@@ -1,0 +1,24 @@
+$if null characters
+    <span>
+$else
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <th>Character
+                <th>Bio
+                <th>Species
+                <th>House
+            <tbody>
+                $forall (Entity characterId character, Entity speciesId species, maybeHouse) <- characters
+                    <tr>
+                        <td>
+                            <a href=@{CharacterR characterId}>#{characterName character}
+                        <td>#{characterBio character}
+                        <td>
+                            <a href=@{SpeciesR speciesId}>#{speciesName species}
+                        <td>
+                            $maybe Entity houseId house <- maybeHouse
+                                <a href=@{HouseR houseId}>#{houseName house}
+                            $nothing
+                                -
+

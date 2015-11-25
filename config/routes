@@ -1,0 +1,25 @@
+/static StaticR Static appStatic
+/auth   AuthR   Auth   getAuth
+
+/favicon.ico FaviconR GET
+/robots.txt RobotsR GET
+
+/characters                   CharactersR    GET
+/characters/new               NewCharacterR  GET POST
+!/characters/#CharacterId     CharacterR     GET
+/characters/#CharacterId/edit EditCharacterR GET POST
+
+/species            SpeciesListR GET POST
+/species/#SpeciesId SpeciesR     GET POST
+
+/houses          HousesR GET POST
+/houses/#HouseId HouseR  GET POST
+
+/seasons                                    SeriesListR          GET POST
+/seasons/#Int                               SeriesR              GET POST
+/seasons/#Int/episodes                      SeriesEpisodesR          POST
+/seasons/#Int/episodes/#Int                 SeriesEpisodeR       GET POST
+/seasons/#Int/episodes/#Int/events          SeriesEpisodeEventsR     POST
+/seasons/#Int/episodes/#Int/events/#EventId SeriesEpisodeEventR  GET POST
+
+/ HomeR GET

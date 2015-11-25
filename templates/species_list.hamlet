@@ -1,0 +1,17 @@
+<div>
+    <a href="#" role="button" .btn .btn-primary>Create a new species
+^{embeddedForm action enctype widget}
+
+<div .table-responsive>
+    <table .table>
+        <thead>
+            <th>Species
+            <th>Description
+            <th>Number Of Characters
+        <tbody>
+            $forall (Entity speciesId species, E.Value characterCount) <- species_list
+                <tr>
+                    <td>
+                        <a href=@{SpeciesR speciesId}>#{speciesName species}
+                    <td>#{speciesDescription species}
+                    <td>#{characterCount}

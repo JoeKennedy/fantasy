@@ -1,0 +1,52 @@
+<h1>#{episodeName episode}
+<dl class="dl-horizontal">
+    <dt>Season
+    <dd>#{seriesNumber series}
+    <dt>Episode in season
+    <dd>#{episodeNumber episode}
+    <dt>Episode overall
+    <dd>#{episodeOverallNumber episode}
+    <dt>Original air date
+    <dd>#{displayAirDate $ episodeAirTime episode}
+^{embeddedForm episodeAction episodeEnctype episodeWidget}
+^{eventFormWidget eventHtmlAction eventEnctype eventWidget}
+
+$if null events
+    <span>
+$else
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <!-- Below shouldn't be visible to the end user -->
+                <th>
+                <!-- Above shouldn't be visible to the end user -->
+                <th>Time In Episode
+                <th>Character
+                <th>Action
+                <th>Receiving Character
+                <th>Event
+            <tbody>
+                $forall (Entity eventId event, Entity _ character, maybeReceivingCharacter) <- events
+                    <tr>
+                        <!-- Below shouldn't be visible to the end user -->
+                        <td>
+                            <a href=@{SeriesEpisodeEventR seriesNo episodeNo eventId}>
+                                <span .glyphicon .glyphicon-pencil>
+                        <!-- Above shouldn't be visible to the end user -->
+                        <td>#{displayTime (eventTimeInEpisode event)}
+                        <td>
+                            <a href=@{CharacterR (eventCharacterId event)}>#{characterName character}
+                        <td>#{show (eventAction event)}
+                        <td>
+                            $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
+                                <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
+                            $nothing
+                                -
+                        <td>
+                            $with (actionBefore, actionAfter) <- actionToSplitString (eventAction event)
+                                <a href=@{CharacterR (eventCharacterId event)}>#{characterName character}
+                                #{actionBefore}
+                                $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
+                                    <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
+                                    #{actionAfter}
+

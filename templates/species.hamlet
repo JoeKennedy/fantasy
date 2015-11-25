@@ -1,0 +1,10 @@
+<h1>#{speciesName s}
+<dl class="dl-horizontal">
+    <dt>Description
+    <dd>#{speciesDescription s}
+
+<div>
+    <a href="#" role="button" .btn .btn-primary>Edit this species
+^{embeddedForm action enctype widget}
+
+^{characterList characters}

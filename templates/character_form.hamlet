@@ -1,0 +1,7 @@
+<h1>#{title}
+
+<form method="post" action=@{action} enctype=#{enctype} class="form-horizontal">
+    ^{widget}
+    <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+            <input type="submit" name="commit" value="Submit" class="btn btn-primary">

@@ -1,0 +1,13 @@
+<h1>#{houseName h}
+<dl class="dl-horizontal">
+    <dt>Words
+    <dd>#{houseWords h}
+    <dt>Description
+    <dd>#{houseDescription h}
+
+<div>
+    <a href="#" role="button" .btn .btn-primary>Edit this house
+^{embeddedForm action enctype widget}
+
+^{characterList characters}
+

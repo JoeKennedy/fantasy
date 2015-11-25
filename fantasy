@@ -1,0 +1,47 @@
+create role campuscutiekevinmorrissey login createdb;
+\q
+create role pfunkportal login createdb;
+\q
+DROP TABLE videos;
+exit
+;
+quit();
+quit;
+\q
+\s
+\list
+\q
+CREATE TABLE daily_videos
+\q
+use musicdatabase_development
+;
+\d musicdatabase_development
+\u musicdatabase_development
+\?
+exit
+\q
+SELECT "recordings"."id" FROM "recordings" INNER JOIN "recording_artists" ON "recordings"."id" = "recording_artists"."recording_id" WHERE "recording_artists"."artist_id" = 122 AND ("recordings"."year" BETWEEN 1977 AND 1995)
+;
+exit
+\q
+select * from schema_migration
+;
+select * from schema_migrations;
+select * from schema_migrations limit 1;
+select * from schema_migrations order by version desc limit 1;
+insert into schema_migration values (20150908183906)
+;
+insert into schema_migrations values (20150908183906);
+select * from schema_migrations order by version desc limit 1;
+exit
+\q
+create role fantasy login createdb;
+\l
+\password fantasy
+exit
+\q
+\l
+\d fantasy
+use fantasy
+;
+\s fantasy

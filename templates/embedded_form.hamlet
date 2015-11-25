@@ -1,0 +1,5 @@
+<form method="post" action=@{action} enctype=#{enctype} .form-horizontal>
+    ^{widget}
+    <div .form-group>
+        <div .col-sm-offset-2 .col-sm-10>
+            <input type="submit" name="commit" value="Submit" .btn .btn-primary>

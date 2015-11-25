@@ -1,0 +1,20 @@
+<div>
+    <a href="#" role="button" .btn .btn-primary>Create a new house
+^{embeddedForm action enctype widget}
+
+<div .table-responsive>
+    <table .table>
+        <thead>
+            <th>House
+            <th>Words
+            <th>Description
+            <th>Number Of Characters
+        <tbody>
+            $forall (Entity houseId house, E.Value characterCount) <- houses
+                <tr>
+                    <td>
+                        <a href=@{HouseR houseId}>#{houseName house}
+                    <td>#{houseWords house}
+                    <td>#{houseDescription house}
+                    <td>#{characterCount}
+

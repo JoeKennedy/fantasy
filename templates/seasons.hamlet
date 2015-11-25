@@ -1,0 +1,32 @@
+<div .panel-group #seasons_accordion role="tablist" aria-multiselectable="true">
+    $forall (Entity _ series, episodeList) <- seriesList
+        <div .panel .panel-default>
+            <div .panel-heading #heading#{seriesNumber series} role="tab">
+                <h3 .panel-title>
+                    <a role="button" data-toggle="collapse" data-parent="#seasons_accordion" href="#collapse#{seriesNumber series}" aria-expanded="true" aria-controls="collapse#{seriesNumber series}">Season #{seriesNumber series}
+            <div .panel-collapse .collapse .in #collapse#{seriesNumber series} role="tabpanel" aria-labelledby="heading#{seriesNumber series}">
+                <div .panel-body>
+                    Statistics
+                <table .table>
+                    <thead>
+                        <tr>
+                            <th .col-sm-1># Overall
+                            <th .col-sm-1># In Season
+                            <th>Title
+                            <th>Original Air Date
+                    <tbody>
+                        $forall (Entity _ episode) <- episodeList
+                            <tr>
+                                <td>#{episodeOverallNumber episode}
+                                <td>#{episodeNumber episode}
+                                <td>
+                                    <a href=@{SeriesEpisodeR (seriesNumber series) (episodeNumber episode)}>#{episodeName episode}
+                                <td>#{displayAirDate $ episodeAirTime episode}
+
+    <div .panel .panel-default>
+        <div .panel-heading #heading_new role="tab">
+            <h3 .panel-title>
+                <a role="button" data-toggle="collapse" data-parent="#seasons_accordion" href="#collapse_new" aria-expanded="true" aria-controls="collapse_new">Add new season
+        <div .panel-collapse .collapse .in #collapse_new role="tabpanel" aria-labelledby="heading_new">
+            <div .panel-body>
+                ^{embeddedForm action enctype widget}

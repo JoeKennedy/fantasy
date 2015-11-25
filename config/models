@@ -1,0 +1,49 @@
+User
+    ident Text
+    password Text Maybe
+    UniqueUser ident
+    deriving Typeable
+Email
+    email Text
+    user UserId Maybe
+    verkey Text Maybe
+    UniqueEmail email
+Species
+    name Text
+    description Text
+    UniqueSpeciesName name
+House
+    name Text
+    words Text
+    description Text
+    UniqueHouseName name
+Character
+    name Text
+    bio Text
+    speciesId SpeciesId
+    houseId HouseId Maybe
+    UniqueCharacterName name
+Series
+    number Int
+    UniqueSeriesNumber number
+    deriving Eq Ord
+Episode
+    name Text
+    number Int
+    overallNumber Int
+    airTime UTCTime
+    seriesId SeriesId
+    UniqueEpisodeOverallNumber overallNumber
+    UniqueEpisodeNumberSeries number seriesId
+    UniqueEpisodeAirTime airTime
+    UniqueEpisodeName name
+Event
+    characterId CharacterId
+    action Action
+    receivingCharacterId CharacterId Maybe
+    episodeId EpisodeId
+    timeInEpisode Int
+    UniqueEvent characterId action episodeId timeInEpisode
+
+
+ -- By default this file is used in Model.hs (which is imported by Foundation.hs)

@@ -1,0 +1,23 @@
+<div .panel .panel-default>
+    <div .panel-heading #heading#{seriesNumber series} role="tab">
+        <h3 .panel-title>
+            <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse#{seriesNumber series}" aria-expanded="true" aria-controls="collapse#{seriesNumber series}">#{panelTitle}
+    <div .panel-collapse .collapse .in #collapse#{seriesNumber series} role="tabpanel" aria-labelledby="heading#{seriesNumber series}">
+        <div .panel-body>
+            Statistics
+        <table .table>
+            <thead>
+                <tr>
+                    <th .col-sm-1># Overall
+                    <th .col-sm-1># In Season
+                    <th>Title
+                    <th>Original Air Date
+            <tbody>
+                $forall (Entity _ episode) <- episodes
+                    <tr>
+                        <td>#{episodeOverallNumber episode}
+                        <td>#{episodeNumber episode}
+                        <td>
+                            <a href=@{SeriesEpisodeR (seriesNumber series) (episodeNumber episode)}>#{episodeName episode}
+                        <td>#{displayAirDate $ episodeAirTime episode}
+
