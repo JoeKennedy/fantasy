@@ -1,19 +1,10 @@
 <h1>#{episodeName episode}
-<dl class="dl-horizontal">
-    <dt>Season
-    <dd>#{seriesNumber series}
-    <dt>Episode in season
-    <dd>#{episodeNumber episode}
-    <dt>Episode overall
-    <dd>#{episodeOverallNumber episode}
-    <dt>Original air date
-    <dd>#{displayAirDate $ episodeAirTime episode}
+<h5>Episode ##{episodeOverallNumber episode} overall
+<h5>Originally aired #{displayAirDate $ episodeAirTime episode}
 ^{embeddedForm episodeAction episodeEnctype episodeWidget}
 ^{eventFormWidget eventHtmlAction eventEnctype eventWidget}
 
-$if null events
-    <span>
-$else
+$if not (null events)
     <div class="table-responsive">
         <table class="table">
             <thead>
