@@ -1,2 +1,2 @@
-<h1>Event!
+<h1>Event ##{toPathPiece eventId}
 ^{eventFormWidget action enctype widget}
