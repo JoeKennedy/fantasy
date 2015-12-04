@@ -1,6 +1,6 @@
 <h1>Game Of Thrones Season #{seriesNumber series}
 
-<div .panel-group #accordion role="tablist" aria-multiselectable="true">
+<div #accordion .panel-group role="tablist" aria-multiselectable="true">
     ^{seriesEpisodesPanel series episodes episodesPanelTitle}
     <div .panel .panel-default>
         <div .panel-heading #heading_series_form role="tab">
