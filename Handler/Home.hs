@@ -12,7 +12,6 @@ import Import
 getHomeR :: Handler Html
 getHomeR = 
     defaultLayout $ do
-        aDomId <- newIdent
         setTitle "A Fantasy League Of Ice And Fire"
         $(widgetFile "homepage")
 
