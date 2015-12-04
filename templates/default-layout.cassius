@@ -1,0 +1,3 @@
+@media (min-width: 979px)
+  ul.nav li.dropdown.dropdown-hover:hover > ul.dropdown-menu
+    display: block

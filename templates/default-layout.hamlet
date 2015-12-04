@@ -1,3 +1,49 @@
+<nav .navbar .navbar-default .navbar-static-top>
+  <div .container-fluid>
+    <div .navbar-header>
+      <button .navbar-toggle .collapsed type="button" data-toggle="collapse" data-target="#header_navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation
+        <span class="icon-bar">
+        <span class="icon-bar">
+        <span class="icon-bar">
+      <a .navbar-brand href=@{HomeR}>A Fantasy League Of Ice And Fire
+
+    <div #header_navbar .collapse .navbar-collapse>
+      <ul .nav .navbar-nav .navbar-left>
+        <li>
+          <a href=@{CharactersR}>Characters
+        <li>
+          <a href=@{HousesR}>Houses
+        <li>
+          <a href=@{SpeciesListR}>Species
+        <li .dropdown .dropdown-hover>
+          <a href="@{SeriesListR}" role="button" aria-haspopup="true" aria-expanded="false">
+            Seasons
+            <span class="caret">
+          <ul .dropdown-menu>
+            $forall Entity _ series <- seriesList
+              <li>
+                <a href=@{SeriesR (seriesNumber series)}>#{seriesNumber series}
+
+      <ul .nav .navbar-nav .navbar-right>
+        <li>
+          <a href="#">Sign In
+
+      <form .navbar-form .navbar-right role="search">
+        <div .form-group>
+          <div .input-group>
+            <input .form-control type="text" placeholder="Search">
+            <span .input-group-btn>
+              <button .btn .btn-default type="button">
+                <span .glyphicon .glyphicon-search>
+
+<ol .breadcrumb>
+    $if not (null parents)
+        $forall p <- parents
+            <li>
+                <a href="@{fst p}">#{snd p}
+    <li .active>#{title'}
+
 $maybe msg <- mmsg
   <div #message>#{msg}
 ^{widget}

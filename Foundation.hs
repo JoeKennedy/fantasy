@@ -57,6 +57,9 @@ instance Yesod App where
     defaultLayout widget = do
         master <- getYesod
         mmsg <- getMessage
+        (title', parents) <- breadcrumbs
+
+        seriesList <- runDB $ selectList [] [Asc SeriesNumber]
 
         -- We break up the default layout into two components:
         -- default-layout is the contents of the body tag, and
@@ -108,6 +111,43 @@ instance Yesod App where
             || level == LevelError
 
     makeLogger = return . appLogger
+
+instance YesodBreadcrumbs App where
+    breadcrumb HomeR = return ("Home", Nothing)
+
+    -- Character, species, and house breadcrumbs
+    breadcrumb CharactersR = return ("Characters", Just HomeR)
+    breadcrumb NewCharacterR = return ("New", Just CharactersR)
+    breadcrumb (CharacterR characterId) = do
+        character <- runDB $ get404 characterId
+        return (characterName character, Just CharactersR)
+    breadcrumb (EditCharacterR characterId) = return ("Edit", Just $ CharacterR characterId)
+
+    breadcrumb SpeciesListR = return ("Species", Just HomeR)
+    breadcrumb (SpeciesR speciesId) = do
+        species <- runDB $ get404 speciesId
+        return (speciesName species, Just SpeciesListR)
+
+    breadcrumb HousesR = return ("Houses", Just HomeR)
+    breadcrumb (HouseR houseId) = do
+        house <- runDB $ get404 houseId
+        return (houseName house, Just HousesR)
+
+    -- Series breadcrumbs
+    breadcrumb SeriesListR = return ("Seasons", Just HomeR)
+    breadcrumb (SeriesR seriesNo) = return (toPathPiece seriesNo, Just SeriesListR)
+    breadcrumb (SeriesEpisodesR seriesNo) = return ("Episodes", Just $ SeriesR seriesNo)
+    breadcrumb (SeriesEpisodeR seriesNo episodeNo) =
+        return (toPathPiece episodeNo, Just $ SeriesEpisodesR seriesNo)
+    breadcrumb (SeriesEpisodeEventR seriesNo episodeNo eventId) =
+        return ("Event #" ++ toPathPiece eventId, Just $ SeriesEpisodeR seriesNo episodeNo)
+
+    -- These pages never call breadcrumb
+    breadcrumb StaticR{}              = return ("", Nothing)
+    breadcrumb AuthR{}                = return ("", Nothing)
+    breadcrumb FaviconR               = return ("", Nothing)
+    breadcrumb RobotsR                = return ("", Nothing)
+    breadcrumb SeriesEpisodeEventsR{} = return ("", Nothing)
 
 -- How to run database actions.
 instance YesodPersist App where

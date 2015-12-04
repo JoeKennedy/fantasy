@@ -17,7 +17,7 @@
 
 /seasons                                    SeriesListR          GET POST
 /seasons/#Int                               SeriesR              GET POST
-/seasons/#Int/episodes                      SeriesEpisodesR          POST
+/seasons/#Int/episodes                      SeriesEpisodesR      GET POST
 /seasons/#Int/episodes/#Int                 SeriesEpisodeR       GET POST
 /seasons/#Int/episodes/#Int/events          SeriesEpisodeEventsR     POST
 /seasons/#Int/episodes/#Int/events/#EventId SeriesEpisodeEventR  GET POST

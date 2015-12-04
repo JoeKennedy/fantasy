@@ -98,6 +98,9 @@ postSeriesR seriesNo = do
             let action = SeriesR seriesNo
             $(widgetFile "embedded_form")
 
+getSeriesEpisodesR :: Int -> Handler Html
+getSeriesEpisodesR seriesNo = redirect $ SeriesR seriesNo
+
 postSeriesEpisodesR :: Int -> Handler Html
 postSeriesEpisodesR seriesNo = do
     Entity { entityKey = seriesId, entityVal = series } <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
@@ -200,5 +203,4 @@ postSeriesEpisodeEventR seriesNo episodeNo eventId = do
             setTitle "Edit of event failed"
             let action = SeriesEpisodeEventR seriesNo episodeNo eventId
             $(widgetFile "event_form")
-
 
