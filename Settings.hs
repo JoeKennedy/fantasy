@@ -54,6 +54,11 @@ data AppSettings = AppSettings
     -- ^ Google Analytics code
     }
 
+data OAuth2Keys = OAuth2Keys
+    { clientId :: Text
+    , clientSecret :: Text
+    }
+
 instance FromJSON AppSettings where
     parseJSON = withObject "AppSettings" $ \o -> do
         let defaultDev =

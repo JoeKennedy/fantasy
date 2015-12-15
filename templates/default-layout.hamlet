@@ -27,7 +27,10 @@
 
       <ul .nav .navbar-nav .navbar-right>
         <li>
-          <a href="#">Sign In
+          $maybe user <- maybeUser
+            <a href="@{AuthR LogoutR}">Sign Out
+          $nothing
+            <a href="@{AuthR LoginR}">Sign In
 
       <form .navbar-form .navbar-right role="search">
         <div .form-group>
@@ -35,14 +38,22 @@
             <input .form-control type="text" placeholder="Search">
             <span .input-group-btn>
               <button .btn .btn-default type="button">
-                <span .glyphicon .glyphicon-search>
+                <i .fa .fa-search>
 
 <ol .breadcrumb>
     $if not (null parents)
         $forall p <- parents
             <li>
-                <a href="@{fst p}">#{snd p}
-    <li .active>#{title'}
+                <a href="@{fst p}">
+                    $if snd p == "Home"
+                        <i .fa .fa-home>
+                    $else
+                        #{snd p}
+    <li .active>
+        $if title' == "Home"
+            <i .fa .fa-home>
+        $else
+            #{title'}
 
 $maybe msg <- mmsg
   <div #message>#{msg}

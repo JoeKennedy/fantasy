@@ -4,5 +4,6 @@ flags:
     dev: false
 packages:
 - '.'
-extra-deps: []
+extra-deps:
+- load-env-0.1.1
 resolver: lts-3.4

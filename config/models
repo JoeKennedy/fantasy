@@ -1,13 +1,16 @@
 User
-    ident Text
-    password Text Maybe
-    UniqueUser ident
-    deriving Typeable
+    firstName Text Maybe
+    lastName Text Maybe
+    deriving Show Typeable
 Email
     email Text
-    user UserId Maybe
+    userId UserId
     verkey Text Maybe
     UniqueEmail email
+Ident
+    ident Text
+    userId UserId
+    UniqueIdent ident
 Species
     name Text
     description Text

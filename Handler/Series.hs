@@ -180,6 +180,7 @@ postSeriesEpisodeEventsR seriesNo episodeNo = do
 
 getSeriesEpisodeEventR :: Int -> Int -> EventId -> Handler Html
 getSeriesEpisodeEventR seriesNo episodeNo eventId = do
+    Entity userid user <- requireAuth
     Entity { entityKey = seriesId  } <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
     Entity { entityKey = episodeId } <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
     event <- runDB $ get404 eventId

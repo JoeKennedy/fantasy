@@ -17,6 +17,7 @@ import Database.Persist.Postgresql          (createPostgresqlPool, pgConnStr,
                                              pgPoolSize, runSqlPool)
 import Import
 import Language.Haskell.TH.Syntax           (qLocation)
+import LoadEnv                              (loadEnv)
 import Network.Wai.Handler.Warp             (Settings, defaultSettings,
                                              defaultShouldDisplayException,
                                              runSettings, setHost,
@@ -25,6 +26,7 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              IPAddrSource (..),
                                              OutputFormat (..), destination,
                                              mkRequestLogger, outputFormat)
+import System.Environment                   (getEnv)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
 
@@ -49,6 +51,7 @@ mkYesodDispatch "App" resourcesApp
 -- migrations handled by Yesod.
 makeFoundation :: AppSettings -> IO App
 makeFoundation appSettings = do
+    loadEnv
     -- Some basic initializations: HTTP connection manager, logger, and static
     -- subsite.
     appHttpManager <- newManager
@@ -56,6 +59,8 @@ makeFoundation appSettings = do
     appStatic <-
         (if appMutableStatic appSettings then staticDevel else static)
         (appStaticDir appSettings)
+    appFacebookOAuth2Keys <- getOAuth2Keys "FACEBOOK_OAUTH2_APP_ID" "FACEBOOK_OAUTH2_APP_SECRET"
+    appGoogleOAuth2Keys <- getOAuth2Keys "GOOGLE_OAUTH2_CLIENT_ID" "GOOGLE_OAUTH2_CLIENT_SECRET"
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
@@ -79,6 +84,12 @@ makeFoundation appSettings = do
 
     -- Return the foundation
     return $ mkFoundation pool
+
+    where
+        getOAuth2Keys :: String -> String -> IO OAuth2Keys
+        getOAuth2Keys clientIdEnvVar clientSecretEnvVar = OAuth2Keys
+            <$> fmap pack (getEnv clientIdEnvVar)
+            <*> fmap pack (getEnv clientSecretEnvVar)
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.

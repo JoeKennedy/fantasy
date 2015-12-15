@@ -1,0 +1,22 @@
+<div .col-md-4 .col-sm-6 .col-xs-8 .col-md-offset-4 .col-sm-offset-3 .col-xs-offset-2>
+    <div .panel .panel-default>
+        <div .panel-heading>
+            <h5 .text-center>Sign In
+        <div .panel-body>
+            <div .col-xs-12>
+                <p>
+                    <a .btn .btn-lg .btn-block .btn-social .btn-facebook .vertical-middle href="@{AuthR FB.facebookLogin}">
+                        <span .fa .fa-facebook .padding-top-4>
+                        Facebook
+            <div .col-xs-12>
+                <p>
+                    <a .btn .btn-lg .btn-block .btn-social .btn-google .vertical-middle href="@{AuthR GE.forwardUrl}">
+                        <span .fa .fa-google .padding-top-4>
+                        Google
+            <div .col-xs-12>
+                <form method="get" action="@{AuthR forwardUrl}">
+                    <input type="hidden" name="openid_identifier" value="http://me.yahoo.com">
+                    <p>
+                        <button .btn .btn-lg .btn-block .btn-social .btn-yahoo .openid-yahoo>
+                            <span .fa .fa-yahoo .padding-top-4>
+                            Yahoo

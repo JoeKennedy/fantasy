@@ -91,9 +91,12 @@ library
                  , containers
                  , vector
                  , time
-                 , esqueleto
+                 , fb
+                 , yesod-fb
+                 , yesod-auth-fb
                  , blaze-markup
                  , old-locale
+                 , load-env
 
 executable         fantasy
     if flag(library-only)

@@ -1,13 +1,17 @@
 module Foundation where
 
 import Import.NoFoundation
-import Database.Persist.Sql (ConnectionPool, runSqlPool)
-import Text.Hamlet          (hamletFile)
-import Text.Jasmine         (minifym)
-import Yesod.Auth.BrowserId (authBrowserId)
-import Yesod.Auth.Message   (AuthMessage (InvalidLogin))
-import Yesod.Default.Util   (addStaticContentExternal)
-import Yesod.Core.Types     (Logger)
+import Model
+import Database.Persist.Sql    (ConnectionPool, runSqlPool)
+import Facebook                (Credentials(..))
+import Text.Hamlet             (hamletFile)
+import Text.Jasmine            (minifym)
+import qualified Yesod.Auth.GoogleEmail2 as GE
+import qualified Yesod.Facebook as YF
+import qualified Yesod.Auth.Facebook.ServerSide as FB
+import Yesod.Auth.OpenId
+import Yesod.Default.Util      (addStaticContentExternal)
+import Yesod.Core.Types        (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
 
 -- | The foundation datatype for your application. This can be a good place to
@@ -15,11 +19,13 @@ import qualified Yesod.Core.Unsafe as Unsafe
 -- starts running, such as database connections. Every handler will have
 -- access to the data present here.
 data App = App
-    { appSettings    :: AppSettings
-    , appStatic      :: Static -- ^ Settings for static file serving.
-    , appConnPool    :: ConnectionPool -- ^ Database connection pool.
-    , appHttpManager :: Manager
-    , appLogger      :: Logger
+    { appSettings           :: AppSettings
+    , appStatic             :: Static -- ^ Settings for static file serving.
+    , appConnPool           :: ConnectionPool -- ^ Database connection pool.
+    , appHttpManager        :: Manager
+    , appLogger             :: Logger
+    , appFacebookOAuth2Keys :: OAuth2Keys
+    , appGoogleOAuth2Keys   :: OAuth2Keys
     }
 
 instance HasHttpManager App where
@@ -56,6 +62,7 @@ instance Yesod App where
 
     defaultLayout widget = do
         master <- getYesod
+        maybeUser <- maybeAuth
         mmsg <- getMessage
         (title', parents) <- breadcrumbs
 
@@ -116,6 +123,7 @@ instance Yesod App where
 
 instance YesodBreadcrumbs App where
     breadcrumb HomeR = return ("Home", Nothing)
+    breadcrumb (AuthR LoginR) = return ("Sign In", Just HomeR)
 
     -- Character, species, and house breadcrumbs
     breadcrumb CharactersR = return ("Characters", Just HomeR)
@@ -170,16 +178,61 @@ instance YesodAuth App where
     -- Override the above two destinations when a Referer: header is present
     redirectToReferer _ = True
 
-    authenticate creds = runDB $ do
-        x <- getBy $ UniqueUser $ credsIdent creds
-        return $ case x of
-            Just (Entity uid _) -> Authenticated uid
-            Nothing -> UserError InvalidLogin
+    authenticate creds = do
+        maybeUser <- maybeAuth
+        maybeIdent <- runDB $ do
+            maybeIdentClaimed <- getBy $ UniqueIdent $ credsIdentClaimed creds
+            case maybeIdentClaimed of
+                Just _ -> return maybeIdentClaimed
+                Nothing -> getBy $ UniqueIdent $ credsIdent creds
+        case (maybeIdent, maybeUser) of
+            (Just (Entity _ ident), Nothing) -> do
+                runDB $ addClaimed (identUserId ident) creds
+                return $ Authenticated $ identUserId ident
+            (Nothing, Nothing) -> runDB $ do
+                uid <- insert $ User
+                    { userFirstName = Nothing
+                    , userLastName = Nothing
+                    }
+                addClaimed uid creds
+                return $ Authenticated uid
+            (Nothing, Just (Entity uid _)) -> do
+                setMessage "Identify added to your account"
+                runDB $ do
+                    _ <- insert $ Ident (credsIdent creds) uid
+                    addClaimed uid creds
+                return $ Authenticated uid
+            (Just (Entity _ ident), Just (Entity uid _)) -> do
+                runDB $ addClaimed uid creds
+                setMessage "That identifier is already attached to an account. Please detach it from the other account first."
+                redirect HomeR
+
+        where
+            addClaimed uid creds' = do
+              let claimed = credsIdentClaimed creds'
+              _ <- insertBy $ Ident claimed uid
+              return ()
 
     -- You can add other plugins like BrowserID, email or OAuth here
-    authPlugins _ = [authBrowserId def]
+    authPlugins m =
+        [ GE.authGoogleEmail
+            (clientId $ appGoogleOAuth2Keys m)
+            (clientSecret $ appGoogleOAuth2Keys m)
+        , FB.authFacebook ["email"]
+        , authOpenId OPLocal []
+        ]
 
     authHttpManager = getHttpManager
+
+    loginHandler = lift $ defaultLayout $(widgetFile "login")
+
+instance YF.YesodFacebook App where
+    fbHttpManager = appHttpManager
+    fbCredentials m =
+        Credentials { appName="Fantasy"
+                    , appId=(clientId $ appFacebookOAuth2Keys m)
+                    , appSecret=(clientSecret $ appFacebookOAuth2Keys m)
+                    }
 
 instance YesodAuthPersist App
 
