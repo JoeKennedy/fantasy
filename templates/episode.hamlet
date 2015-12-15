@@ -22,7 +22,7 @@ $if not (null events)
                         <!-- Below shouldn't be visible to the end user -->
                         <td>
                             <a href=@{SeriesEpisodeEventR seriesNo episodeNo eventId}>
-                                <span .glyphicon .glyphicon-pencil>
+                                <span .fa .fa-pencil>
                         <!-- Above shouldn't be visible to the end user -->
                         <td>#{displayTime (eventTimeInEpisode event)}
                         <td>
