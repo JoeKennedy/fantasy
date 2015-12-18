@@ -1,12 +1,12 @@
 module Handler.Series where
 
 import Import
+import Handler.Common (isAdmin)
 
 import qualified Data.Map as Map
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
 import           Text.Blaze (toMarkup)
-import           Text.Printf (printf)
 import           Text.Read (readMaybe)
 import           Yesod.Form.Bootstrap3 (renderBootstrap3)
 
@@ -39,9 +39,6 @@ embeddedForm action enctype widget = $(widgetFile "embedded_form")
 eventFormWidget action enctype widget = $(widgetFile "event_form")
 
 seriesEpisodesPanel series episodes panelTitle = $(widgetFile "series_episodes_panel")
-
-displayTime :: Int -> String
-displayTime time = printf "%02d" (time `div` 60) ++ ":" ++ printf "%02d" (time `mod` 60)
 
 getSeriesListR :: Handler Html
 getSeriesListR = do

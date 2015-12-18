@@ -5,7 +5,6 @@ import Import
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
 import           Text.Blaze (toMarkup)
-import           Text.Printf (printf)
 import           Yesod.Form.Bootstrap3 (renderBootstrap3)
 
 characterForm :: Maybe Character -> Form Character
@@ -16,9 +15,6 @@ characterForm character = renderBootstrap3 defaultBootstrapForm $ Character
     <*> aopt (selectField houses) (fieldName "House") (characterHouseId <$> character)
     where speciesList = optionsPersistKey [] [Asc SpeciesName] speciesName
           houses = optionsPersistKey [] [Asc HouseName] houseName
-
-displayTime :: Int -> String
-displayTime time = printf "%02d" (time `div` 60) ++ ":" ++ printf "%02d" (time `mod` 60)
 
 getCharactersR :: Handler Html
 getCharactersR = do
