@@ -14,3 +14,11 @@ getFaviconR = return $ TypedContent "image/x-icon"
 getRobotsR :: Handler TypedContent
 getRobotsR = return $ TypedContent typePlain
                     $ toContent $(embedFile "config/robots.txt")
+
+----------
+-- USER --
+----------
+
+isAdmin :: Maybe (Entity User) -> Bool
+isAdmin (Just (Entity _ user)) = userIsAdmin user
+isAdmin Nothing                = False

@@ -2,18 +2,20 @@
 
 <div #accordion .panel-group role="tablist" aria-multiselectable="true">
     ^{seriesEpisodesPanel series episodes episodesPanelTitle}
-    <div .panel .panel-default>
-        <div .panel-heading #heading_series_form role="tab">
-            <h3 .panel-title>
-                <a .collapsed role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse_series_form" aria-expanded="false" aria-controls="collapse_series_form">Edit season
-        <div .panel-collapse .collapse #collapse_series_form role="tabpanel" aria-labelledby="heading_series_form">
-            <div .panel-body>
-                ^{embeddedForm seriesAction seriesEnctype seriesWidget}
+    $if isAdmin maybeUser
+        <div .panel .panel-default>
+            <div .panel-heading #heading_series_form role="tab">
+                <h3 .panel-title>
+                    <a .collapsed role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse_series_form" aria-expanded="false" aria-controls="collapse_series_form">Edit season
+            <div .panel-collapse .collapse #collapse_series_form role="tabpanel" aria-labelledby="heading_series_form">
+                <div .panel-body>
+                    ^{embeddedForm seriesAction seriesEnctype seriesWidget}
 
-    <div .panel .panel-default>
-        <div .panel-heading #heading_episode_form role="tab">
-            <h3 .panel-title>
-                <a .collapsed role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse_episode_form" aria-expanded="false" aria-controls="collapse_episode_form">Add an episode
-        <div .panel-collapse .collapse #collapse_episode_form role="tabpanel" aria-labelledby="heading_episode_form">
-            <div .panel-body>
-                ^{embeddedForm episodeAction episodeEnctype episodeWidget}
+    $if isAdmin maybeUser
+        <div .panel .panel-default>
+            <div .panel-heading #heading_episode_form role="tab">
+                <h3 .panel-title>
+                    <a .collapsed role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse_episode_form" aria-expanded="false" aria-controls="collapse_episode_form">Add an episode
+            <div .panel-collapse .collapse #collapse_episode_form role="tabpanel" aria-labelledby="heading_episode_form">
+                <div .panel-body>
+                    ^{embeddedForm episodeAction episodeEnctype episodeWidget}

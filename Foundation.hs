@@ -86,9 +86,21 @@ instance Yesod App where
     authRoute _ = Just $ AuthR LoginR
 
     -- Routes not requiring authentication.
-    isAuthorized (AuthR _) _ = return Authorized
-    isAuthorized FaviconR _ = return Authorized
-    isAuthorized RobotsR _ = return Authorized
+    isAuthorized (AuthR _)                   _    = return Authorized
+    isAuthorized FaviconR                    _    = return Authorized
+    isAuthorized RobotsR                     _    = return Authorized
+    isAuthorized NewCharacterR               _    = requireAdmin
+    isAuthorized (EditCharacterR _)          _    = requireAdmin
+    isAuthorized HousesR                     True = requireAdmin
+    isAuthorized (HouseR _)                  True = requireAdmin
+    isAuthorized SpeciesListR                True = requireAdmin
+    isAuthorized (SpeciesR _)                True = requireAdmin
+    isAuthorized SeriesListR                 True = requireAdmin
+    isAuthorized (SeriesR _)                 True = requireAdmin
+    isAuthorized (SeriesEpisodesR _)         True = requireAdmin
+    isAuthorized (SeriesEpisodeR _ _)        True = requireAdmin
+    isAuthorized (SeriesEpisodeEventsR _ _)  _    = requireAdmin
+    isAuthorized (SeriesEpisodeEventR _ _ _) _    = requireAdmin
     -- Default to Authorized for now.
     isAuthorized _ _ = return Authorized
 
@@ -119,6 +131,15 @@ instance Yesod App where
             || level == LevelError
 
     makeLogger = return . appLogger
+
+requireAdmin :: (Typeable (AuthEntity master), PersistEntity (AuthEntity master)
+           , YesodAuthPersist master, AuthId master ~ Key (AuthEntity master)
+           , AuthEntity master ~ User) => HandlerT master IO AuthResult
+requireAdmin = do
+    mu <- maybeAuth
+    return $ case mu of
+        Nothing -> AuthenticationRequired
+        Just (Entity _ u) -> if userIsAdmin u then Authorized else Unauthorized "You must be an admin"
 
 instance YesodBreadcrumbs App where
     breadcrumb HomeR = return ("Home", Nothing)
@@ -191,7 +212,8 @@ instance YesodAuth App where
             (Nothing, Nothing) -> runDB $ do
                 uid <- insert $ User
                     { userFirstName = Nothing
-                    , userLastName = Nothing
+                    , userLastName  = Nothing
+                    , userIsAdmin   = False
                     }
                 addClaimed uid creds
                 return $ Authenticated uid

@@ -1,6 +1,7 @@
-<div>
-    <a href="#" role="button" .btn .btn-primary>Create a new species
-^{embeddedForm action enctype widget}
+$if isAdmin maybeUser
+    <div>
+        <a href="#" role="button" .btn .btn-primary>Create a new species
+    ^{embeddedForm action enctype widget}
 
 <div .table-responsive>
     <table .table>

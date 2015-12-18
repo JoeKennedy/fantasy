@@ -5,9 +5,10 @@
     <dt>Description
     <dd>#{houseDescription h}
 
-<div>
-    <a href="#" role="button" .btn .btn-primary>Edit this house
-^{embeddedForm action enctype widget}
+$if isAdmin maybeUser
+    <div>
+        <a href="#" role="button" .btn .btn-primary>Edit this house
+    ^{embeddedForm action enctype widget}
 
 ^{characterList characters}
 

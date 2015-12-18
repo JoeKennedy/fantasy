@@ -3,8 +3,9 @@
     <dt>Description
     <dd>#{speciesDescription s}
 
-<div>
-    <a href="#" role="button" .btn .btn-primary>Edit this species
-^{embeddedForm action enctype widget}
+$if isAdmin maybeUser
+    <div>
+        <a href="#" role="button" .btn .btn-primary>Edit this species
+    ^{embeddedForm action enctype widget}
 
 ^{characterList characters}

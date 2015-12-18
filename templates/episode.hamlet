@@ -1,16 +1,17 @@
 <h1>#{episodeName episode}
 <h5>Episode ##{episodeOverallNumber episode} overall
 <h5>Originally aired #{displayAirDate $ episodeAirTime episode}
-^{embeddedForm episodeAction episodeEnctype episodeWidget}
-^{eventFormWidget eventHtmlAction eventEnctype eventWidget}
+
+$if isAdmin maybeUser
+    ^{embeddedForm episodeAction episodeEnctype episodeWidget}
+    ^{eventFormWidget eventHtmlAction eventEnctype eventWidget}
 
 $if not (null events)
     <div class="table-responsive">
         <table class="table">
             <thead>
-                <!-- Below shouldn't be visible to the end user -->
-                <th>
-                <!-- Above shouldn't be visible to the end user -->
+                $if isAdmin maybeUser
+                    <th>
                 <th>Time In Episode
                 <th>Character
                 <th>Action
@@ -19,11 +20,10 @@ $if not (null events)
             <tbody>
                 $forall (Entity eventId event, Entity _ character, maybeReceivingCharacter) <- events
                     <tr>
-                        <!-- Below shouldn't be visible to the end user -->
-                        <td>
-                            <a href=@{SeriesEpisodeEventR seriesNo episodeNo eventId}>
-                                <span .fa .fa-pencil>
-                        <!-- Above shouldn't be visible to the end user -->
+                        $if isAdmin maybeUser
+                            <td>
+                                <a href=@{SeriesEpisodeEventR seriesNo episodeNo eventId}>
+                                    <span .fa .fa-pencil>
                         <td>#{displayTime (eventTimeInEpisode event)}
                         <td>
                             <a href=@{CharacterR (eventCharacterId event)}>#{characterName character}

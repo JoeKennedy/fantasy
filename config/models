@@ -1,6 +1,7 @@
 User
     firstName Text Maybe
     lastName Text Maybe
+    isAdmin Bool default=false
     deriving Show Typeable
 Email
     email Text

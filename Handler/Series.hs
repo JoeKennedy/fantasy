@@ -42,6 +42,7 @@ seriesEpisodesPanel series episodes panelTitle = $(widgetFile "series_episodes_p
 
 getSeriesListR :: Handler Html
 getSeriesListR = do
+    maybeUser <- maybeAuth
     (widget, enctype) <- generateFormPost $ seriesForm Nothing
     episodesAndSeries <- runDB
         $ E.select
@@ -71,6 +72,7 @@ postSeriesListR = do
 
 getSeriesR :: Int -> Handler Html
 getSeriesR seriesNo = do
+    maybeUser <- maybeAuth
     Entity { entityKey = seriesId, entityVal = series } <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
     episodes <- runDB $ selectList [EpisodeSeriesId ==. seriesId] [Asc EpisodeNumber]
     (seriesWidget,  seriesEnctype)  <- generateFormPost $ seriesForm $ Just series
@@ -128,6 +130,7 @@ parseUTCDate = maybe (Left MsgInvalidDay) Right . readMaybe
 
 getSeriesEpisodeR :: Int -> Int -> Handler Html
 getSeriesEpisodeR seriesNo episodeNo = do
+    maybeUser <- maybeAuth
     Entity { entityKey = seriesId,  entityVal = series }  <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
     Entity { entityKey = episodeId, entityVal = episode } <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
     (episodeWidget, episodeEnctype) <- generateFormPost $ episodeForm seriesId $ Just episode
@@ -177,7 +180,6 @@ postSeriesEpisodeEventsR seriesNo episodeNo = do
 
 getSeriesEpisodeEventR :: Int -> Int -> EventId -> Handler Html
 getSeriesEpisodeEventR seriesNo episodeNo eventId = do
-    Entity userid user <- requireAuth
     Entity { entityKey = seriesId  } <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
     Entity { entityKey = episodeId } <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
     event <- runDB $ get404 eventId

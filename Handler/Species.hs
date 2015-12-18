@@ -1,6 +1,7 @@
 module Handler.Species where
 
 import Import
+import Handler.Common (isAdmin)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -16,6 +17,7 @@ embeddedForm action enctype widget = $(widgetFile "embedded_form")
 
 getSpeciesListR :: Handler Html
 getSpeciesListR = do
+    maybeUser <- maybeAuth
     (widget, enctype) <- generateFormPost $ speciesForm Nothing
     species_list <- runDB
         $ E.select
@@ -45,6 +47,7 @@ characterList characters = $(widgetFile "characters")
 
 getSpeciesR :: SpeciesId -> Handler Html
 getSpeciesR speciesId = do
+    maybeUser         <- maybeAuth
     s                 <- runDB $ get404 speciesId
     (widget, enctype) <- generateFormPost $ speciesForm $ Just s
     characters        <- runDB

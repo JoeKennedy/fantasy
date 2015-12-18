@@ -1,6 +1,7 @@
 module Handler.House where
 
 import Import
+import Handler.Common (isAdmin)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -20,6 +21,7 @@ embeddedForm action enctype widget = $(widgetFile "embedded_form")
 
 getHousesR :: Handler Html
 getHousesR = do
+    maybeUser <- maybeAuth
     (widget, enctype) <- generateFormPost $ houseForm Nothing
     houses <- runDB
         $ E.select
@@ -46,6 +48,7 @@ postHousesR = do
 
 getHouseR :: HouseId -> Handler Html
 getHouseR houseId = do
+    maybeUser         <- maybeAuth
     h                 <- runDB $ get404 houseId
     (widget, enctype) <- generateFormPost $ houseForm $ Just h
     characters        <- runDB
