@@ -1,7 +1,6 @@
 module Foundation where
 
 import Import.NoFoundation
-import Model
 import Database.Persist.Sql    (ConnectionPool, runSqlPool)
 import Facebook                (Credentials(..))
 import Text.Hamlet             (hamletFile)
