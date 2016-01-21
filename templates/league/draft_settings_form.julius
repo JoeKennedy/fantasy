@@ -1,0 +1,6 @@
+function draftSettingsFormReady(jQuery) {
+    listGroupField('draft_type');
+}
+
+$(document).ready(draftSettingsFormReady)
+$(window).load(draftSettingsFormReady)

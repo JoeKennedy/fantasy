@@ -30,6 +30,10 @@ import System.Environment                   (getEnv)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
 
+import qualified Data.Proxy as P
+import qualified Web.ServerSession.Core as SS
+import qualified Web.ServerSession.Backend.Persistent as SS
+
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Common
@@ -37,6 +41,14 @@ import Handler.Common
 import Handler.Character
 import Handler.Home
 import Handler.House
+import Handler.League
+import Handler.League.ConfirmSettings
+import Handler.League.DraftSettings
+import Handler.League.GeneralSettings
+import Handler.League.ScoringSettings
+-- The below currently has no routes in it
+-- import Handler.League.Setup
+import Handler.League.TeamSettings
 import Handler.Series
 import Handler.Species
 
@@ -44,6 +56,10 @@ import Handler.Species
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
 -- comments there for more details.
 mkYesodDispatch "App" resourcesApp
+
+-- Create migration function using both our entities and the
+-- serversession-persistent-backend ones.
+mkMigrate "migrateAll" (SS.serverSessionDefs (P.Proxy :: P.Proxy SS.SessionMap) ++ entityDefs)
 
 -- | This function allocates resources (such as a database connection pool),
 -- performs initialization and returns a foundation datatype value. This is also

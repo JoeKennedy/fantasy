@@ -1,0 +1,226 @@
+#{extra}
+<div .row>
+    <div .col-md-5>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Weighted Scoring Settings
+            <ul .list-group>
+                <li .list-group-item>
+                    <h6 .list-group-item-heading>What is "weighted" scoring?
+                    <p .list-group-item-text>
+                        As an overview, weighted scoring is a way to assure that
+                        \ important actions relative to the plot, action, or
+                        \ fictional universe, i.e. Snape killing Dumbledore
+                        \ (wait, wrong series), are <i>weighted</i> more
+                        \ heavily than unimportant actions, like Gimli or
+                        \ Legolas killing a random
+                        \ Orc (shoot, different wrong series).
+
+                <li .list-group-item>
+                    <h6 .list-group-item-heading>How does weighted scoring work?
+                    <p .list-group-item-text>
+                        Each action, like a kill or an insult, rather than
+                        \ being just X number of points, now has a weight,
+                        \ which is calculated as the percent of points the
+                        \ primary character
+                        \ (in the case of single character actions) or the
+                        \ receiving character (in the case of multi-character
+                        \ actions) has accrued over the course of the series up
+                        \ to the moment the action happened.
+
+                <li .list-group-item>
+                    <h6 .list-group-item-heading>
+                        Can I have an example for a single character action?
+                    <div .list-group-item-text>
+                        <p> Up-to-date show watchers should remember (spoiler
+                            \ alert) when Lady Selyse Baratheon, wife of the
+                            \ (probably?) late Stannis Baratheon, hung herself
+                            \ after Stannis sentenced their daughter to death.
+                            \ We'll use her suicide as the only action for our
+                            \ example, just to keep is simple.
+                        <p> Let's say that up until that episode in season 5,
+                            \ Lady Selyse had earned 180 points using the
+                            \ scoring settings for your league here. Obviously
+                            \ we're being insanely generous with points for her
+                            \ character, as she rarely does cool stuff. We'll
+                            \ also say that your scoring settings for the
+                            \ SUICIDE action are as follows:
+                        <dl .dl-horizontal>
+                            <dt>Points
+                            <dd>-20
+                            <dt>Weight %
+                            <dd>-35
+                        <p> With these settings, Lady Selyse would lose 20
+                            \ points for killing herself, plus an additional 35%
+                            \ of her 180 points, which comes out to 63 points.
+                            \ This means that Lady Selyse committing suicide
+                            \ would result in the following point allocation:
+                        <dl .dl-horizontal>
+                            <dt>Selyse Baratheon
+                            <dd>-83 points
+
+                <li .list-group-item>
+                    <h6 .list-group-item-heading>
+                        Can I have an example for a multi-character action?
+                    <div .list-group-item-text>
+                        <p> As an example, let's go with the moment that
+                            \ (spoiler alert)
+                            <strong .text-primary>Roose Bolton
+                            betrayed
+                            <strong .text-muted>Robb Stark
+                            \ by stabbing
+                            \ him in the heart and killing him
+                            \ at the Red Wedding. To keep things simple, let's
+                            \ focus only on the kill for now.
+                            \ Obviously, this is an
+                            \ important moment in the show, since it marks the
+                            \ demise of the so-called King in the North.
+
+                        <p> Now, let's say that over the
+                            \ course of seasons 1 through 3 of the show,
+                            <strong .text-muted>Robb Stark
+                            \ has accrued 500 points based
+                            \ on your scoring settings,
+                            \ and you have the KILL point/weight settings to be:
+
+                        <dl .dl-horizontal>
+                            <dt>#1 Points
+                            <dd>10
+                            <dt>#1 Weight %
+                            <dd>25
+                            <dt>#2 Points
+                            <dd>-15
+                            <dt>#2 Weight %
+                            <dd>-50
+
+                        <p> With these settings,
+                            <strong .text-primary>Roose Bolton
+                            would score 10
+                            \ points for the kill, and then <i>additionally</i>
+                            \ get 25% of
+                            <strong .text-muted>Robb Stark</strong>'s
+                            \ 500 points, which is 125 points.
+                            \ This would bring his total for killing
+                            <strong .text-muted>Robb Stark
+                            \ to 135.
+                            <strong .text-muted>Robb Stark</strong>,
+                            \ however, would lose 15
+                            \ points for dying, and lose an <i>additional</i> 250
+                            \ points (or 50% of his 500 points) for being an
+                            \ important character who died. In summary,
+                            <strong .text-primary>Roose Bolton
+                            \ killing
+                            <strong .text-muted>Robb Stark
+                            would
+                            \ result in the following point allocations:
+
+                        <dl .dl-horizontal>
+                            <dt .text-primary>Roose Bolton
+                            <dd>135 points
+                            <dt .text-muted>Robb Stark
+                            <dd>-265 points
+
+                <li .list-group-item>
+                    <h6 .list-group-item-heading>
+                        Why don't some actions have weights?
+                    <div .list-group-item-text>
+                        <p> Some actions, like those related to drinking, aren't
+                            \ more important when done by, say, Tyrion Lannister
+                            \ than by an unnamed Stark bannerman. Sure, it's fun
+                            \ to see Tyrion drunk, but the actual act of him
+                            \ taking or pouring a drink is, for the most part,
+                            \ inconsequential to the plot's big picture.
+                        <p> As you can probably see, we've deemed <i>most</i>
+                            \ single character actions as inconsequential, as
+                            \ only a few of them have weights by default.
+                            \ However, we've allowed all weights to be
+                            \ adjustable, because it's up to you to decide
+                            \ how your league is scored.
+            <div .panel-body .text-primary>
+                Hopefully this section has answered any questions
+                \ you might have had about weighted scoring. Go forth and
+                \ configure your scoring settings!
+
+    <div .col-md-7>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Single Character Actions
+            <div .panel-body>
+                Enter the points and weight of each single character action.
+                Feel free to use the defaults.
+            <table .table .table-condensed .table-hover>
+                <thead>
+                    <tr>
+                        <th>
+                        <th>Action
+                        <th .hidden-xs>Description
+                        <th .col-md-4 .col-sm-3 .col-xs-6>Points + Weight %
+
+                <tbody>
+                    $forall (scoringSettings, isUsed, pointsAndWeights) <- singleCharacterSettings
+                        $with action <- scoringSettingsAction scoringSettings
+                            <tr>
+                                <td>^{fvInput $ snd isUsed}
+                                <td .text-uppercase>#{show action}
+                                <td .hidden-xs>
+                                    $with (actionBefore, _) <- actionToSplitString action
+                                        Character #{actionBefore}
+                                <td>
+                                    <div .input-group>
+                                        ^{fvInput $ snd (pointsAndWeights !! 0)}
+                                        <div .input-group-addon .input-sm>
+                                            <i .fa .fa-plus>
+                                        ^{fvInput $ snd (pointsAndWeights !! 1)}
+                                        <div .input-group-addon .input-sm>
+                                            <i .fa .fa-percent>
+
+    <div .col-xs-12>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Multi-Character Actions
+            <div .panel-body>
+                Multi-character actions have two sets of points and weights.
+                The first set of points and weights (left column)
+                is assigned to the character performing or
+                undertaking the action, and the other set (right column) is
+                assigned to the character on the receiving end of the action.
+                Feel free to use the defaults.
+            <table .table .table-condensed .table-hover>
+                <thead>
+                    <tr>
+                        <th>
+                        <th>Action
+                        <th .col-md-6 .col-sm-5 .hidden-xs>Description
+                        <th .text-primary>#1 Points + Weight %
+                        <th .text-muted>#2 Points + Weight %
+
+                <tbody>
+                    $forall (scoringSettings, isUsed, pointsAndWeights) <- multiCharacterSettings
+                        $with action <- scoringSettingsAction scoringSettings
+                            <tr>
+                                <td>^{fvInput $ snd isUsed}
+                                <td .text-uppercase>#{show action}
+                                <td .hidden-xs>
+                                    $with (actionBefore, actionAfter) <- actionToSplitString action
+                                        <span .text-primary>Character #1
+                                        #{actionBefore}
+                                        <span .text-muted>character #2
+                                        #{actionAfter}
+
+                                <td>
+                                    <div .input-group>
+                                        ^{fvInput $ snd (pointsAndWeights !! 0)}
+                                        <div .input-group-addon .input-sm>
+                                            <i .fa .fa-plus>
+                                        ^{fvInput $ snd (pointsAndWeights !! 1)}
+                                        <div .input-group-addon .input-sm>
+                                            <i .fa .fa-percent>
+                                <td>
+                                    <div .input-group>
+                                        ^{fvInput $ snd (pointsAndWeights !! 2)}
+                                        <div .input-group-addon .input-sm>
+                                            <i .fa .fa-plus>
+                                        ^{fvInput $ snd (pointsAndWeights !! 3)}
+                                        <div .input-group-addon .input-sm>
+                                            <i .fa .fa-percent>
+

@@ -1,44 +1,57 @@
-<nav .navbar .navbar-default .navbar-static-top>
+<nav .navbar .navbar-inverse .navbar-static-top>
   <div .container-fluid>
     <div .navbar-header>
       <button .navbar-toggle .collapsed type="button" data-toggle="collapse" data-target="#header_navbar" aria-expanded="false">
-        <span class="sr-only">Toggle navigation
-        <span class="icon-bar">
-        <span class="icon-bar">
-        <span class="icon-bar">
+        <span .sr-only>Toggle navigation
+        <span .icon-bar>
+        <span .icon-bar>
+        <span .icon-bar>
       <a .navbar-brand href=@{HomeR}>A Fantasy League Of Ice And Fire
 
     <div #header_navbar .collapse .navbar-collapse>
       <ul .nav .navbar-nav .navbar-left>
         <li>
           <a href=@{CharactersR}>Characters
-        <li>
+        <li .hidden-sm>
           <a href=@{HousesR}>Houses
-        <li>
+        <li .hidden-sm>
           <a href=@{SpeciesListR}>Species
         <li .dropdown .dropdown-hover>
           <a href="@{SeriesListR}" role="button" aria-haspopup="true" aria-expanded="false">
             Seasons
-            <span class="caret">
+            <span .fa .fa-caret-down>
           <ul .dropdown-menu>
             $forall Entity _ series <- seriesList
               <li>
                 <a href=@{SeriesR (seriesNumber series)}>#{seriesNumber series}
+        <li .hidden-sm>
+          <a href=@{LeaguesR}>Leagues
 
       <ul .nav .navbar-nav .navbar-right>
-        <li>
-          $maybe user <- maybeUser
-            <a href="@{AuthR LogoutR}">Sign Out
-          $nothing
+        $maybe _ <- maybeUserId
+          <li .dropdown .dropdown-hover>
+            <a href="#" role=button aria-haspopup="true" aria-expanded="false">
+              <i .fa .fa-user .fa-lg .fa-fw>
+            <ul .dropdown-menu>
+              $if not (null leagues)
+                  $forall Entity _ league <- leagues
+                      <li>
+                          <a href="#">#{leagueName league}
+                  <li .divider role="separator">
+              <li>
+                <a href="@{AuthR LogoutR}">Sign Out
+        $nothing
+          <li>
             <a href="@{AuthR LoginR}">Sign In
 
-      <form .navbar-form .navbar-right role="search">
-        <div .form-group>
-          <div .input-group>
-            <input .form-control type="text" placeholder="Search">
-            <span .input-group-btn>
-              <button .btn .btn-default type="button">
-                <i .fa .fa-search>
+      <div .nav .navbar-nav .navbar-right>
+        <a .btn .btn-primary .navbar-btn href="@{SetupLeagueR SetupNewLeagueR}">Create A League!
+
+$maybe msg <- mmsg
+  <div #message .alert .alert-dismissible .alert-primary .bg-primary>
+    <button .close type="button" data-dismiss="alert">
+      <i .fa .fa-times>
+    #{msg}
 
 <ol .breadcrumb>
     $if not (null parents)
@@ -55,6 +68,4 @@
         $else
             #{title'}
 
-$maybe msg <- mmsg
-  <div #message>#{msg}
 ^{widget}

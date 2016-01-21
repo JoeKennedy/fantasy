@@ -1,0 +1,25 @@
+function disableSubmit(disabled) {
+    $("button#next").attr('disabled', disabled);
+}
+
+function handleListGroupItemClick(event) {
+    field_name = event.data.fieldName
+
+    // make clicked list group item active
+    $("#" + field_name + "_list a.list-group-item").removeClass('active');
+    $(this).addClass('active');
+
+    // set hidden value to name of clicked list group item
+    var listGroupItemName = $(this).find(".list-group-item-name").text()
+    $("input#" + field_name).val(listGroupItemName);
+
+    disableSubmit(false);
+    event.preventDefault();
+}
+
+function listGroupField(fieldName) {
+    if ($("input#" + fieldName).val().length === 0) {
+        disableSubmit(true);
+        $("#" + fieldName + "_list a.list-group-item").click({ fieldName: fieldName }, handleListGroupItemClick);
+    }
+}

@@ -1,0 +1,40 @@
+#{extra}
+
+<div .row>
+    <div .col-lg-6 .col-sm-12>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>League Info
+            <div .panel-body>
+                <div .form-group>
+                    <label for="#{fvId nameView}">
+                        #{fvLabel nameView}
+                    ^{fvInput nameView}
+                ^{fvInput scoringTypeView}
+                <div .form-group>
+                    <label for="#{fvId teamsCountView}">
+                        #{fvLabel teamsCountView}
+                    ^{fvInput teamsCountView}
+                <div .checkbox>
+                    <label>
+                        ^{fvInput isPrivateView}
+                        #{fvLabel isPrivateView}
+
+    <div .col-lg-6 .col-sm-12>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Scoring
+
+            <div .panel-body>
+                <label>How will your league be scored?
+
+            <div #scoring_type_list .list-group>
+                $forall scoringType <- scoringTypes
+                    ^{leagueListGroupItem league scoringType}
+
+            <div .panel-footer .text-primary>
+                <b>Important:
+                You can't change how your league is scored
+                $if isNothing league
+                    \ after this step
+

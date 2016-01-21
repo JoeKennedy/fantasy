@@ -102,7 +102,7 @@ getSeriesEpisodesR seriesNo = redirect $ SeriesR seriesNo
 
 postSeriesEpisodesR :: Int -> Handler Html
 postSeriesEpisodesR seriesNo = do
-    Entity { entityKey = seriesId, entityVal = series } <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
+    Entity seriesId series <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
     ((result, widget), enctype) <- runFormPost $ episodeForm seriesId Nothing
     case result of
         FormSuccess episode -> do

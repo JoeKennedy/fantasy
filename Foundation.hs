@@ -1,17 +1,22 @@
 module Foundation where
 
 import Import.NoFoundation
-import Database.Persist.Sql    (ConnectionPool, runSqlPool)
-import Facebook                (Credentials(..))
-import Text.Hamlet             (hamletFile)
-import Text.Jasmine            (minifym)
-import qualified Yesod.Auth.GoogleEmail2 as GE
-import qualified Yesod.Facebook as YF
+
+import qualified Database.Esqueleto as E
+import           Database.Esqueleto ((^.))
+import           Database.Persist.Sql                 (ConnectionPool, runSqlPool)
+import           Facebook                             (Credentials(..))
+import           Text.Hamlet                          (hamletFile)
+import           Text.Jasmine                         (minifym)
+import           Web.ServerSession.Backend.Persistent
+import           Web.ServerSession.Frontend.Yesod
+import qualified Yesod.Auth.GoogleEmail2        as GE
 import qualified Yesod.Auth.Facebook.ServerSide as FB
-import Yesod.Auth.OpenId
-import Yesod.Default.Util      (addStaticContentExternal)
-import Yesod.Core.Types        (Logger)
-import qualified Yesod.Core.Unsafe as Unsafe
+import           Yesod.Auth.OpenId
+import           Yesod.Core.Types                     (Logger)
+import qualified Yesod.Core.Unsafe              as US
+import           Yesod.Default.Util                   (addStaticContentExternal)
+import qualified Yesod.Facebook                 as YF
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -53,19 +58,24 @@ instance Yesod App where
     -- see: https://github.com/yesodweb/yesod/wiki/Overriding-approot
     approot = ApprootMaster $ appRoot . appSettings
 
-    -- Store session data on the client in encrypted cookies,
-    -- default session idle timeout is 120 minutes
-    makeSessionBackend _ = Just <$> defaultClientSessionBackend
-        120    -- timeout in minutes
-        "config/client_session_key.aes"
+    -- Store session data on the server with default settings
+    makeSessionBackend = simpleBackend id . SqlStorage . appConnPool
 
     defaultLayout widget = do
         master <- getYesod
-        maybeUser <- maybeAuth
+        maybeUserId <- maybeAuthId
         mmsg <- getMessage
         (title', parents) <- breadcrumbs
 
         seriesList <- runDB $ selectList [] [Asc SeriesNumber]
+
+        leagues <- runDB
+            $ E.select
+            $ E.from $ \(team `E.InnerJoin` league) -> do
+                E.on $ team ^. TeamLeagueId E.==. league ^. LeagueId
+                E.where_ (team ^. TeamOwnerId E.==. E.val maybeUserId)
+                E.orderBy [E.asc (league ^. LeagueName)]
+                return league
 
         -- We break up the default layout into two components:
         -- default-layout is the contents of the body tag, and
@@ -79,13 +89,13 @@ instance Yesod App where
             addStylesheet $ StaticR css_bootstrap_social_css
             addScriptRemote "http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"
             addScript $ StaticR js_bootstrap_js
-            $(widgetFile "default-layout")
-        withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
+            $(widgetFile "layouts/default-layout")
+        withUrlRenderer $(hamletFile "templates/layouts/default-layout-wrapper.hamlet")
 
     -- The page to be redirected to when authentication is required.
     authRoute _ = Just $ AuthR LoginR
 
-    -- Routes not requiring authentication.
+    -- determine authorization for routes
     isAuthorized (AuthR _)                   _    = return Authorized
     isAuthorized FaviconR                    _    = return Authorized
     isAuthorized RobotsR                     _    = return Authorized
@@ -101,6 +111,8 @@ instance Yesod App where
     isAuthorized (SeriesEpisodeR _ _)        True = requireAdmin
     isAuthorized (SeriesEpisodeEventsR _ _)  _    = requireAdmin
     isAuthorized (SeriesEpisodeEventR _ _ _) _    = requireAdmin
+
+    isAuthorized (SetupLeagueR _)               _ = requireLoggedIn
     -- Default to Authorized for now.
     isAuthorized _ _ = return Authorized
 
@@ -131,6 +143,15 @@ instance Yesod App where
             || level == LevelError
 
     makeLogger = return . appLogger
+
+requireLoggedIn :: (Typeable (AuthEntity master), PersistEntity (AuthEntity master)
+                   , YesodAuthPersist master, AuthId master ~ Key (AuthEntity master)
+                   , AuthEntity master ~ User) => HandlerT master IO AuthResult
+requireLoggedIn = do
+    mu <- maybeAuth
+    return $ case mu of
+        Nothing -> AuthenticationRequired
+        Just _  -> Authorized
 
 requireAdmin :: (Typeable (AuthEntity master), PersistEntity (AuthEntity master)
            , YesodAuthPersist master, AuthId master ~ Key (AuthEntity master)
@@ -171,6 +192,16 @@ instance YesodBreadcrumbs App where
         return (toPathPiece episodeNo, Just $ SeriesEpisodesR seriesNo)
     breadcrumb (SeriesEpisodeEventR seriesNo episodeNo eventId) =
         return ("Event #" ++ toPathPiece eventId, Just $ SeriesEpisodeR seriesNo episodeNo)
+
+    -- League breadcrumbs
+    breadcrumb LeaguesR           = return ("Leagues", Just HomeR)
+
+    breadcrumb (SetupLeagueR SetupNewLeagueR)       = return ("Setup", Just LeaguesR)
+    breadcrumb (SetupLeagueR SetupGeneralSettingsR) = return ("General Settings", Just $ SetupLeagueR SetupNewLeagueR)
+    breadcrumb (SetupLeagueR SetupScoringSettingsR) = return ("Scoring Settings", Just $ SetupLeagueR SetupGeneralSettingsR)
+    breadcrumb (SetupLeagueR SetupDraftSettingsR)   = return ("Draft Settings", Just $ SetupLeagueR SetupScoringSettingsR)
+    breadcrumb (SetupLeagueR SetupTeamSettingsR)    = return ("Team Settings", Just $ SetupLeagueR SetupDraftSettingsR)
+    breadcrumb (SetupLeagueR SetupConfirmSettingsR) = return ("Complete Setup", Just $ SetupLeagueR SetupTeamSettingsR)
 
     -- These pages never call breadcrumb
     breadcrumb StaticR{}              = return ("", Nothing)
@@ -263,7 +294,7 @@ instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
 
 unsafeHandler :: App -> Handler a -> IO a
-unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
+unsafeHandler = US.fakeHandlerGetLogger appLogger
 
 -- Note: Some functionality previously present in the scaffolding has been
 -- moved to documentation in the Wiki. Following are some hopefully helpful

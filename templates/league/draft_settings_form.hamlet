@@ -1,0 +1,57 @@
+#{extra}
+
+<div .row>
+
+    <div .col-md-6 .col-sm-12>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Draft Type
+
+            <div .panel-body>
+                <label>How will your league be drafted?
+
+            <div #draft_type_list .list-group>
+                $forall draftType <- draftTypes
+                    ^{draftSettingsListGroupItem draftSettings draftType}
+
+            <div .panel-footer .text-primary>
+                <b>Important:
+                You can't change how your league is drafted
+                $if isNothing draftSettings
+                    \ after this step
+
+    <div .col-md-6 .col-sm-12>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Draft Info
+            <div .panel-body>
+                ^{fvInput draftTypeView}
+                <div .form-group>
+                    <label for="#{fvId dateView}">
+                        #{fvLabel dateView}
+                    ^{fvInput dateView}
+                <div .form-group>
+                    <label for="#{fvId timeView}">
+                        #{fvLabel timeView}
+                    ^{fvInput timeView}
+                <div .form-group>
+                    <label for="#{fvId draftOrderTypeView}">
+                        #{fvLabel draftOrderTypeView}
+                    ^{fvInput draftOrderTypeView}
+                <div .form-group>
+                    <label for="#{fvId locationView}">
+                        #{fvLabel locationView}
+                    ^{fvInput locationView}
+                <div .form-group>
+                    <label for="#{fvId secondsPerPickView}">
+                        #{fvLabel secondsPerPickView}
+                    ^{fvInput secondsPerPickView}
+                <div .form-group>
+                    <label for="#{fvId noteView}">
+                        #{fvLabel noteView}
+                    ^{fvInput noteView}
+                <div .checkbox>
+                    <label>
+                        ^{fvInput allowDraftPickTradingView}
+                        #{fvLabel allowDraftPickTradingView}
+

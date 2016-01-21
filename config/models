@@ -12,6 +12,7 @@ Ident
     ident Text
     userId UserId
     UniqueIdent ident
+
 Species
     name Text
     description Text
@@ -48,6 +49,78 @@ Event
     episodeId EpisodeId
     timeInEpisode Int
     UniqueEvent characterId action episodeId timeInEpisode
+
+League
+    name Text
+    isPrivate Bool default=false
+    scoringType ScoringType
+    teamsCount Int
+    isSetupComplete Bool default=false
+    lastCompletedStep Int default=1
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    UniqueLeagueName name
+GeneralSettings
+    leagueId LeagueId
+    numberOfStarters Int
+    rosterSize Int
+    regularSeasonLength Int
+    playoffLength Int
+    numberOfTeamsInPlayoffs Int
+    tradeDeadlineWeek Int
+    waiverPeriodInDays Int
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    UniqueGeneralSettingsLeagueId leagueId
+ScoringSettings
+    leagueId LeagueId
+    action Action
+    isUsed Bool
+    points Int
+    weight Int
+    pointsReceiving Int
+    weightReceiving Int
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    UniqueScoringSettingsLeagueIdAction leagueId action
+DraftSettings
+    leagueId LeagueId
+    draftType DraftType
+    draftOrderType DraftOrderType
+    date Day
+    time TimeOfDay
+    location Text
+    allowDraftPickTrading Bool
+    secondsPerPick Int
+    note Textarea
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    UniqueDraftSettingsLeagueId leagueId
+Team
+    leagueId LeagueId
+    name Text
+    abbreviation Text
+    ownerId UserId Maybe
+    ownerName Text
+    ownerEmail Text
+    isConfirmed Bool default=false
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    confirmedBy UserId Maybe
+    confirmedAt UTCTime Maybe
+    UniqueTeamNameLeagueId name leagueId
+    UniqueTeamAbbreviationLeagueId abbreviation leagueId
+    UniqueTeamOwnerEmailLeagueId ownerEmail leagueId
 
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

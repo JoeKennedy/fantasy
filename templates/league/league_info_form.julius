@@ -1,0 +1,26 @@
+function disableSubmit(disabled) {
+    $("button#next").attr('disabled', disabled);
+}
+
+function handleScoringTypeClick(event) {
+    // make clicked scoring type active
+    $("#scoring_type_list a.list-group-item").removeClass('active');
+    $(this).addClass('active');
+
+    // set hidden value with clicked scoring type
+    var scoringType = $(this).find(".scoring-type-name").text()
+    $("input#scoring_type").val(scoringType);
+
+    disableSubmit(false);
+    event.preventDefault();
+}
+
+function leagueInfoFormReady(jQuery) {
+    if ($("input#scoring_type").val().length === 0) {
+        disableSubmit(true);
+        $("#scoring_type_list a.list-group-item").on('click', handleScoringTypeClick);
+    }
+}
+
+$(document).ready(leagueInfoFormReady)
+$(window).load(leagueInfoFormReady)

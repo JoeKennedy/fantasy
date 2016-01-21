@@ -1,0 +1,9 @@
+<h5 .list-group-item-heading>
+    <span .scoring-type-name>
+        #{show scoringType}
+    $if (isRecommendedScoringType scoringType)
+        &nbsp;
+        <span .label .label-primary>
+            Recommended!
+<p .list-group-item-text>
+    #{scoringTypeDescription scoringType}

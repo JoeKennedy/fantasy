@@ -1,0 +1,16 @@
+<h1>Leagues
+
+$if not (null leagues)
+    <div .table-responsive>
+        <table .table>
+            <thead>
+                <tr>
+                    <th>League
+                    <th>Number of teams
+                    <th>Scoring
+            <tbody>
+                $forall (Entity _ league) <- leagues
+                    <tr>
+                        <td>#{leagueName league}
+                        <td>#{leagueTeamsCount league}
+                        <td>#{show $ leagueScoringType league}

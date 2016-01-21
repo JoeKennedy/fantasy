@@ -1,0 +1,49 @@
+#{extra}
+
+<div .row>
+    <div .col-md-4 .col-sm-6 .col-xs-12>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Roster
+            <div .panel-body>
+                <div .form-group>
+                    <label for="#{fvId startersView}">
+                        #{fvLabel startersView}
+                    ^{fvInput startersView}
+                <div .form-group>
+                    <label for="#{fvId rosterSizeView}">
+                        #{fvLabel rosterSizeView}
+                    ^{fvInput rosterSizeView}
+
+    <div .col-md-4 .col-sm-6 .col-xs-12>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Acquisitions
+            <div .panel-body>
+                <div .form-group>
+                    <label for="#{fvId tradeDeadlineWeekView}">
+                        #{fvLabel tradeDeadlineWeekView}
+                    ^{fvInput tradeDeadlineWeekView}
+                <div .form-group>
+                    <label for="#{fvId waiverPeriodView}">
+                        #{fvLabel waiverPeriodView}
+                    ^{fvInput waiverPeriodView}
+
+    <div .col-md-4 .col-sm-6 .col-xs-12>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Schedule
+            <div .panel-body>
+                <div .form-group>
+                    <label for="#{fvId regSeasonLengthView}">
+                        #{fvLabel regSeasonLengthView}
+                    ^{fvInput regSeasonLengthView}
+                <div .form-group>
+                    <label for="#{fvId playoffLengthView}">
+                        #{fvLabel playoffLengthView}
+                    ^{fvInput playoffLengthView}
+                <div .form-group>
+                    <label for="#{fvId teamsInPlayoffsView}">
+                        #{fvLabel teamsInPlayoffsView}
+                    ^{fvInput teamsInPlayoffsView}
+

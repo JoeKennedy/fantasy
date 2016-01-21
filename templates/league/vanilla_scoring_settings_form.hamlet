@@ -1,0 +1,61 @@
+#{extra}
+<div .row>
+    <div .col-md-6>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Single Character Actions
+            <div .panel-body>
+                Enter how many points each single character action should score.
+            <table .table .table-condensed .table-hover>
+                <thead>
+                    <tr>
+                        <th>
+                        <th>Action
+                        <th>Description
+                        <th .col-xs-1>Points
+
+                <tbody>
+                    $forall (scoringSettings, isUsed, pointsAndWeights) <- singleCharacterSettings
+                        $with action <- scoringSettingsAction scoringSettings
+                            <tr>
+                                <td>^{fvInput $ snd isUsed}
+                                <td .text-uppercase>#{show action}
+                                <td>
+                                    $with (actionBefore, _) <- actionToSplitString action
+                                        Character #{actionBefore}
+                                <td>^{fvInput $ snd (pointsAndWeights !! 0)}
+
+    <div .col-md-6>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Multi-Character Actions
+            <div .panel-body>
+                Multi-character actions have two point values. The first point
+                value (left column) is assigned to the character performing or
+                undertaking the action, and the other (right column) is
+                assigned to the character on the receiving end of the action.
+            <table .table .table-condensed .table-hover>
+                <thead>
+                    <tr>
+                        <th>
+                        <th>Action
+                        <th>Description
+                        <th .text-primary .col-xs-1>Points
+                        <th .text-muted .col-xs-1>Points
+
+                <tbody>
+                    $forall (scoringSettings, isUsed, pointsAndWeights) <- multiCharacterSettings
+                        $with action <- scoringSettingsAction scoringSettings
+                            <tr>
+                                <td>^{fvInput $ snd isUsed}
+                                <td .text-uppercase>#{show action}
+                                <td>
+                                    $with (actionBefore, actionAfter) <- actionToSplitString action
+                                        <span .text-primary>Character #1
+                                        #{actionBefore}
+                                        <span .text-muted>character #2
+                                        #{actionAfter}
+
+                                <td>^{fvInput $ snd (pointsAndWeights !! 0)}
+                                <td>^{fvInput $ snd (pointsAndWeights !! 2)}
+

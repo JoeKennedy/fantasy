@@ -1,0 +1,9 @@
+<h5 .list-group-item-heading>
+    <span .list-group-item-name>
+        #{show draftType}
+    $if (isRecommendedDraftType draftType)
+        &nbsp;
+        <span .label .label-primary>
+            Recommended!
+<p .list-group-item-text>
+    #{draftTypeDescription draftType}

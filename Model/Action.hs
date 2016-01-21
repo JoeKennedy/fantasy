@@ -1,7 +1,8 @@
 module Model.Action where
 
-import Prelude
-import Yesod
+import Model.Types
+
+import ClassyPrelude.Yesod
 
 data Action = Appear | Kill | Defeat | Insult | Maim | Injure | Sentence | Torture | Sex | Guilty | Innocent | Clear | Death | Raise | Pour | Drink | Finish
     deriving (Show, Read, Eq, Enum, Bounded)
@@ -42,14 +43,14 @@ actionToSplitString Injure   = (" injured ", " ")
 actionToSplitString Sentence = (" sentenced ", " to death ")
 actionToSplitString Torture  = (" tortured ", " ")
 actionToSplitString Sex      = (" had sex with ", " ")
-actionToSplitString Guilty   = (" found guilty of a crime ", " ")
-actionToSplitString Innocent = (" found innocent of a crime ", " ")
-actionToSplitString Clear    = (" cleared of a wrongful accusation or conviction ", " ")
-actionToSplitString Death    = (" died ", " ")
-actionToSplitString Raise    = (" resurrected ", " ")
-actionToSplitString Pour     = (" poured a drink ", " ")
-actionToSplitString Drink    = (" took a drink ", " ")
-actionToSplitString Finish   = (" finished a drink ", " ")
+actionToSplitString Guilty   = (" was found guilty of a crime ", " ")
+actionToSplitString Innocent = (" was found innocent of a crime ", " ")
+actionToSplitString Clear    = (" was cleared of a wrongful charge ", " ")
+actionToSplitString Death    = (" died of natural causes ", " ")
+actionToSplitString Raise    = (" raised ", " from the dead ")
+actionToSplitString Pour     = (" poured an alcoholic drink ", " ")
+actionToSplitString Drink    = (" took an alcoholic drink ", " ")
+actionToSplitString Finish   = (" finished an alcoholic drink ", " ")
 
 reverseActionString :: Action -> String
 reverseActionString Kill     = " killed by "
@@ -62,4 +63,13 @@ reverseActionString Torture  = " tortured by "
 reverseActionString Sex      = " had sex with "
 reverseActionString Raise    = " resurrected by "
 reverseActionString _        = error "This action can't be reversed"
+
+defaultScoringAttributes :: Action -> ScoringType -> (Bool, Int, Int, Int, Int)
+defaultScoringAttributes action Weighted
+    | isMultiCharacter action == True  = (True, 10, 50, -20, -50)
+    | otherwise = (True, 10, 50, 0, 0)
+defaultScoringAttributes action Vanilla
+    | isMultiCharacter action == True  = (True, 10, 0, -20, 0)
+    | otherwise = (True, 10, 0, 0, 0)
+defaultScoringAttributes _ Scorekeeper = error "This isn't a thing"
 

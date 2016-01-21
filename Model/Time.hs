@@ -3,7 +3,6 @@ module Model.Time where
 import ClassyPrelude.Yesod
 
 import Data.Time
-import Data.Time.Format
 import Text.Printf (printf)
 
 displayTime :: Int -> String

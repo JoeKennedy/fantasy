@@ -1,0 +1,21 @@
+<div .row>
+    <div .col-lg-6 .col-lg-offset-3 .col-md-8 .col-md-offset-2 .col-sm-10 .col-sm-offset-1 .col-xs-12>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Complete Setup
+            <div .panel-body>
+                <div .pull-left>
+                    <h6>When you click the "Create League!" button:
+                <div .pull-right>
+                    <button .btn .btn-primary .btn-lg type="submit" name="commit">
+                        Create League!
+            <ul .list-group>
+                <li .list-group-item>
+                    Your league will be officially created!
+                <li .list-group-item>
+                    Emails will be sent out to each team owner asking them to
+                    join the league!
+                <li .list-group-item>
+                    You will be entered to win a million dollars!
+            <div .panel-footer .text-primary>
+                Note that only two of the three things above is true

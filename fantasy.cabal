@@ -20,7 +20,9 @@ library
                      Model
                      Model.Action
                      Model.Bootstrap
+                     Model.LeagueSettings
                      Model.Time
+                     Model.Types
                      Model.Widget
                      Settings
                      Settings.StaticFiles
@@ -28,6 +30,13 @@ library
                      Handler.Character
                      Handler.Home
                      Handler.House
+                     Handler.League
+                     Handler.League.ConfirmSettings
+                     Handler.League.DraftSettings
+                     Handler.League.GeneralSettings
+                     Handler.League.ScoringSettings
+                     Handler.League.Setup
+                     Handler.League.TeamSettings
                      Handler.Series
                      Handler.Species
 
@@ -97,6 +106,11 @@ library
                  , blaze-markup
                  , old-locale
                  , load-env
+                 , path-pieces                      >= 0.2.1
+                 , serversession                    >= 1.0
+                 , serversession-frontend-yesod     >= 1.0
+                 , serversession-backend-persistent >= 1.0
+                 , transformers
 
 executable         fantasy
     if flag(library-only)

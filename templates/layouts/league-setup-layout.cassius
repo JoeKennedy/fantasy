@@ -1,0 +1,24 @@
+.table tbody > tr > td
+    vertical-align: middle
+
+.wizard {padding: 0 0 10px 0;}
+.wizard > .wizard-step {padding: 0; position: relative;}
+.wizard > .wizard-step + .wizard-step {}
+.wizard > .wizard-step .wizard-stepnum {margin-bottom: 5px;}
+.wizard > .wizard-step > .wizard-dot {position: absolute; background-color: #282828; width: 30px; height: 30px; display: block; top: 45px; left: 50%; margin-top: -15px; margin-left: -15px; border-radius: 50%;}
+.wizard > .wizard-step.active > .wizard-dot {background-color: #2a9fd6;}
+.wizard > .wizard-step.previous > .wizard-dot {background-color: #2a9fd6;}
+.wizard > .wizard-step > .progress {position: relative; border-radius: 0px;
+height: 8px; box-shadow: none; margin: 20px 0; background-color: #282828;}
+.wizard > .wizard-step > .progress > .progress-bar {width:0px; box-shadow: none; background: #2a9fd6;}
+.wizard > .wizard-step.previous > .progress > .progress-bar {width:100%;}
+.wizard > .wizard-step.active > .progress > .progress-bar {width:50%;}
+.wizard > .wizard-step.active > .wizard-stepnum {color: #2a9fd6;}
+.wizard > .wizard-step.active > .wizard-info {color: #2a9fd6;}
+.wizard > .wizard-step:first-child.active > .progress > .progress-bar {width:0%;}
+.wizard > .wizard-step:last-child.active > .progress > .progress-bar {width: 100%;}
+.wizard > .wizard-step.completed > a.wizard-dot:hover {background-color: #2a9fd6}
+.wizard > .wizard-step.disabled > .wizard-dot:after {opacity: 0;}
+.wizard > .wizard-step:first-child  > .progress {left: 50%; width: 50%;}
+.wizard > .wizard-step:last-child  > .progress {width: 50%;}
+.wizard > .wizard-step.disabled a.wizard-dot{ pointer-events: none; }

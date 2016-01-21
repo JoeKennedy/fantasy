@@ -1,0 +1,33 @@
+$with currentStep <- leagueSetupCurrentStep action
+    <div .panel .panel-default>
+        <div .panel-heading>
+            <h4 .text-center>League Setup: #{leagueSetupCurrentStepName action}
+        <div .panel-body>
+            <div .wizard>
+                $forall (stepNum, stepName, stepRoute, stepClass) <- leagueSetupWizard lastCompletedStep currentStep
+                    <div .col-xs-2 .wizard-step class="#{stepClass}">
+                        <div .text-center .wizard-stepnum>
+                            <b>Step #{stepNum}
+                        <div .progress>
+                            <div .progress-bar>
+                        <a href="@{stepRoute}" .wizard-dot>
+                        <div .text-center .wizard-info>#{stepName}
+
+    <form method="post" action=@{action} enctype=#{enctype}>
+        ^{widget}
+        $case leagueSetupPreviousStep currentStep
+            $of Just (_, stepName, stepRoute)
+                <div .pull-left>
+                    <a #previous .btn .btn-primary href=@{stepRoute}>
+                        <i .fa .fa-long-arrow-left aria-hidden="true">
+                        #{stepName}
+            $of Nothing
+
+        $case leagueSetupNextStep currentStep
+            $of Just (_, stepName, _)
+                <div .pull-right>
+                    <button #next .btn .btn-primary type="submit" name="commit">
+                        #{stepName}
+                        <i .fa .fa-long-arrow-right aria-hidden="true">
+            $of Nothing
+
