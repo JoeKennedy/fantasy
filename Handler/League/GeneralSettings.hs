@@ -2,6 +2,7 @@ module Handler.League.GeneralSettings where
 
 import Import
 import Handler.League.Setup
+import Handler.League.Layout
 
 ----------
 -- Form --
@@ -68,4 +69,27 @@ postSetupGeneralSettingsR = do
             let action = SetupLeagueR SetupGeneralSettingsR
             setTitle $ leagueSetupStepTitle league action
             $(widgetFile "layouts/league-setup-layout")
+
+getLeagueGeneralSettingsR :: LeagueId -> Handler Html
+getLeagueGeneralSettingsR leagueId = do
+    userId <- requireAuthId
+    league <- runDB $ get404 leagueId
+    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+    (widget, enctype) <- generateFormPost $ generalSettingsForm (leagueTeamsCount league) userId generalSettings
+    let action = LeagueSettingsR leagueId LeagueGeneralSettingsR
+    leagueSettingsLayout leagueId action enctype widget "General"
+
+postLeagueGeneralSettingsR :: LeagueId -> Handler Html
+postLeagueGeneralSettingsR leagueId = do
+    userId <- requireAuthId
+    league <- runDB $ get404 leagueId
+    Entity generalSettingsId generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+    ((result, widget), enctype) <- runFormPost $ generalSettingsForm (leagueTeamsCount league) userId generalSettings
+    let action = LeagueSettingsR leagueId LeagueGeneralSettingsR
+    case result of
+        FormSuccess generalSettings' -> do
+            runDB $ replace generalSettingsId generalSettings'
+            setMessage "Successfully updated league general settings"
+            redirect action
+        _ -> leagueSettingsLayout leagueId action enctype widget "General"
 

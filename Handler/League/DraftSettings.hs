@@ -2,6 +2,7 @@ module Handler.League.DraftSettings where
 
 import Import
 import Handler.League.Setup
+import Handler.League.Layout
 
 ----------
 -- Form --
@@ -68,11 +69,32 @@ postSetupDraftSettingsR = do
             case maybeDraftSettings of Just (Entity dsId _) -> runDB $ replace dsId draftSettings
                                        Nothing              -> runDB $ insert_ draftSettings
             updateLeagueLastCompletedStep leagueId league 4
-            redirect $ SetupLeagueR SetupTeamSettingsR
+            redirect $ SetupLeagueR SetupTeamsSettingsR
         _ -> defaultLayout $ do
             let action = SetupLeagueR SetupDraftSettingsR
             setTitle $ leagueSetupStepTitle league action
             $(widgetFile "layouts/league-setup-layout")
+
+getLeagueDraftSettingsR :: LeagueId -> Handler Html
+getLeagueDraftSettingsR leagueId = do
+    userId <- requireAuthId
+    draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
+    (widget, enctype) <- generateFormPost $ draftSettingsForm userId leagueId $ extractValueMaybe $ Just draftSettings
+    let action = LeagueSettingsR leagueId LeagueDraftSettingsR
+    leagueSettingsLayout leagueId action enctype widget "Draft"
+
+postLeagueDraftSettingsR :: LeagueId -> Handler Html
+postLeagueDraftSettingsR leagueId = do
+    userId <- requireAuthId
+    Entity draftSettingsId draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
+    ((result, widget), enctype) <- runFormPost $ draftSettingsForm userId leagueId $ Just draftSettings
+    let action = LeagueSettingsR leagueId LeagueDraftSettingsR
+    case result of
+        FormSuccess draftSettings' -> do
+            runDB $ replace draftSettingsId draftSettings'
+            setMessage "Successfully updated league draft settings"
+            redirect action
+        _ -> leagueSettingsLayout leagueId action enctype widget "Draft"
 
 -------------
 -- Helpers --

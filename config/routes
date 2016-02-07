@@ -22,13 +22,26 @@
 /seasons/#Int/episodes/#Int/events          SeriesEpisodeEventsR     POST
 /seasons/#Int/episodes/#Int/events/#EventId SeriesEpisodeEventR  GET POST
 
-/leagues/             LeaguesR           GET
+/leagues/          LeaguesR GET
+/leagues/#LeagueId LeagueR  GET
+
+/leagues/#LeagueId/teams                  LeagueTeamsR        GET
+/leagues/#LeagueId/teams/#TeamId          LeagueTeamR         GET
+/leagues/#LeagueId/teams/#TeamId/settings LeagueTeamSettingsR GET POST
+
+/leagues/#LeagueId/settings LeagueSettingsR:
+    /league  LeagueEditSettingsR    GET POST
+    /general LeagueGeneralSettingsR GET POST
+    /scoring LeagueScoringSettingsR GET POST
+    /draft   LeagueDraftSettingsR   GET POST
+    /teams   LeagueTeamsSettingsR   GET POST
+
 /leagues/setup SetupLeagueR:
     /new     SetupNewLeagueR       GET POST
     /general SetupGeneralSettingsR GET POST
     /scoring SetupScoringSettingsR GET POST
     /draft   SetupDraftSettingsR   GET POST
-    /teams   SetupTeamSettingsR    GET POST
+    /team    SetupTeamsSettingsR   GET POST
     /confirm SetupConfirmSettingsR GET POST
 
 / HomeR GET

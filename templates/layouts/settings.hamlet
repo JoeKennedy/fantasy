@@ -1,0 +1,20 @@
+<ul #league_settings_nav .nav .nav-pills .small>
+    <li role="presentation">
+        $maybe Entity teamId _ <- maybeTeam
+            <a href="@{LeagueTeamSettingsR leagueId teamId}">My Team
+    <li role="presentation">
+        <a href="@{LeagueSettingsR leagueId LeagueEditSettingsR}">League
+    <li role="presentation">
+        <a href="@{LeagueSettingsR leagueId LeagueGeneralSettingsR}">General
+    <li role="presentation">
+        <a href="@{LeagueSettingsR leagueId LeagueScoringSettingsR}">Scoring
+    <li role="presentation">
+        <a href="@{LeagueSettingsR leagueId LeagueDraftSettingsR}">Draft
+    <li role="presentation">
+        <a href="@{LeagueSettingsR leagueId LeagueTeamsSettingsR}">Teams
+
+<form method="post" action=@{action} enctype=#{enctype}>
+    ^{widget}
+    $if not disableFields
+        <div .pull-right>
+            <button .btn .btn-primary type="submit" name="commit">Change Settings

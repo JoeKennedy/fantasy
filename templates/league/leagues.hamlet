@@ -9,8 +9,10 @@ $if not (null leagues)
                     <th>Number of teams
                     <th>Scoring
             <tbody>
-                $forall (Entity _ league) <- leagues
+                $forall (Entity leagueId league) <- leagues
                     <tr>
-                        <td>#{leagueName league}
+                        <td>
+                            <a href="@{LeagueR leagueId}">
+                                #{leagueName league}
                         <td>#{leagueTeamsCount league}
                         <td>#{show $ leagueScoringType league}

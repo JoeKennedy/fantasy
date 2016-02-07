@@ -36,7 +36,8 @@ library
                      Handler.League.GeneralSettings
                      Handler.League.ScoringSettings
                      Handler.League.Setup
-                     Handler.League.TeamSettings
+                     Handler.League.Layout
+                     Handler.League.Team
                      Handler.Series
                      Handler.Species
 

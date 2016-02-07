@@ -1,5 +1,5 @@
-<nav .navbar .navbar-inverse .navbar-static-top>
-  <div .container-fluid>
+<nav #header_nav .navbar .navbar-inverse .navbar-static-top>
+  <div .container>
     <div .navbar-header>
       <button .navbar-toggle .collapsed type="button" data-toggle="collapse" data-target="#header_navbar" aria-expanded="false">
         <span .sr-only>Toggle navigation
@@ -34,9 +34,9 @@
               <i .fa .fa-user .fa-lg .fa-fw>
             <ul .dropdown-menu>
               $if not (null leagues)
-                  $forall Entity _ league <- leagues
+                  $forall Entity leagueId league <- leagues
                       <li>
-                          <a href="#">#{leagueName league}
+                          <a href="@{LeagueR leagueId}">#{leagueName league}
                   <li .divider role="separator">
               <li>
                 <a href="@{AuthR LogoutR}">Sign Out
@@ -47,25 +47,26 @@
       <div .nav .navbar-nav .navbar-right>
         <a .btn .btn-primary .navbar-btn href="@{SetupLeagueR SetupNewLeagueR}">Create A League!
 
-$maybe msg <- mmsg
-  <div #message .alert .alert-dismissible .alert-primary .bg-primary>
-    <button .close type="button" data-dismiss="alert">
-      <i .fa .fa-times>
-    #{msg}
+<div .container>
+  $maybe msg <- mmsg
+    <div #message .alert .alert-dismissible .alert-primary .bg-primary>
+      <button .close type="button" data-dismiss="alert">
+        <i .fa .fa-times>
+      #{msg}
 
-<ol .breadcrumb>
-    $if not (null parents)
-        $forall p <- parents
-            <li>
-                <a href="@{fst p}">
-                    $if snd p == "Home"
-                        <i .fa .fa-home>
-                    $else
-                        #{snd p}
-    <li .active>
-        $if title' == "Home"
-            <i .fa .fa-home>
-        $else
-            #{title'}
+  <ol .breadcrumb>
+      $if not (null parents)
+          $forall p <- parents
+              <li>
+                  <a href="@{fst p}">
+                      $if snd p == "Home"
+                          <i .fa .fa-home>
+                      $else
+                          #{snd p}
+      <li .active>
+          $if title' == "Home"
+              <i .fa .fa-home>
+          $else
+              #{title'}
 
-^{widget}
+  ^{widget}

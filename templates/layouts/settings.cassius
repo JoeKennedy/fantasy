@@ -1,0 +1,5 @@
+#league_settings_nav
+    margin-bottom: 20px
+.table tbody > tr > td
+    vertical-align: middle
+

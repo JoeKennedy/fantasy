@@ -2,6 +2,7 @@ module Handler.League.ScoringSettings where
 
 import Import
 import Handler.League.Setup
+import Handler.League.Layout
 
 import Data.List ((!!))
 
@@ -53,7 +54,7 @@ getSetupScoringSettingsR :: Handler Html
 getSetupScoringSettingsR = do
     userId <- requireAuthId
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId
-    scoringSettingsList <- runDB $ selectList [ScoringSettingsLeagueId ==. leagueId] []
+    scoringSettingsList <- runDB $ selectList [ScoringSettingsLeagueId ==. leagueId] [Asc ScoringSettingsId]
     (widget, enctype) <- generateFormPost $ scoringSettingsForm userId league $ map extractValue scoringSettingsList
     defaultLayout $ do
         let action = SetupLeagueR SetupScoringSettingsR
@@ -64,7 +65,7 @@ postSetupScoringSettingsR :: Handler Html
 postSetupScoringSettingsR = do
     userId <- requireAuthId
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId
-    scoringSettingsList <- runDB $ selectList [ScoringSettingsLeagueId ==. leagueId] []
+    scoringSettingsList <- runDB $ selectList [ScoringSettingsLeagueId ==. leagueId] [Asc ScoringSettingsId]
     ((result, widget), enctype) <- runFormPost $ scoringSettingsForm userId league $ map extractValue scoringSettingsList
     case result of
         FormSuccess scoringSettingsList' -> do
@@ -77,7 +78,29 @@ postSetupScoringSettingsR = do
             setTitle $ leagueSetupStepTitle league action
             $(widgetFile "layouts/league-setup-layout")
 
+getLeagueScoringSettingsR :: LeagueId -> Handler Html
+getLeagueScoringSettingsR leagueId = do
+    userId <- requireAuthId
+    league <- runDB $ get404 leagueId
+    scoringSettingsList <- runDB $ selectList [ScoringSettingsLeagueId ==. leagueId] [Asc ScoringSettingsId]
+    (widget, enctype) <- generateFormPost $ scoringSettingsForm userId league $ map extractValue scoringSettingsList
+    let action = LeagueSettingsR leagueId LeagueScoringSettingsR
+    leagueSettingsLayout leagueId action enctype widget "Scoring"
 
+postLeagueScoringSettingsR :: LeagueId -> Handler Html
+postLeagueScoringSettingsR leagueId = do
+    userId <- requireAuthId
+    league <- runDB $ get404 leagueId
+    scoringSettingsList <- runDB $ selectList [ScoringSettingsLeagueId ==. leagueId] [Asc ScoringSettingsId]
+    ((result, widget), enctype) <- runFormPost $ scoringSettingsForm userId league $ map extractValue scoringSettingsList
+    let action = LeagueSettingsR leagueId LeagueScoringSettingsR
+    case result of
+        FormSuccess scoringSettingsList' -> do
+            forM_ (zip scoringSettingsList scoringSettingsList') (\(Entity scoringSettingsId _, scoringSettings') ->
+                runDB $ replace scoringSettingsId scoringSettings')
+            setMessage "Successfully updated league scoring settings"
+            redirect action
+        _ -> leagueSettingsLayout leagueId action enctype widget "Scoring"
 
 -------------
 -- Helpers --

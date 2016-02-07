@@ -3,13 +3,17 @@
     <div .col-xs-12>
         <div .panel .panel-default>
             <div .panel-heading>
-                <h5 .text-center>Teams
-            <!-- <div .panel-body> -->
-            <!--     Test more stuff -->
+                <h5 .text-center>
+                    $if length teams > 1
+                        Teams
+                    $else
+                        My Team
+
             <table .table .table-hover>
                 <thead>
                     <tr>
-                        <th .hidden-xs>
+                        $if length teams > 1
+                            <th .hidden-xs>
                         <th .col-xs-3>Name
                         <th .col-sm-1 .hidden-xs>Abbreviation
                         <th .col-xs-1 .visible-xs>Abbrev.
@@ -21,7 +25,8 @@
                 <tbody>
                     $forall (team, fields, num) <- forms
                         <tr>
-                            <td .hidden-xs>#{show num}
+                            $if length teams > 1
+                                <td .hidden-xs>#{show num}
                             <td>
                                 <div .input-group>
                                     <div .input-group-addon .input-sm .hidden-xs>House

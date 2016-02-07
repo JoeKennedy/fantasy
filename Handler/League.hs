@@ -2,6 +2,7 @@ module Handler.League where
 
 import Import
 import Handler.League.Setup
+import Handler.League.Layout
 
 ----------
 -- Form --
@@ -69,6 +70,35 @@ postSetupNewLeagueR = do
                 lastCompletedStep = fromMaybe 0 (leagueLastCompletedStep <$> extractValueMaybe maybeLeague)
             setTitle title
             $(widgetFile "layouts/league-setup-layout")
+
+getLeagueR :: LeagueId -> Handler Html
+getLeagueR leagueId = do
+    league <- runDB $ get404 leagueId
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
+    leagueLayout leagueId "League" $ do
+        let maybeCreatorTeam = listToMaybe teams
+        $(widgetFile "league/league")
+
+getLeagueEditSettingsR :: LeagueId -> Handler Html
+getLeagueEditSettingsR leagueId = do
+    userId <- requireAuthId
+    league <- runDB $ get404 leagueId
+    (widget, enctype) <- generateFormPost $ leagueForm userId $ Just league
+    let action = LeagueSettingsR leagueId LeagueEditSettingsR
+    leagueSettingsLayout leagueId action enctype widget "League"
+
+postLeagueEditSettingsR :: LeagueId -> Handler Html
+postLeagueEditSettingsR leagueId = do
+    userId <- requireAuthId
+    league <- runDB $ get404 leagueId
+    ((result, widget), enctype) <- runFormPost $ leagueForm userId $ Just league
+    let action = LeagueSettingsR leagueId LeagueEditSettingsR
+    case result of
+        FormSuccess league' -> do
+            runDB $ replace leagueId league'
+            setMessage "Successfully updated league settings"
+            redirect action
+        _ -> leagueSettingsLayout leagueId action enctype widget "League"
 
 -------------------
 -- Create League --

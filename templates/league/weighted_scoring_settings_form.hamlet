@@ -93,9 +93,10 @@
                             <dt>#2 Weight %
                             <dd>-50
 
-                        <p> With these settings,
+                        <p> With these
+                            \ settings,
                             <strong .text-primary>Roose Bolton
-                            would score 10
+                            \ would score 10
                             \ points for the kill, and then <i>additionally</i>
                             \ get 25% of
                             <strong .text-muted>Robb Stark</strong>'s

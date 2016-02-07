@@ -112,7 +112,11 @@ instance Yesod App where
     isAuthorized (SeriesEpisodeEventsR _ _)  _    = requireAdmin
     isAuthorized (SeriesEpisodeEventR _ _ _) _    = requireAdmin
 
-    isAuthorized (SetupLeagueR _)               _ = requireLoggedIn
+    isAuthorized (LeagueR leagueId) _ = requirePublicOrTeamOwner leagueId
+    isAuthorized (LeagueSettingsR leagueId _) True = requireLeagueManager leagueId
+    -- TODO - change this to ensure user is logged in or a team owner
+    isAuthorized (LeagueSettingsR leagueId _) False = requirePublicOrTeamOwner leagueId
+    isAuthorized (SetupLeagueR _) _ = requireLoggedIn
     -- Default to Authorized for now.
     isAuthorized _ _ = return Authorized
 
@@ -162,6 +166,42 @@ requireAdmin = do
         Nothing -> AuthenticationRequired
         Just (Entity _ u) -> if userIsAdmin u then Authorized else Unauthorized "You must be an admin"
 
+requirePublicOrTeamOwner :: (YesodPersist site, YesodAuth site,
+                        YesodPersistBackend site ~ SqlBackend,
+                        AuthId site ~ Key User) =>
+                       LeagueId -> HandlerT site IO AuthResult
+requirePublicOrTeamOwner leagueId = do
+    league <- runDB $ get404 leagueId
+    muid <- maybeAuthId
+    case (leagueIsPrivate league, muid) of
+        (False, _) -> return Authorized
+        (True, Nothing) -> return AuthenticationRequired
+        (True, Just uid) -> do
+            teams <- runDB $ selectList [TeamLeagueId ==. leagueId] []
+            case find (\(Entity _ t) -> teamOwnerId t == Just uid) teams of
+                Just _  -> return Authorized
+                Nothing -> return $ Unauthorized "This league is private"
+
+-- TODO - this function will need to change later so that someone
+-- other than the creator can manage the league
+-- In addition, this should be used when determining
+-- whether or not users can see fields for the settings
+-- Easiest way to start might be to just disable all fields
+-- if the user can't manage the league
+requireLeagueManager :: (YesodPersist site, YesodAuth site, AuthId site ~ Key User,
+                    YesodPersistBackend site ~ SqlBackend) =>
+                   LeagueId -> HandlerT site IO AuthResult
+requireLeagueManager leagueId = do
+    league <- runDB $ get404 leagueId
+    muid <- maybeAuthId
+    return $ case muid of
+        Just uid ->
+            if uid == leagueCreatedBy league
+                then Authorized
+                else Unauthorized "You aren't allowed to manage this league"
+        Nothing -> AuthenticationRequired
+
+
 instance YesodBreadcrumbs App where
     breadcrumb HomeR = return ("Home", Nothing)
     breadcrumb (AuthR LoginR) = return ("Sign In", Just HomeR)
@@ -196,12 +236,28 @@ instance YesodBreadcrumbs App where
     -- League breadcrumbs
     breadcrumb LeaguesR           = return ("Leagues", Just HomeR)
 
+    breadcrumb (LeagueR leagueId) = do
+        league <- runDB $ get404 leagueId
+        return (leagueName league, Just LeaguesR)
+
+    breadcrumb (LeagueTeamsR leagueId) = return ("Teams", Just $ LeagueR leagueId)
+    breadcrumb (LeagueTeamR leagueId teamId) = do
+        team <- runDB $ get404 teamId
+        return ("House " ++ teamName team, Just $ LeagueTeamsR leagueId)
+    breadcrumb (LeagueTeamSettingsR leagueId teamId) = return ("Settings", Just $ LeagueTeamR leagueId teamId)
+
+    breadcrumb (LeagueSettingsR leagueId LeagueEditSettingsR) = return ("League Settings", Just $ LeagueR leagueId)
+    breadcrumb (LeagueSettingsR leagueId LeagueGeneralSettingsR) = return ("General Settings", Just $ LeagueR leagueId)
+    breadcrumb (LeagueSettingsR leagueId LeagueScoringSettingsR) = return ("Scoring Settings", Just $ LeagueR leagueId)
+    breadcrumb (LeagueSettingsR leagueId LeagueDraftSettingsR) = return ("Draft Settings", Just $ LeagueR leagueId)
+    breadcrumb (LeagueSettingsR leagueId LeagueTeamsSettingsR) = return ("Team Settings", Just $ LeagueR leagueId)
+
     breadcrumb (SetupLeagueR SetupNewLeagueR)       = return ("Setup", Just LeaguesR)
     breadcrumb (SetupLeagueR SetupGeneralSettingsR) = return ("General Settings", Just $ SetupLeagueR SetupNewLeagueR)
     breadcrumb (SetupLeagueR SetupScoringSettingsR) = return ("Scoring Settings", Just $ SetupLeagueR SetupGeneralSettingsR)
     breadcrumb (SetupLeagueR SetupDraftSettingsR)   = return ("Draft Settings", Just $ SetupLeagueR SetupScoringSettingsR)
-    breadcrumb (SetupLeagueR SetupTeamSettingsR)    = return ("Team Settings", Just $ SetupLeagueR SetupDraftSettingsR)
-    breadcrumb (SetupLeagueR SetupConfirmSettingsR) = return ("Complete Setup", Just $ SetupLeagueR SetupTeamSettingsR)
+    breadcrumb (SetupLeagueR SetupTeamsSettingsR)    = return ("Team Settings", Just $ SetupLeagueR SetupDraftSettingsR)
+    breadcrumb (SetupLeagueR SetupConfirmSettingsR) = return ("Complete Setup", Just $ SetupLeagueR SetupTeamsSettingsR)
 
     -- These pages never call breadcrumb
     breadcrumb StaticR{}              = return ("", Nothing)

@@ -15,19 +15,15 @@ $with currentStep <- leagueSetupCurrentStep action
 
     <form method="post" action=@{action} enctype=#{enctype}>
         ^{widget}
-        $case leagueSetupPreviousStep currentStep
-            $of Just (_, stepName, stepRoute)
-                <div .pull-left>
-                    <a #previous .btn .btn-primary href=@{stepRoute}>
-                        <i .fa .fa-long-arrow-left aria-hidden="true">
-                        #{stepName}
-            $of Nothing
+        $maybe (_, stepName, stepRoute) <- leagueSetupPreviousStep currentStep
+            <div .pull-left>
+                <a #previous .btn .btn-primary href=@{stepRoute}>
+                    <i .fa .fa-long-arrow-left aria-hidden="true">
+                    #{stepName}
 
-        $case leagueSetupNextStep currentStep
-            $of Just (_, stepName, _)
-                <div .pull-right>
-                    <button #next .btn .btn-primary type="submit" name="commit">
-                        #{stepName}
-                        <i .fa .fa-long-arrow-right aria-hidden="true">
-            $of Nothing
+        $maybe (_, stepName, _) <- leagueSetupNextStep currentStep
+            <div .pull-right>
+                <button #next .btn .btn-primary type="submit" name="commit">
+                    #{stepName}
+                    <i .fa .fa-long-arrow-right aria-hidden="true">
 

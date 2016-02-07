@@ -40,7 +40,7 @@ leagueSetupSteps = [ (1, "Create League",    SetupLeagueR SetupNewLeagueR)
                    , (2, "General Settings", SetupLeagueR SetupGeneralSettingsR)
                    , (3, "Scoring Settings", SetupLeagueR SetupScoringSettingsR)
                    , (4, "Draft Settings",   SetupLeagueR SetupDraftSettingsR)
-                   , (5, "Team Settings",    SetupLeagueR SetupTeamSettingsR)
+                   , (5, "Team Settings",    SetupLeagueR SetupTeamsSettingsR)
                    , (6, "Complete Setup",   SetupLeagueR SetupConfirmSettingsR)
                    ]
 

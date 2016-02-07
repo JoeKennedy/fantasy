@@ -48,7 +48,7 @@ import Handler.League.GeneralSettings
 import Handler.League.ScoringSettings
 -- The below currently has no routes in it
 -- import Handler.League.Setup
-import Handler.League.TeamSettings
+import Handler.League.Team
 import Handler.Series
 import Handler.Species
 

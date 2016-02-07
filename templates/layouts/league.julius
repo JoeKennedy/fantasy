@@ -1,0 +1,7 @@
+function leagueLayoutReady(jQuery) {
+    var tabs = $('#league_navbar').find('.tab-name')
+    tabs.filter(function() { return $(this).text().trim() === #{toJSON activeTab} }).parent().addClass('active')
+}
+
+$(document).ready(leagueLayoutReady)
+$(window).load(leagueLayoutReady)
