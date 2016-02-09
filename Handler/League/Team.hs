@@ -53,18 +53,19 @@ teamSettingsForm currentUserId league teams extra = do
 getSetupTeamsSettingsR :: Handler Html
 getSetupTeamsSettingsR = do
     userId <- requireAuthId
-    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId
+    let action = SetupLeagueR SetupTeamsSettingsR
+    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
     (widget, enctype) <- generateFormPost $ teamSettingsForm userId league $ map extractValue teams
     defaultLayout $ do
-        let action = SetupLeagueR SetupTeamsSettingsR
         setTitle $ leagueSetupStepTitle league action
         $(widgetFile "layouts/league-setup-layout")
 
 postSetupTeamsSettingsR :: Handler Html
 postSetupTeamsSettingsR = do
     userId <- requireAuthId
-    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId
+    let action = SetupLeagueR SetupTeamsSettingsR
+    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
     ((result, widget), enctype) <- runFormPost $ teamSettingsForm userId league $ map extractValue teams
     case result of
@@ -73,7 +74,6 @@ postSetupTeamsSettingsR = do
             updateLeagueLastCompletedStep leagueId league 5
             redirect $ SetupLeagueR SetupConfirmSettingsR
         _ -> defaultLayout $ do
-            let action = SetupLeagueR SetupTeamsSettingsR
             setTitle $ leagueSetupStepTitle league action
             $(widgetFile "layouts/league-setup-layout")
 

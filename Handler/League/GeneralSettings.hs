@@ -46,18 +46,19 @@ generalSettingsForm teamsCount currentUserId generalSettings extra = do
 getSetupGeneralSettingsR :: Handler Html
 getSetupGeneralSettingsR = do
     userId <- requireAuthId
-    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId
+    let action = SetupLeagueR SetupGeneralSettingsR
+    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
     (widget, enctype) <- generateFormPost $ generalSettingsForm (leagueTeamsCount league) userId generalSettings
     defaultLayout $ do
-        let action = SetupLeagueR SetupGeneralSettingsR
         setTitle $ leagueSetupStepTitle league action
         $(widgetFile "layouts/league-setup-layout")
 
 postSetupGeneralSettingsR :: Handler Html
 postSetupGeneralSettingsR = do
     userId <- requireAuthId
-    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId
+    let action = SetupLeagueR SetupGeneralSettingsR
+    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     Entity generalSettingsId generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
     ((result, widget), enctype) <- runFormPost $ generalSettingsForm (leagueTeamsCount league) userId generalSettings
     case result of
@@ -66,7 +67,6 @@ postSetupGeneralSettingsR = do
             updateLeagueLastCompletedStep leagueId league 2
             redirect $ SetupLeagueR SetupScoringSettingsR
         _ -> defaultLayout $ do
-            let action = SetupLeagueR SetupGeneralSettingsR
             setTitle $ leagueSetupStepTitle league action
             $(widgetFile "layouts/league-setup-layout")
 

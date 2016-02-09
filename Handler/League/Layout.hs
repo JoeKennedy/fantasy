@@ -11,7 +11,7 @@ import           Text.Blaze         (toMarkup)
 leagueLayout :: LeagueId -> Text -> Widget -> Handler Html
 leagueLayout leagueId activeTab widget = do
     maybeUserId <- maybeAuthId
-    league <- runDB $ get404 leagueId
+    league <- leagueOrRedirectIfIncomplete leagueId
     maybeTeam <- getCurrentTeam leagueId maybeUserId
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
     leagues <- getLeaguesByUser maybeUserId
@@ -61,4 +61,11 @@ disableSettingsFields :: Maybe UserId -> Maybe Team -> League -> Route App -> Bo
 disableSettingsFields maybeUserId _ league (LeagueSettingsR _ _) = not $ isLeagueManager maybeUserId league
 disableSettingsFields maybeUserId maybeTeam _ (LeagueTeamSettingsR _ _) = not $ isTeamOwner maybeUserId maybeTeam
 disableSettingsFields _ _ _ _ = error "Shouldn't be trying to disable fields for any other actions"
+
+leagueOrRedirectIfIncomplete :: (YesodPersist site, RedirectUrl site (Route App),
+                                 YesodPersistBackend site ~ SqlBackend) =>
+                                LeagueId -> HandlerT site IO League
+leagueOrRedirectIfIncomplete leagueId = do
+    league <- runDB $ get404 leagueId
+    if leagueIsSetupComplete league then return league else redirect $ leagueSetupNextStepToComplete league
 

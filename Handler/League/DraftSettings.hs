@@ -50,18 +50,19 @@ draftSettingsForm currentUserId leagueId draftSettings extra = do
 getSetupDraftSettingsR :: Handler Html
 getSetupDraftSettingsR = do
     userId <- requireAuthId
-    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId
+    let action = SetupLeagueR SetupDraftSettingsR
+    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsLeagueId leagueId
     (widget, enctype) <- generateFormPost $ draftSettingsForm userId leagueId $ extractValueMaybe maybeDraftSettings
     defaultLayout $ do
-        let action = SetupLeagueR SetupDraftSettingsR
         setTitle $ leagueSetupStepTitle league action
         $(widgetFile "layouts/league-setup-layout")
 
 postSetupDraftSettingsR :: Handler Html
 postSetupDraftSettingsR = do
     userId <- requireAuthId
-    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId
+    let action = SetupLeagueR SetupDraftSettingsR
+    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsLeagueId leagueId
     ((result, widget), enctype) <- runFormPost $ draftSettingsForm userId leagueId $ extractValueMaybe maybeDraftSettings
     case result of
@@ -71,7 +72,6 @@ postSetupDraftSettingsR = do
             updateLeagueLastCompletedStep leagueId league 4
             redirect $ SetupLeagueR SetupTeamsSettingsR
         _ -> defaultLayout $ do
-            let action = SetupLeagueR SetupDraftSettingsR
             setTitle $ leagueSetupStepTitle league action
             $(widgetFile "layouts/league-setup-layout")
 

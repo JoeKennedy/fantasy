@@ -35,6 +35,12 @@ leagueSetupCurrentStepName currentRoute =
         of Just (_, stepName, _) -> stepName
            Nothing               -> error "Step not found"
 
+leagueSetupNextStepToComplete :: League -> Route App
+leagueSetupNextStepToComplete league =
+    case find (\(stepNum, _, _) -> stepNum == leagueLastCompletedStep league + 1) leagueSetupSteps of
+        Just (_, _, stepRoute) -> stepRoute
+        Nothing                -> error "No next step"
+
 leagueSetupSteps :: [(Int, String, Route App)]
 leagueSetupSteps = [ (1, "Create League",    SetupLeagueR SetupNewLeagueR)
                    , (2, "General Settings", SetupLeagueR SetupGeneralSettingsR)
@@ -58,11 +64,15 @@ leagueSetupPreviousStep currentStep =
 
 leagueOrRedirect :: ( YesodPersist site, RedirectUrl site (Route App)
                     , YesodPersistBackend site ~ SqlBackend) =>
-                    UserId -> HandlerT site IO (Entity League, Int)
-leagueOrRedirect userId = do
+                    UserId -> Route App -> HandlerT site IO (Entity League, Int)
+leagueOrRedirect userId action = do
     maybeLeague <- leagueBeingSetUp userId
-    case maybeLeague of (Just (Entity leagueId league)) -> return (Entity leagueId league, leagueLastCompletedStep league)
-                        Nothing       -> redirect $ SetupLeagueR SetupNewLeagueR
+    case maybeLeague of
+        Nothing -> redirect $ SetupLeagueR SetupNewLeagueR
+        Just (Entity leagueId league) ->
+            if leagueLastCompletedStep league + 1 >= leagueSetupCurrentStep action
+                then return (Entity leagueId league, leagueLastCompletedStep league)
+                else redirect $ leagueSetupNextStepToComplete league
 
 leagueBeingSetUp :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) =>
                     UserId -> HandlerT site IO (Maybe (Entity League))
@@ -74,7 +84,6 @@ updateLeagueLastCompletedStep leagueId league stepNumber =
     let lastCompletedStep = max (leagueLastCompletedStep league) stepNumber
         isSetupComplete = lastCompletedStep == 6
     in  runDB $ update leagueId [LeagueLastCompletedStep =. lastCompletedStep, LeagueIsSetupComplete =. isSetupComplete]
-
 
 
 -------------------------
