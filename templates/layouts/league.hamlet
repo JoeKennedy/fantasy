@@ -6,7 +6,6 @@
         <span .icon-bar>
         <span .icon-bar>
         <span .icon-bar>
-      <ul .hidden-xs .nav .navbar-nav .navbar-left>
       <a .visible-xs .navbar-brand href=@{HomeR}>A Fantasy League Of Ice And Fire
 
     <div #league_navbar .collapse .navbar-collapse>
