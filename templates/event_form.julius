@@ -33,4 +33,3 @@ function eventFormReady(jQuery) {
 }
 
 $(document).ready(eventFormReady)
-$(window).load(eventFormReady)

@@ -4,4 +4,3 @@ function leagueLayoutReady(jQuery) {
 }
 
 $(document).ready(leagueLayoutReady)
-$(window).load(leagueLayoutReady)

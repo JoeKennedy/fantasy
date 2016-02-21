@@ -29,4 +29,3 @@ function draftSettingsFormReady(jQuery) {
 }
 
 $(document).ready(draftSettingsFormReady)
-$(window).load(draftSettingsFormReady)

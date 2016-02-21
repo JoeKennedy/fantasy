@@ -8,4 +8,3 @@ function leagueSettingsLayoutReady(jQuery) {
 }
 
 $(document).ready(leagueSettingsLayoutReady)
-$(window).load(leagueSettingsLayoutReady)
