@@ -1,7 +1,8 @@
+<div .page-header>
+    <h4>#{leagueName league}
+
 <div .row>
     <div .col-md-8 .col-xs-12>
-        <div .page-header>
-            <h4>#{leagueName league}
         <div>
             <div>
                 <strong>Creator:
