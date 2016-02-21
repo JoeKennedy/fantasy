@@ -45,6 +45,7 @@ import Handler.League
 import Handler.League.ConfirmSettings
 import Handler.League.DraftSettings
 import Handler.League.GeneralSettings
+import Handler.League.Player
 import Handler.League.ScoringSettings
 -- The below currently has no routes in it
 -- import Handler.League.Setup

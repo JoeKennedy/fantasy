@@ -104,6 +104,7 @@ DraftSettings
     updatedBy UserId
     updatedAt UTCTime
     UniqueDraftSettingsLeagueId leagueId
+
 Team
     leagueId LeagueId
     name Text
@@ -112,6 +113,8 @@ Team
     ownerName Text
     ownerEmail Text
     isConfirmed Bool default=false
+    playersCount Int default=0
+    startersCount Int default=0
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId
@@ -121,6 +124,18 @@ Team
     UniqueTeamNameLeagueId name leagueId
     UniqueTeamAbbreviationLeagueId abbreviation leagueId
     UniqueTeamOwnerEmailLeagueId ownerEmail leagueId
+    deriving Eq Ord
+
+Player
+    leagueId LeagueId
+    characterId CharacterId
+    teamId TeamId Maybe
+    isStarter Bool default=false
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    UniquePlayerCharacterLeague characterId leagueId
 
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

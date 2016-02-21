@@ -2,6 +2,8 @@ module Handler.Character where
 
 import Import
 
+import Handler.League (createPlayer)
+
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
 import           Text.Blaze (toMarkup)
@@ -63,6 +65,8 @@ postNewCharacterR = do
     case result of
         FormSuccess character -> do
             characterId <- runDB $ insert character
+            leagues <- runDB $ selectList [] [Asc LeagueId]
+            mapM_ (\l -> runDB $ createPlayer l characterId) leagues
             redirect $ CharacterR characterId
         _ -> defaultLayout $ do
             let title = "Create a new character" :: Html

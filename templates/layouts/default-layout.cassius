@@ -4,3 +4,9 @@
 
 #header_nav.navbar-static-top
   z-index: 1001
+
+.vertical-align-middle
+    vertical-align: middle
+
+.table tbody > tr.vertical-align-middle > td
+    vertical-align: middle

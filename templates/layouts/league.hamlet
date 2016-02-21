@@ -16,7 +16,7 @@
           $maybe Entity teamId _ <- maybeTeam
             <a .tab-name href="@{LeagueTeamR leagueId teamId}">My Team
         <li>
-          <a .tab-name href="#">Players
+          <a .tab-name href="@{LeaguePlayersR leagueId}">Players
         <li>
           <a .tab-name href="#">Standings
         <li>

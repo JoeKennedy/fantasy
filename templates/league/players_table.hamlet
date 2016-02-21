@@ -1,0 +1,42 @@
+$if length players > 0
+    <div .panel .panel-default>
+        <div .table-responsive>
+            <table .table .table-striped>
+                $forall (subTableHeader, subTablePlayers, extraSlots) <- subTables
+                    <thead>
+                        <tr .active>
+                            <th colspan="#{show colspan}">
+                                #{subTableHeader}
+                        <tr>
+                            $if hasSlotColumn playersTableType
+                                <th>Slot
+                            <th>Name
+                            $if isMultipleTeams playersTableType
+                                <th>Team
+                            <th>
+
+                    <tbody>
+                        $forall (num, Entity _ player, maybeTeam, Entity _ character, button) <- subTablePlayers
+                            <tr .vertical-align-middle>
+                                $if subTableHeader == "Starters"
+                                    <td>#{num}
+                                $if subTableHeader == "Bench"
+                                    <td>Bench
+                                <td>#{characterName character}
+                                $if isMultipleTeams playersTableType
+                                    <td>
+                                        $maybe Entity teamId team <- maybeTeam
+                                            <a href="@{LeagueTeamR (playerLeagueId player) teamId}">
+                                                H#{teamAbbreviation team}
+                                        $nothing
+                                            <a href="@{LeaguePlayersR (playerLeagueId player)}">
+                                                FA
+                                <td .text-right .player-action>^{button}
+                        $forall slot <- extraSlots
+                            <tr .vertical-align-middle>
+                                <td colspan="#{colspan}">
+                                    $if subTableHeader == "Starters"
+                                        #{slot}
+                                    $if subTableHeader == "Bench"
+                                        Bench
+

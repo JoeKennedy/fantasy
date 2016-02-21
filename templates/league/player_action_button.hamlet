@@ -1,0 +1,3 @@
+<a .btn .btn-primary .btn-xs href="@{action}">
+    #{text}
+    <i class="fa fa-#{icon}">

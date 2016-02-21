@@ -80,3 +80,30 @@ draftOrderTypeOptions = map (\draftOrderType ->
     (pack $ draftOrderTypeDescription draftOrderType, draftOrderType)) draftOrderTypes 
 
 
+----------------------
+-- PlayersTableType --
+----------------------
+data PlayersTableType = FreeAgents | OnRosters | AllPlayers | SingleTeam Text | Players Int Int
+    deriving (Show, Read, Eq)
+
+isMultipleTeams :: PlayersTableType -> Bool
+isMultipleTeams OnRosters  = True
+isMultipleTeams AllPlayers = True
+isMultipleTeams _ = False
+
+hasSlotColumn :: PlayersTableType -> Bool
+hasSlotColumn (Players _ _) = True
+hasSlotColumn _ = False
+
+playersTableColumnCount :: PlayersTableType -> Int
+playersTableColumnCount ptt
+    | isMultipleTeams ptt || hasSlotColumn ptt = 3
+    | otherwise = 2
+
+packPlayersTableType :: PlayersTableType -> Text
+packPlayersTableType FreeAgents = "Free Agents"
+packPlayersTableType OnRosters  = "On Rosters"
+packPlayersTableType AllPlayers = "All Players"
+packPlayersTableType (SingleTeam teamName) = "House " ++ teamName ++ " players"
+packPlayersTableType (Players _ _) = "Players"
+

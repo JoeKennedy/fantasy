@@ -1,44 +1,25 @@
-<div .row>
-    <div .col-md-8 .col-xs-12>
-        <div .page-header>
-            <h4>
-                House #{teamName team}
-                <small>(H#{teamAbbreviation team})
-        <div>
-            <div>
-                <strong>Owner:
-                <span>#{teamOwnerName team}
-            <div>
-                <strong>Email:
-                <span>#{teamOwnerEmail team}
-            <div>
-                <strong>Status:
-                $if teamIsConfirmed team
-                    <span>Joined
-                $else
-                    <span>Unjoined
+<div .page-header>
+    <h4>
+        House #{teamName team}
+        <small>(H#{teamAbbreviation team})
 
-    <div .col-md-4 .col-xs-12>
-        <div .panel .panel-default>
-            <div .panel-heading>
-                <h5 .text-center>Players
-            <table .table>
-                <tr .small>
-                    <td>
-                        <a href="#">Player 1
-                <tr .small>
-                    <td>
-                        <a href="#">Player 2
-                <tr .small>
-                    <td>
-                        <a href="#">Player 3
-                <tr .small>
-                    <td>
-                        <a href="#">Player 4
-                <tr .small>
-                    <td>
-                        <a href="#">Player 5
-                <tr .small>
-                    <td>
-                        <a href="#">Player 6
+<div .row>
+    <div .col-lg-3 .col-sm-4 .col-xs-12>
+        <ul .list-group>
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Owner
+                <p .list-group-item-text>#{teamOwnerName team}
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Email
+                <p .list-group-item-text>#{teamOwnerEmail team}
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Status
+                <p .list-group-item-text>
+                    $if teamIsConfirmed team
+                        Joined
+                    $else
+                        Unjoined
+
+    <div .col-lg-9 .col-sm-8 .col-xs-12>
+        ^{playersTable players (Players numberOfStarters rosterSize)}
 

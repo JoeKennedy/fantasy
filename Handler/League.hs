@@ -1,6 +1,7 @@
 module Handler.League where
 
 import Import
+import Handler.Common        (extractValueMaybe)
 import Handler.League.Setup
 import Handler.League.Layout
 
@@ -106,8 +107,9 @@ postLeagueEditSettingsR leagueId = do
 createLeague :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) =>
                 League -> HandlerT site IO ()
 createLeague league = runDB $ do
-    let teamsCount = leagueTeamsCount league
     leagueId <- insert league
+    let teamsCount = leagueTeamsCount league
+        leagueEntity = Entity leagueId league
     insert_ $ GeneralSettings
         { generalSettingsLeagueId = leagueId
         , generalSettingsNumberOfStarters = fst $ defaultRosterSize teamsCount
@@ -122,14 +124,15 @@ createLeague league = runDB $ do
         , generalSettingsUpdatedBy = leagueUpdatedBy league
         , generalSettingsUpdatedAt = leagueUpdatedAt league
         }
-    mapM_ (createScoringSettingsRow leagueId league) allActions
-    createFirstTeam leagueId league
-    mapM_ (createTeam leagueId league) [2..(leagueTeamsCount league)]
+    mapM_ (createScoringSettingsRow leagueEntity) allActions
+    createFirstTeam leagueEntity
+    mapM_ (createTeam leagueEntity) [2..(leagueTeamsCount league)]
+    characters <- selectKeysList [] [Asc CharacterName]
+    mapM_ (createPlayer leagueEntity) characters
     return ()
 
-createScoringSettingsRow :: (MonadIO m) =>
-                            LeagueId -> League -> Action -> ReaderT SqlBackend m ()
-createScoringSettingsRow leagueId league action =
+createScoringSettingsRow :: (MonadIO m) => Entity League -> Action -> ReaderT SqlBackend m ()
+createScoringSettingsRow (Entity leagueId league) action =
     let (isUsed, points, weight, pointsRec, weightRec) =
             defaultScoringAttributes action $ leagueScoringType league
     in  insert_ $ ScoringSettings
@@ -146,39 +149,55 @@ createScoringSettingsRow leagueId league action =
             , scoringSettingsUpdatedAt = leagueUpdatedAt league
             }
 
-createFirstTeam :: (MonadIO m) => LeagueId -> League -> ReaderT SqlBackend m ()
-createFirstTeam leagueId league =
-    insert_ $ Team { teamLeagueId     = leagueId
-                   , teamName         = "Number 1"
-                   , teamAbbreviation = "N1"
-                   , teamOwnerId      = Just $ leagueCreatedBy league
-                   , teamOwnerName    = "Owner 1"
-                   , teamOwnerEmail   = "Enter your email"
-                   , teamIsConfirmed  = True
-                   , teamCreatedBy    = leagueCreatedBy league
-                   , teamCreatedAt    = leagueCreatedAt league
-                   , teamUpdatedBy    = leagueUpdatedBy league
-                   , teamUpdatedAt    = leagueUpdatedAt league
-                   , teamConfirmedBy  = Just $ leagueCreatedBy league
-                   , teamConfirmedAt  = Just $ leagueCreatedAt league
+createFirstTeam :: (MonadIO m) => Entity League -> ReaderT SqlBackend m ()
+createFirstTeam (Entity leagueId league) =
+    insert_ $ Team { teamLeagueId      = leagueId
+                   , teamName          = "Number 1"
+                   , teamAbbreviation  = "N1"
+                   , teamOwnerId       = Just $ leagueCreatedBy league
+                   , teamOwnerName     = "Owner 1"
+                   , teamOwnerEmail    = "Enter your email"
+                   , teamIsConfirmed   = True
+                   , teamPlayersCount  = 0
+                   , teamStartersCount = 0
+                   , teamCreatedBy     = leagueCreatedBy league
+                   , teamCreatedAt     = leagueCreatedAt league
+                   , teamUpdatedBy     = leagueUpdatedBy league
+                   , teamUpdatedAt     = leagueUpdatedAt league
+                   , teamConfirmedBy   = Just $ leagueCreatedBy league
+                   , teamConfirmedAt   = Just $ leagueCreatedAt league
                    }
 
-createTeam :: (MonadIO m) => LeagueId -> League -> Int -> ReaderT SqlBackend m ()
-createTeam leagueId league int =
-    insert_ $ Team { teamLeagueId     = leagueId
-                   , teamName         = pack $ "Number " ++ show int
-                   , teamAbbreviation = pack $ "N" ++ show int
-                   , teamOwnerId      = Nothing
-                   , teamOwnerName    = pack $ "Owner " ++ show int
-                   , teamOwnerEmail   = pack $ "Enter Team " ++ show int ++ "'s email"
-                   , teamIsConfirmed  = False
-                   , teamCreatedBy    = leagueCreatedBy league
-                   , teamCreatedAt    = leagueCreatedAt league
-                   , teamUpdatedBy    = leagueUpdatedBy league
-                   , teamUpdatedAt    = leagueUpdatedAt league
-                   , teamConfirmedBy  = Nothing
-                   , teamConfirmedAt  = Nothing
+createTeam :: (MonadIO m) => Entity League -> Int -> ReaderT SqlBackend m ()
+createTeam (Entity leagueId league) int =
+    insert_ $ Team { teamLeagueId      = leagueId
+                   , teamName          = pack $ "Number " ++ show int
+                   , teamAbbreviation  = pack $ "N" ++ show int
+                   , teamOwnerId       = Nothing
+                   , teamOwnerName     = pack $ "Owner " ++ show int
+                   , teamOwnerEmail    = pack $ "Enter Team " ++ show int ++ "'s email"
+                   , teamIsConfirmed   = False
+                   , teamPlayersCount  = 0
+                   , teamStartersCount = 0
+                   , teamCreatedBy     = leagueCreatedBy league
+                   , teamCreatedAt     = leagueCreatedAt league
+                   , teamUpdatedBy     = leagueUpdatedBy league
+                   , teamUpdatedAt     = leagueUpdatedAt league
+                   , teamConfirmedBy   = Nothing
+                   , teamConfirmedAt   = Nothing
                    }
+
+createPlayer :: (MonadIO m) => Entity League -> CharacterId -> ReaderT SqlBackend m ()
+createPlayer (Entity leagueId league) characterId =
+    insert_ $ Player { playerLeagueId    = leagueId
+                     , playerCharacterId = characterId
+                     , playerTeamId      = Nothing
+                     , playerIsStarter   = False
+                     , playerCreatedBy   = leagueCreatedBy league
+                     , playerCreatedAt   = leagueCreatedAt league
+                     , playerUpdatedBy   = leagueUpdatedBy league
+                     , playerUpdatedAt   = leagueUpdatedAt league
+                     }
 
 -------------
 -- Helpers --

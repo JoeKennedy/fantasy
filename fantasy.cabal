@@ -34,9 +34,10 @@ library
                      Handler.League.ConfirmSettings
                      Handler.League.DraftSettings
                      Handler.League.GeneralSettings
+                     Handler.League.Layout
+                     Handler.League.Player
                      Handler.League.ScoringSettings
                      Handler.League.Setup
-                     Handler.League.Layout
                      Handler.League.Team
                      Handler.Series
                      Handler.Species

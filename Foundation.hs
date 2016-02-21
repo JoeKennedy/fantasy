@@ -96,29 +96,45 @@ instance Yesod App where
     authRoute _ = Just $ AuthR LoginR
 
     -- determine authorization for routes
-    isAuthorized (AuthR _)                   _    = return Authorized
-    isAuthorized FaviconR                    _    = return Authorized
-    isAuthorized RobotsR                     _    = return Authorized
-    isAuthorized NewCharacterR               _    = requireAdmin
-    isAuthorized (EditCharacterR _)          _    = requireAdmin
-    isAuthorized HousesR                     True = requireAdmin
-    isAuthorized (HouseR _)                  True = requireAdmin
-    isAuthorized SpeciesListR                True = requireAdmin
-    isAuthorized (SpeciesR _)                True = requireAdmin
-    isAuthorized SeriesListR                 True = requireAdmin
-    isAuthorized (SeriesR _)                 True = requireAdmin
-    isAuthorized (SeriesEpisodesR _)         True = requireAdmin
-    isAuthorized (SeriesEpisodeR _ _)        True = requireAdmin
-    isAuthorized (SeriesEpisodeEventsR _ _)  _    = requireAdmin
-    isAuthorized (SeriesEpisodeEventR _ _ _) _    = requireAdmin
+    isAuthorized (AuthR _)   _ = return Authorized
+    isAuthorized FaviconR    _ = return Authorized
+    isAuthorized RobotsR     _ = return Authorized
+    isAuthorized (StaticR _) _ = return Authorized
+    isAuthorized HomeR       _ = return Authorized
 
-    isAuthorized (LeagueR leagueId) _ = requirePublicOrTeamOwner leagueId
-    isAuthorized (LeagueSettingsR leagueId _) True = requireLeagueManager leagueId
-    -- TODO - change this to ensure user is logged in or a team owner
-    isAuthorized (LeagueSettingsR leagueId _) False = requirePublicOrTeamOwner leagueId
+    isAuthorized CharactersR                 _      = return Authorized
+    isAuthorized NewCharacterR               _      = requireAdmin
+    isAuthorized (CharacterR _)              _      = requireAdmin
+    isAuthorized (EditCharacterR _)          _      = requireAdmin
+    isAuthorized HousesR                     isPost = requireAdminIfPost isPost
+    isAuthorized (HouseR _)                  isPost = requireAdminIfPost isPost
+    isAuthorized SpeciesListR                isPost = requireAdminIfPost isPost
+    isAuthorized (SpeciesR _)                isPost = requireAdminIfPost isPost
+    isAuthorized SeriesListR                 isPost = requireAdminIfPost isPost
+    isAuthorized (SeriesR _)                 isPost = requireAdminIfPost isPost
+    isAuthorized (SeriesEpisodesR _)         isPost = requireAdminIfPost isPost
+    isAuthorized (SeriesEpisodeR _ _)        isPost = requireAdminIfPost isPost
+    isAuthorized (SeriesEpisodeEventsR _ _)  _      = requireAdmin
+    isAuthorized (SeriesEpisodeEventR _ _ _) _      = requireAdmin
+
+    isAuthorized LeaguesR                         _ = return Authorized
+    isAuthorized (LeagueR leagueId)               _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeagueTeamsR leagueId)          _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeagueTeamR leagueId _)         _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeagueTeamSettingsR _ teamId)   _ = requireTeamOwner teamId
+
+    isAuthorized (LeaguePlayersR leagueId)        _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeaguePlayerR leagueId _)       _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeaguePlayerStartR _ playerId)  _ = requirePlayerOwner playerId
+    isAuthorized (LeaguePlayerBenchR _ playerId)  _ = requirePlayerOwner playerId
+    -- TODO - change below two lines to proper authorization
+    isAuthorized (LeaguePlayerClaimR _ _)         _ = requireLoggedIn
+    isAuthorized (LeaguePlayerTradeR _ _)         _ = requireLoggedIn
+
+    isAuthorized (LeagueSettingsR leagueId _)  True = requireLeagueManager leagueId
+    isAuthorized (LeagueSettingsR leagueId _) False = requirePublicOrLeagueMember leagueId
+
     isAuthorized (SetupLeagueR _) _ = requireLoggedIn
-    -- Default to Authorized for now.
-    isAuthorized _ _ = return Authorized
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -148,29 +164,26 @@ instance Yesod App where
 
     makeLogger = return . appLogger
 
-requireLoggedIn :: (Typeable (AuthEntity master), PersistEntity (AuthEntity master)
-                   , YesodAuthPersist master, AuthId master ~ Key (AuthEntity master)
-                   , AuthEntity master ~ User) => HandlerT master IO AuthResult
+requireLoggedIn :: Handler AuthResult
 requireLoggedIn = do
     mu <- maybeAuth
     return $ case mu of
         Nothing -> AuthenticationRequired
         Just _  -> Authorized
 
-requireAdmin :: (Typeable (AuthEntity master), PersistEntity (AuthEntity master)
-           , YesodAuthPersist master, AuthId master ~ Key (AuthEntity master)
-           , AuthEntity master ~ User) => HandlerT master IO AuthResult
+requireAdmin :: Handler AuthResult
 requireAdmin = do
     mu <- maybeAuth
     return $ case mu of
         Nothing -> AuthenticationRequired
         Just (Entity _ u) -> if userIsAdmin u then Authorized else Unauthorized "You must be an admin"
 
-requirePublicOrTeamOwner :: (YesodPersist site, YesodAuth site,
-                        YesodPersistBackend site ~ SqlBackend,
-                        AuthId site ~ Key User) =>
-                       LeagueId -> HandlerT site IO AuthResult
-requirePublicOrTeamOwner leagueId = do
+requireAdminIfPost :: Bool -> Handler AuthResult
+requireAdminIfPost True  = requireAdmin
+requireAdminIfPost False = return Authorized
+
+requirePublicOrLeagueMember :: LeagueId -> Handler AuthResult
+requirePublicOrLeagueMember leagueId = do
     league <- runDB $ get404 leagueId
     muid <- maybeAuthId
     case (leagueIsPrivate league, muid) of
@@ -182,24 +195,43 @@ requirePublicOrTeamOwner leagueId = do
                 Just _  -> return Authorized
                 Nothing -> return $ Unauthorized "This league is private"
 
+requireTeamOwner :: TeamId -> Handler AuthResult
+requireTeamOwner teamId = do
+    team <- runDB $ get404 teamId
+    muid <- maybeAuthId
+    let unauthorized = Unauthorized "You are not the owner of this team"
+    return $ case muid of
+        Nothing -> AuthenticationRequired
+        _ -> if teamOwnerId team == muid then Authorized else unauthorized
+
 -- TODO - this function will need to change later so that someone
 -- other than the creator can manage the league
 -- In addition, this should be used when determining
 -- whether or not users can see fields for the settings
 -- Easiest way to start might be to just disable all fields
 -- if the user can't manage the league
-requireLeagueManager :: (YesodPersist site, YesodAuth site, AuthId site ~ Key User,
-                    YesodPersistBackend site ~ SqlBackend) =>
-                   LeagueId -> HandlerT site IO AuthResult
+requireLeagueManager :: LeagueId -> Handler AuthResult
 requireLeagueManager leagueId = do
     league <- runDB $ get404 leagueId
     muid <- maybeAuthId
     return $ case muid of
+        Nothing -> AuthenticationRequired
         Just uid ->
             if uid == leagueCreatedBy league
                 then Authorized
                 else Unauthorized "You aren't allowed to manage this league"
-        Nothing -> AuthenticationRequired
+
+requirePlayerOwner :: PlayerId -> Handler AuthResult
+requirePlayerOwner playerId = do
+    player <- runDB $ get404 playerId
+    muid <- maybeAuthId
+    let unauthorized = Unauthorized "This player is not on your team"
+    case (muid, playerTeamId player) of
+        (Nothing, _) -> return AuthenticationRequired
+        (_, Nothing) -> return unauthorized
+        (_, Just teamId) -> do
+            team <- runDB $ get404 teamId
+            return $ if teamOwnerId team == muid then Authorized else unauthorized
 
 
 instance YesodBreadcrumbs App where
@@ -235,23 +267,36 @@ instance YesodBreadcrumbs App where
 
     -- League breadcrumbs
     breadcrumb LeaguesR           = return ("Leagues", Just HomeR)
-
     breadcrumb (LeagueR leagueId) = do
         league <- runDB $ get404 leagueId
         return (leagueName league, Just LeaguesR)
 
+    -- League players breadcrumbs
+    breadcrumb (LeaguePlayersR leagueId) = return ("Players", Just $ LeagueR leagueId)
+    breadcrumb (LeaguePlayerR leagueId playerId) = do
+        player <- runDB $ get404 playerId
+        character <- runDB $ get404 $ playerCharacterId player
+        return (characterName character, Just $ LeagueR leagueId)
+    breadcrumb (LeaguePlayerStartR leagueId playerId) = return ("Start", Just $ LeaguePlayerR leagueId playerId)
+    breadcrumb (LeaguePlayerBenchR leagueId playerId) = return ("Bench", Just $ LeaguePlayerR leagueId playerId)
+    breadcrumb (LeaguePlayerClaimR leagueId playerId) = return ("Claim", Just $ LeaguePlayerR leagueId playerId)
+    breadcrumb (LeaguePlayerTradeR leagueId playerId) = return ("Trade", Just $ LeaguePlayerR leagueId playerId)
+
+    -- League teams breadcrumbs
     breadcrumb (LeagueTeamsR leagueId) = return ("Teams", Just $ LeagueR leagueId)
     breadcrumb (LeagueTeamR leagueId teamId) = do
         team <- runDB $ get404 teamId
         return ("House " ++ teamName team, Just $ LeagueTeamsR leagueId)
     breadcrumb (LeagueTeamSettingsR leagueId teamId) = return ("Settings", Just $ LeagueTeamR leagueId teamId)
 
+    -- League settings breadcrumbs
     breadcrumb (LeagueSettingsR leagueId LeagueEditSettingsR) = return ("League Settings", Just $ LeagueR leagueId)
     breadcrumb (LeagueSettingsR leagueId LeagueGeneralSettingsR) = return ("General Settings", Just $ LeagueR leagueId)
     breadcrumb (LeagueSettingsR leagueId LeagueScoringSettingsR) = return ("Scoring Settings", Just $ LeagueR leagueId)
     breadcrumb (LeagueSettingsR leagueId LeagueDraftSettingsR) = return ("Draft Settings", Just $ LeagueR leagueId)
     breadcrumb (LeagueSettingsR leagueId LeagueTeamsSettingsR) = return ("Team Settings", Just $ LeagueR leagueId)
 
+    -- League setup breadcrumbs
     breadcrumb (SetupLeagueR SetupNewLeagueR)       = return ("Setup", Just LeaguesR)
     breadcrumb (SetupLeagueR SetupGeneralSettingsR) = return ("General Settings", Just $ SetupLeagueR SetupNewLeagueR)
     breadcrumb (SetupLeagueR SetupScoringSettingsR) = return ("Scoring Settings", Just $ SetupLeagueR SetupGeneralSettingsR)
@@ -310,7 +355,7 @@ instance YesodAuth App where
                     _ <- insert $ Ident (credsIdent creds) uid
                     addClaimed uid creds
                 return $ Authenticated uid
-            (Just (Entity _ ident), Just (Entity uid _)) -> do
+            (Just _, Just (Entity uid _)) -> do
                 runDB $ addClaimed uid creds
                 setMessage "That identifier is already attached to an account. Please detach it from the other account first."
                 redirect HomeR

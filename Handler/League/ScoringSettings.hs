@@ -1,6 +1,7 @@
 module Handler.League.ScoringSettings where
 
 import Import
+import Handler.Common        (extractValue)
 import Handler.League.Setup
 import Handler.League.Layout
 

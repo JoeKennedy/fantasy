@@ -85,13 +85,3 @@ updateLeagueLastCompletedStep leagueId league stepNumber =
         isSetupComplete = lastCompletedStep == 6
     in  runDB $ update leagueId [LeagueLastCompletedStep =. lastCompletedStep, LeagueIsSetupComplete =. isSetupComplete]
 
-
--------------------------
--- Very Common Helpers --
--------------------------
-extractValue :: (Entity t) -> t
-extractValue (Entity _ value) = value
-
-extractValueMaybe :: Maybe (Entity t) -> Maybe t
-extractValueMaybe (Just (Entity _ value)) = Just value
-extractValueMaybe Nothing                 = Nothing

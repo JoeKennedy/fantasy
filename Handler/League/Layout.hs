@@ -2,6 +2,7 @@ module Handler.League.Layout where
 
 import Import
 
+import Handler.Common       (extractValueMaybe)
 import Handler.League.Setup
 
 import qualified Database.Esqueleto as E

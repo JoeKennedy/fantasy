@@ -2,11 +2,15 @@ module Handler.League.Team where
 
 import Import
 
+import Handler.Common        (extractValue)
 import Handler.League.Layout
+import Handler.League.Player (playersTable, playersWithButtons)
 import Handler.League.Setup
 
-import Data.List  ((!!))
-import Text.Blaze (toMarkup)
+import           Data.List          ((!!))
+import qualified Database.Esqueleto as E
+import           Database.Esqueleto ((^.), (?.))
+import           Text.Blaze         (toMarkup)
 
 ----------
 -- Form --
@@ -38,6 +42,8 @@ teamSettingsForm currentUserId league teams extra = do
             <*> fst (fields !! 2) -- teamOwnerNameRec
             <*> fst (fields !! 3) -- teamOwnerEmailRec
             <*> pure (teamIsConfirmed team)
+            <*> pure (teamPlayersCount team)
+            <*> pure (teamStartersCount team)
             <*> pure (teamCreatedBy team)
             <*> pure (teamCreatedAt team)
             <*> updatedByField currentUserId
@@ -79,6 +85,7 @@ postSetupTeamsSettingsR = do
 
 getLeagueTeamsR :: LeagueId -> Handler Html
 getLeagueTeamsR leagueId = do
+    league <- runDB $ get404 leagueId
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
     leagueLayout leagueId "Teams" $ do
         $(widgetFile "league/teams")
@@ -87,7 +94,12 @@ getLeagueTeamR :: LeagueId -> TeamId -> Handler Html
 getLeagueTeamR leagueId teamId = do
     maybeUserId <- maybeAuthId
     team <- runDB $ get404 teamId
+    teamPlayers <- getTeamPlayers teamId
+    players <- playersWithButtons leagueId teamPlayers
+    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
     let tab = if isUserTeamOwner maybeUserId team then "My Team" else "Teams"
+        numberOfStarters = generalSettingsNumberOfStarters generalSettings
+        rosterSize = generalSettingsRosterSize generalSettings
     leagueLayout leagueId tab $ do
         $(widgetFile "league/team")
 
@@ -145,4 +157,16 @@ getTeamsForSettings _ (Just teamId) = do
 teamSettingsAction :: LeagueId -> Maybe TeamId -> Route App
 teamSettingsAction leagueId (Just teamId) = LeagueTeamSettingsR leagueId teamId
 teamSettingsAction leagueId Nothing = LeagueSettingsR leagueId LeagueTeamsSettingsR
+
+getTeamPlayers :: TeamId -> Handler [(Entity Player, Maybe (Entity Team), Entity Character)]
+getTeamPlayers teamId = runDB
+    $ E.select
+    $ E.from $ \(player `E.InnerJoin` character `E.LeftOuterJoin` team) -> do
+        E.on $ E.just (player ^. PlayerTeamId) E.==. E.just (team ?. TeamId)
+        E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
+        E.where_ $ player ^. PlayerTeamId E.==. E.just (E.val teamId)
+        E.orderBy [ E.desc (player ^. PlayerIsStarter)
+                  , E.asc (character ^. CharacterName)
+                  ]
+        return (player, team, character)
 

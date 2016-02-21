@@ -1,9 +1,8 @@
 module Handler.Series where
 
 import Import
-import Handler.Common (isAdmin)
+import Handler.Common (isAdmin, listByFirst)
 
-import qualified Data.Map as Map
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
 import           Text.Blaze (toMarkup)
@@ -31,9 +30,6 @@ eventForm episodeId event = renderBootstrap3 defaultBootstrapForm $ Event
     <*> areq intField  (fieldName "Time in episode") (eventTimeInEpisode <$> event)
     where characters = optionsPersistKey [] [Asc CharacterName] characterName
 
-groupByFirst :: Ord k => [(k, t)] -> Map k [t]
-groupByFirst tuples = Map.fromListWith (++) [(x, [y]) | (x, y) <- tuples]
-
 embeddedForm action enctype widget = $(widgetFile "embedded_form")
 
 eventFormWidget action enctype widget = $(widgetFile "event_form")
@@ -52,7 +48,7 @@ getSeriesListR = do
             -- to be the opposite of what you'd expect
             E.orderBy [E.desc (series ^. SeriesNumber), E.desc (episode ^. EpisodeNumber)]
             return (series, episode)
-    let seriesList = Map.toList $ groupByFirst episodesAndSeries
+    let seriesList = listByFirst episodesAndSeries
     defaultLayout $ do
         setTitle "Game Of Thrones Seasons"
         let action = SeriesListR

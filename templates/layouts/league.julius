@@ -1,6 +1,18 @@
+function performPlayerAction(event) {
+    $.ajax ({
+        url: $(this).prop("href"),
+        type: "POST",
+        success: function() { window.location.reload(true); }
+    });
+
+    event.preventDefault();
+}
+
 function leagueLayoutReady(jQuery) {
     var tabs = $('#league_navbar').find('.tab-name')
     tabs.filter(function() { return $(this).text().trim() === #{toJSON activeTab} }).parent().addClass('active')
+
+    $('.player-action a').click(performPlayerAction);
 }
 
 $(document).ready(leagueLayoutReady)
