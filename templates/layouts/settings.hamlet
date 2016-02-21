@@ -1,4 +1,9 @@
-<ul #league_settings_nav .nav .nav-pills .small>
+<div .page-header>
+    <h4>
+        #{leagueName league}
+        <small>Settings
+
+<ul #league_settings_nav .nav .nav-pills>
     <li role="presentation">
         $maybe Entity teamId _ <- maybeTeam
             <a href="@{LeagueTeamSettingsR leagueId teamId}">My Team
