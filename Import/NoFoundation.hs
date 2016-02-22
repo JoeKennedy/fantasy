@@ -9,7 +9,6 @@ import Model.Bootstrap       as Import
 import Model.LeagueSettings  as Import
 import Model.Time            as Import
 import Model.Types           as Import
-import Model.Widget          as Import
 import Settings              as Import
 import Settings.StaticFiles  as Import
 import Yesod.Auth            as Import

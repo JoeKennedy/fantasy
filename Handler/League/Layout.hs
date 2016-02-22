@@ -23,8 +23,7 @@ leagueLayout leagueId activeTab widget = do
 leagueLayoutTitle :: League -> Text -> Text
 leagueLayoutTitle league subtitle = leagueName league ++ " | " ++ subtitle
 
-getLeaguesByUser :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) =>
-              Maybe UserId -> HandlerT site IO [Entity League]
+getLeaguesByUser :: Maybe UserId -> Handler [Entity League]
 getLeaguesByUser maybeUserId = runDB
     $ E.select
     $ E.from $ \(team `E.InnerJoin` league) -> do
@@ -33,8 +32,7 @@ getLeaguesByUser maybeUserId = runDB
         E.orderBy [E.asc (league ^. LeagueName)]
         return league
 
-getCurrentTeam :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) =>
-                  LeagueId -> Maybe UserId -> HandlerT site IO (Maybe (Entity Team))
+getCurrentTeam :: LeagueId -> Maybe UserId -> Handler (Maybe (Entity Team))
 getCurrentTeam leagueId maybeUserId =
     runDB $ selectFirst [TeamLeagueId ==. leagueId, TeamOwnerId ==. maybeUserId, TeamOwnerId !=. Nothing] []
 
@@ -63,9 +61,7 @@ disableSettingsFields maybeUserId _ league (LeagueSettingsR _ _) = not $ isLeagu
 disableSettingsFields maybeUserId maybeTeam _ (LeagueTeamSettingsR _ _) = not $ isTeamOwner maybeUserId maybeTeam
 disableSettingsFields _ _ _ _ = error "Shouldn't be trying to disable fields for any other actions"
 
-leagueOrRedirectIfIncomplete :: (YesodPersist site, RedirectUrl site (Route App),
-                                 YesodPersistBackend site ~ SqlBackend) =>
-                                LeagueId -> HandlerT site IO League
+leagueOrRedirectIfIncomplete :: LeagueId -> Handler League
 leagueOrRedirectIfIncomplete leagueId = do
     league <- runDB $ get404 leagueId
     if leagueIsSetupComplete league then return league else redirect $ leagueSetupNextStepToComplete league

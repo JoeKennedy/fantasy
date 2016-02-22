@@ -7,7 +7,7 @@ import Handler.League.Layout
 ----------
 -- Form --
 ----------
-generalSettingsForm :: Int -> UserId -> GeneralSettings -> Html -> MForm Handler (FormResult GeneralSettings, Widget)
+generalSettingsForm :: Int -> UserId -> GeneralSettings -> Form GeneralSettings
 generalSettingsForm teamsCount currentUserId generalSettings extra = do
     (startersRes, startersView) <- mreq (selectFieldList $ toOptions possibleNumbersOfStarters)
         (fieldName "Maximum number of starters") (Just $ generalSettingsNumberOfStarters generalSettings)

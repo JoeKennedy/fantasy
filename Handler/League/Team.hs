@@ -15,7 +15,7 @@ import           Text.Blaze         (toMarkup)
 ----------
 -- Form --
 ----------
-teamSettingsForm :: UserId -> League -> [Team] -> Html -> MForm Handler (FormResult [Team], Widget)
+teamSettingsForm :: UserId -> League -> [Team] -> Form [Team]
 teamSettingsForm currentUserId league teams extra = do
     forms <- do
         fields <- forM teams (\team -> sequence $
@@ -147,8 +147,7 @@ updateTeamSettings leagueId maybeTeamId pillName = do
             redirect action
         _ -> leagueSettingsLayout leagueId action enctype widget pillName
 
-getTeamsForSettings :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) =>
-                       LeagueId -> Maybe TeamId -> HandlerT site IO [Entity Team]
+getTeamsForSettings :: LeagueId -> Maybe TeamId -> Handler [Entity Team]
 getTeamsForSettings leagueId Nothing = runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
 getTeamsForSettings _ (Just teamId) = do
     team <- runDB $ get404 teamId

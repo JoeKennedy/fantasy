@@ -45,7 +45,7 @@ wipeDB app = runDBWithApp app $ do
         query = "TRUNCATE TABLE " ++ intercalate ", " escapedTables
     rawExecute query []
 
-getTables :: MonadIO m => ReaderT SqlBackend m [Text]
+getTables :: ReaderT SqlBackend Handler [Text]
 getTables = do
     tables <- rawSql [st|
         SELECT table_name

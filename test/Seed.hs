@@ -1,21 +1,23 @@
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+
 import Import
 import Model
-import Control.Monad.Logger (runStderrLoggingT)
+
+import Control.Monad.Logger        (runStderrLoggingT)
 import Database.Persist.Postgresql (pgConnStr, withPostgresqlConn, runSqlConn, rawExecute)
 import Text.Read
 
-insertSpecies :: MonadIO m => ReaderT SqlBackend m (SpeciesId)
+insertSpecies :: ReaderT SqlBackend Handler (SpeciesId)
 insertSpecies = insert $ Species "Human" "People like you and I"
 
-insertHouse :: MonadIO m => ReaderT SqlBackend m (HouseId)
+insertHouse :: ReaderT SqlBackend Handler (HouseId)
 insertHouse = insert $ House "Stark" "Winter is coming" "They are honorable"
 
-insertCharacter :: MonadIO m => (Text, Text, SpeciesId, Maybe HouseId) -> ReaderT SqlBackend m ()
+insertCharacter :: (Text, Text, SpeciesId, Maybe HouseId) -> ReaderT SqlBackend Handler ()
 insertCharacter (name, bio, speciesId, maybeHouseId) =
     insert_ $ Character name bio speciesId maybeHouseId
 
-insertEpisode :: MonadIO m => (Text, Int, Int, String, Int) -> ReaderT SqlBackend m ()
+insertEpisode :: (Text, Int, Int, String, Int) -> ReaderT SqlBackend Handler ()
 insertEpisode (name, number, overallNumber, airTime, seriesNumber) = do
     (Entity seriesId _) <- getBy404 $ UniqueSeriesNumber seriesNumber
     insert_ $ Episode name number overallNumber (read airTime :: UTCTime) seriesId

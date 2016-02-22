@@ -8,7 +8,7 @@ import Handler.League.Layout
 ----------
 -- Form --
 ----------
-draftSettingsForm :: UserId -> LeagueId -> Maybe DraftSettings -> Html -> MForm Handler (FormResult DraftSettings, Widget)
+draftSettingsForm :: UserId -> LeagueId -> Maybe DraftSettings -> Form DraftSettings
 draftSettingsForm currentUserId leagueId draftSettings extra = do
     (draftTypeRes, draftTypeView) <- mreq hiddenField (hidden "Draft type")
         (draftSettingsDraftType <$> draftSettings)
@@ -100,12 +100,10 @@ postLeagueDraftSettingsR leagueId = do
 -------------
 -- Helpers --
 -------------
-draftTypeWidget :: (MonadIO m, MonadBaseControl IO m, MonadThrow m) =>
-                   DraftType -> WidgetT site m ()
+draftTypeWidget :: DraftType -> Widget
 draftTypeWidget draftType = $(widgetFile "league/draft_type")
 
-draftSettingsListGroupItem :: (MonadIO m, MonadBaseControl IO m, MonadThrow m) =>
-                              Maybe DraftSettings -> DraftType -> WidgetT site m ()
+draftSettingsListGroupItem :: Maybe DraftSettings -> DraftType -> Widget
 draftSettingsListGroupItem (Just draftSettings) draftType
     | draftSettingsDraftType draftSettings == draftType =
         [whamlet|<div .list-group-item .active>^{draftTypeWidget draftType}|]

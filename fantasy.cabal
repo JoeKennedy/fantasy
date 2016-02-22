@@ -23,7 +23,6 @@ library
                      Model.LeagueSettings
                      Model.Time
                      Model.Types
-                     Model.Widget
                      Settings
                      Settings.StaticFiles
                      Handler.Common

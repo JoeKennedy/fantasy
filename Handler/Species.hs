@@ -1,7 +1,8 @@
 module Handler.Species where
 
 import Import
-import Handler.Common (isAdmin)
+import Handler.Character (characterList)
+import Handler.Common    (isAdmin, embeddedForm)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -12,8 +13,6 @@ speciesForm :: Maybe Species -> Form Species
 speciesForm species = renderBootstrap3 defaultBootstrapForm $ Species
     <$> areq textField (fieldName "Name") (speciesName <$> species)
     <*> areq textField (fieldName "Description") (speciesDescription <$> species)
-
-embeddedForm action enctype widget = $(widgetFile "embedded_form")
 
 getSpeciesListR :: Handler Html
 getSpeciesListR = do
@@ -41,9 +40,6 @@ postSpeciesListR = do
             setTitle "Species creation failed"
             let action = SpeciesListR
             $(widgetFile "embedded_form")
-
--- characterList :: WidgetT App IO ()
-characterList characters = $(widgetFile "characters")
 
 getSpeciesR :: SpeciesId -> Handler Html
 getSpeciesR speciesId = do

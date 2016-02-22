@@ -10,7 +10,7 @@ import Data.List ((!!))
 ----------
 -- Form --
 ----------
-scoringSettingsForm :: UserId -> League -> [ScoringSettings] -> Html -> MForm Handler (FormResult [ScoringSettings], Widget)
+scoringSettingsForm :: UserId -> League -> [ScoringSettings] -> Form [ScoringSettings]
 scoringSettingsForm currentUserId league scoringSettingsList extra = do
     let scoringType = leagueScoringType league
     forms <- do

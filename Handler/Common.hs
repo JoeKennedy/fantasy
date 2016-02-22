@@ -23,6 +23,12 @@ isAdmin :: Maybe (Entity User) -> Bool
 isAdmin (Just (Entity _ user)) = userIsAdmin user
 isAdmin Nothing                = False
 
+------------------
+-- Generic Form --
+------------------
+embeddedForm :: Route App -> Enctype -> Widget -> Widget
+embeddedForm action enctype widget = $(widgetFile "embedded_form")
+
 -------------
 -- Helpers --
 -------------

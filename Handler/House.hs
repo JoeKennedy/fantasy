@@ -1,7 +1,8 @@
 module Handler.House where
 
 import Import
-import Handler.Common (isAdmin)
+import Handler.Character (characterList)
+import Handler.Common    (isAdmin, embeddedForm)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -13,11 +14,6 @@ houseForm house = renderBootstrap3 defaultBootstrapForm $ House
     <$> areq textField (fieldName "Name") (houseName <$> house)
     <*> areq textField (fieldName "Words") (houseWords <$> house)
     <*> areq textField (fieldName "Description") (houseDescription <$> house)
-
--- characterList :: WidgetT App IO ()
-characterList characters = $(widgetFile "characters")
-
-embeddedForm action enctype widget = $(widgetFile "embedded_form")
 
 getHousesR :: Handler Html
 getHousesR = do

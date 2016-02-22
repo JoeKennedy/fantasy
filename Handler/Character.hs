@@ -98,3 +98,11 @@ postEditCharacterR characterId = do
             setTitle title
             $(widgetFile "character_form")
 
+
+-------------
+-- Helpers --
+-------------
+type FullCharacter = (Entity Character, Entity Species, Maybe (Entity House))
+
+characterList :: [FullCharacter] -> Widget
+characterList characters = $(widgetFile "characters")

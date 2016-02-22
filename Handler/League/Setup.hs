@@ -62,9 +62,7 @@ leagueSetupPreviousStep :: Int -> Maybe (Int, String, Route App)
 leagueSetupPreviousStep currentStep =
     find (\(stepNum, _, _) -> stepNum == currentStep - 1) leagueSetupSteps
 
-leagueOrRedirect :: ( YesodPersist site, RedirectUrl site (Route App)
-                    , YesodPersistBackend site ~ SqlBackend) =>
-                    UserId -> Route App -> HandlerT site IO (Entity League, Int)
+leagueOrRedirect :: UserId -> Route App -> Handler (Entity League, Int)
 leagueOrRedirect userId action = do
     maybeLeague <- leagueBeingSetUp userId
     case maybeLeague of
@@ -74,12 +72,10 @@ leagueOrRedirect userId action = do
                 then return (Entity leagueId league, leagueLastCompletedStep league)
                 else redirect $ leagueSetupNextStepToComplete league
 
-leagueBeingSetUp :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) =>
-                    UserId -> HandlerT site IO (Maybe (Entity League))
+leagueBeingSetUp :: UserId -> Handler (Maybe (Entity League))
 leagueBeingSetUp userId = runDB $ selectFirst [LeagueCreatedBy ==. userId, LeagueIsSetupComplete ==. False] []
 
-updateLeagueLastCompletedStep :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) =>
-                                 LeagueId -> League -> Int -> HandlerT site IO ()
+updateLeagueLastCompletedStep :: LeagueId -> League -> Int -> Handler ()
 updateLeagueLastCompletedStep leagueId league stepNumber =
     let lastCompletedStep = max (leagueLastCompletedStep league) stepNumber
         isSetupComplete = lastCompletedStep == 6

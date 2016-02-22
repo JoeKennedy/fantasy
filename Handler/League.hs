@@ -8,7 +8,7 @@ import Handler.League.Layout
 ----------
 -- Form --
 ----------
-leagueForm :: UserId -> Maybe League -> Html -> MForm Handler (FormResult League, Widget)
+leagueForm :: UserId -> Maybe League -> Form League
 leagueForm currentUserId league extra = do
     (nameRes, nameView) <- mreq textField (fieldName "Name") (leagueName <$> league)
     (isPrivateRes, isPrivateView) <- mreq checkBoxField "Is league private?"
@@ -104,8 +104,7 @@ postLeagueEditSettingsR leagueId = do
 -------------------
 -- Create League --
 -------------------
-createLeague :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) =>
-                League -> HandlerT site IO ()
+createLeague :: League -> Handler ()
 createLeague league = runDB $ do
     leagueId <- insert league
     let teamsCount = leagueTeamsCount league
@@ -131,7 +130,7 @@ createLeague league = runDB $ do
     mapM_ (createPlayer leagueEntity) characters
     return ()
 
-createScoringSettingsRow :: (MonadIO m) => Entity League -> Action -> ReaderT SqlBackend m ()
+createScoringSettingsRow :: Entity League -> Action -> ReaderT SqlBackend Handler ()
 createScoringSettingsRow (Entity leagueId league) action =
     let (isUsed, points, weight, pointsRec, weightRec) =
             defaultScoringAttributes action $ leagueScoringType league
@@ -149,7 +148,7 @@ createScoringSettingsRow (Entity leagueId league) action =
             , scoringSettingsUpdatedAt = leagueUpdatedAt league
             }
 
-createFirstTeam :: (MonadIO m) => Entity League -> ReaderT SqlBackend m ()
+createFirstTeam :: Entity League -> ReaderT SqlBackend Handler ()
 createFirstTeam (Entity leagueId league) =
     insert_ $ Team { teamLeagueId      = leagueId
                    , teamName          = "Number 1"
@@ -168,7 +167,7 @@ createFirstTeam (Entity leagueId league) =
                    , teamConfirmedAt   = Just $ leagueCreatedAt league
                    }
 
-createTeam :: (MonadIO m) => Entity League -> Int -> ReaderT SqlBackend m ()
+createTeam :: Entity League -> Int -> ReaderT SqlBackend Handler ()
 createTeam (Entity leagueId league) int =
     insert_ $ Team { teamLeagueId      = leagueId
                    , teamName          = pack $ "Number " ++ show int
@@ -187,7 +186,7 @@ createTeam (Entity leagueId league) int =
                    , teamConfirmedAt   = Nothing
                    }
 
-createPlayer :: (MonadIO m) => Entity League -> CharacterId -> ReaderT SqlBackend m ()
+createPlayer :: Entity League -> CharacterId -> ReaderT SqlBackend Handler ()
 createPlayer (Entity leagueId league) characterId =
     insert_ $ Player { playerLeagueId    = leagueId
                      , playerCharacterId = characterId
@@ -202,12 +201,10 @@ createPlayer (Entity leagueId league) characterId =
 -------------
 -- Helpers --
 -------------
-scoringTypeWidget :: (MonadIO m, MonadBaseControl IO m, MonadThrow m) =>
-                     ScoringType -> WidgetT site m ()
+scoringTypeWidget :: ScoringType -> Widget
 scoringTypeWidget scoringType = $(widgetFile "league/scoring_type")
 
-leagueListGroupItem :: (MonadIO m, MonadBaseControl IO m, MonadThrow m) =>
-                       Maybe League -> ScoringType -> WidgetT site m ()
+leagueListGroupItem :: Maybe League -> ScoringType -> Widget
 leagueListGroupItem (Just league) scoringType
     | leagueScoringType league == scoringType =
         [whamlet|<div .list-group-item .active>^{scoringTypeWidget scoringType}|]

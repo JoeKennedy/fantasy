@@ -1,7 +1,7 @@
 module Handler.Series where
 
 import Import
-import Handler.Common (isAdmin, listByFirst)
+import Handler.Common (isAdmin, embeddedForm, listByFirst)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -30,10 +30,10 @@ eventForm episodeId event = renderBootstrap3 defaultBootstrapForm $ Event
     <*> areq intField  (fieldName "Time in episode") (eventTimeInEpisode <$> event)
     where characters = optionsPersistKey [] [Asc CharacterName] characterName
 
-embeddedForm action enctype widget = $(widgetFile "embedded_form")
-
+eventFormWidget :: Route App -> Enctype -> Widget -> Widget
 eventFormWidget action enctype widget = $(widgetFile "event_form")
 
+seriesEpisodesPanel :: Series -> [Entity Episode] -> String -> Widget
 seriesEpisodesPanel series episodes panelTitle = $(widgetFile "series_episodes_panel")
 
 getSeriesListR :: Handler Html
@@ -69,7 +69,7 @@ postSeriesListR = do
 getSeriesR :: Int -> Handler Html
 getSeriesR seriesNo = do
     maybeUser <- maybeAuth
-    Entity { entityKey = seriesId, entityVal = series } <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
+    Entity seriesId series <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
     episodes <- runDB $ selectList [EpisodeSeriesId ==. seriesId] [Asc EpisodeNumber]
     (seriesWidget,  seriesEnctype)  <- generateFormPost $ seriesForm $ Just series
     (episodeWidget, episodeEnctype) <- generateFormPost $ episodeForm seriesId Nothing
@@ -82,7 +82,7 @@ getSeriesR seriesNo = do
 
 postSeriesR :: Int -> Handler Html
 postSeriesR seriesNo = do
-    Entity { entityKey = seriesId, entityVal = series } <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
+    Entity seriesId series <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
     ((result, widget), enctype) <- runFormPost $ seriesForm $ Just series
     case result of
         FormSuccess series' -> do
@@ -127,8 +127,8 @@ parseUTCDate = maybe (Left MsgInvalidDay) Right . readMaybe
 getSeriesEpisodeR :: Int -> Int -> Handler Html
 getSeriesEpisodeR seriesNo episodeNo = do
     maybeUser <- maybeAuth
-    Entity { entityKey = seriesId,  entityVal = series }  <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
-    Entity { entityKey = episodeId, entityVal = episode } <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
+    Entity seriesId  _ <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
+    Entity episodeId episode <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
     (episodeWidget, episodeEnctype) <- generateFormPost $ episodeForm seriesId $ Just episode
     (eventWidget, eventEnctype)     <- generateFormPost $ eventForm episodeId Nothing
     events <- runDB
@@ -147,8 +147,8 @@ getSeriesEpisodeR seriesNo episodeNo = do
 
 postSeriesEpisodeR :: Int -> Int -> Handler Html
 postSeriesEpisodeR seriesNo episodeNo = do
-    Entity { entityKey = seriesId } <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
-    Entity { entityKey = episodeId, entityVal = episode } <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
+    Entity seriesId  _ <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
+    Entity episodeId episode <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
     ((result, widget), enctype) <- runFormPost $ episodeForm seriesId $ Just episode
     case result of
         FormSuccess episode' -> do
@@ -162,8 +162,8 @@ postSeriesEpisodeR seriesNo episodeNo = do
 
 postSeriesEpisodeEventsR :: Int -> Int -> Handler Html
 postSeriesEpisodeEventsR seriesNo episodeNo = do
-    Entity { entityKey = seriesId  } <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
-    Entity { entityKey = episodeId } <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
+    Entity seriesId  _ <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
+    Entity episodeId _ <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
     ((result, widget), enctype) <- runFormPost $ eventForm episodeId Nothing
     case result of
         FormSuccess event -> do
@@ -176,8 +176,8 @@ postSeriesEpisodeEventsR seriesNo episodeNo = do
 
 getSeriesEpisodeEventR :: Int -> Int -> EventId -> Handler Html
 getSeriesEpisodeEventR seriesNo episodeNo eventId = do
-    Entity { entityKey = seriesId  } <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
-    Entity { entityKey = episodeId } <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
+    Entity seriesId  _ <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
+    Entity episodeId _ <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
     event <- runDB $ get404 eventId
     (widget, enctype) <- generateFormPost $ eventForm episodeId $ Just event
     defaultLayout $ do
@@ -187,8 +187,8 @@ getSeriesEpisodeEventR seriesNo episodeNo eventId = do
 
 postSeriesEpisodeEventR :: Int -> Int -> EventId -> Handler Html
 postSeriesEpisodeEventR seriesNo episodeNo eventId = do
-    Entity { entityKey = seriesId  } <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
-    Entity { entityKey = episodeId } <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
+    Entity seriesId  _ <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
+    Entity episodeId _ <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
     event <- runDB $ get404 eventId
     ((result, widget), enctype) <- runFormPost $ eventForm episodeId $ Just event
     case result of
