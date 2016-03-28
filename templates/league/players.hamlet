@@ -38,3 +38,6 @@
             <div #all_players .tab-pane role="tabpanel">
                 ^{playersTable allPlayers AllPlayers}
 
+^{playersModal myPlayers (PlayersModal numberOfStarters rosterSize) Claim}
+^{playersModal myPlayers (PlayersModal numberOfStarters rosterSize) Trade}
+

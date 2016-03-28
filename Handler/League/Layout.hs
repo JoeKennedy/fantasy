@@ -52,14 +52,23 @@ isLeagueManager :: Maybe UserId -> League -> Bool
 isLeagueManager (Just userId) league = userId == leagueCreatedBy league
 isLeagueManager Nothing _ = False
 
+canEnterDraftResults :: Maybe UserId -> League -> Bool
+canEnterDraftResults maybeUserId league =
+    isLeagueManager maybeUserId league && (not $ leagueIsDraftComplete league)
+
 isTeamOwner :: Maybe UserId -> Maybe Team -> Bool
 isTeamOwner (Just userId) (Just team) = Just userId == teamOwnerId team
 isTeamOwner _ _ = False
 
 disableSettingsFields :: Maybe UserId -> Maybe Team -> League -> Route App -> Bool
-disableSettingsFields maybeUserId _ league (LeagueSettingsR _ _) = not $ isLeagueManager maybeUserId league
-disableSettingsFields maybeUserId maybeTeam _ (LeagueTeamSettingsR _ _) = not $ isTeamOwner maybeUserId maybeTeam
-disableSettingsFields _ _ _ _ = error "Shouldn't be trying to disable fields for any other actions"
+disableSettingsFields maybeUserId _ league (LeagueSettingsR _ LeagueDraftSettingsR) =
+    leagueIsDraftComplete league || (not $ isLeagueManager maybeUserId league)
+disableSettingsFields maybeUserId _ league (LeagueSettingsR _ _) =
+    not $ isLeagueManager maybeUserId league
+disableSettingsFields maybeUserId maybeTeam _ (LeagueTeamSettingsR _ _) =
+    not $ isTeamOwner maybeUserId maybeTeam
+disableSettingsFields _ _ _ _ =
+    error "Shouldn't be trying to disable fields for any other actions"
 
 leagueOrRedirectIfIncomplete :: LeagueId -> Handler League
 leagueOrRedirectIfIncomplete leagueId = do

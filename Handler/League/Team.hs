@@ -2,24 +2,33 @@ module Handler.League.Team where
 
 import Import
 
-import Handler.Common        (extractValue)
+import Handler.Common             (extractValue)
 import Handler.League.Layout
-import Handler.League.Player (playersTable, playersWithButtons)
+import Handler.League.Player      (getTeamPlayers, maybeAuthTeamId,
+                                   playersModal,
+                                   playersTable, playersWithButtons)
+import Handler.League.Transaction (getRequestedTransactions, getSuccessfulTransactions,
+                                   transactionRequestsPanel, transactionsTable)
 import Handler.League.Setup
 
-import           Data.List          ((!!))
-import qualified Database.Esqueleto as E
-import           Database.Esqueleto ((^.), (?.))
-import           Text.Blaze         (toMarkup)
+import Data.List  ((!!))
+import Text.Blaze (toMarkup)
 
 ----------
 -- Form --
 ----------
-teamSettingsForm :: UserId -> League -> [Team] -> Form [Team]
-teamSettingsForm currentUserId league teams extra = do
+teamSettingsForm :: UserId -> League -> DraftSettings -> [Team] -> Form [Team]
+teamSettingsForm currentUserId league draftSettings teams extra = do
+    let areTeamsSetup = leagueLastCompletedStep league > 4
+        draftOrderType = draftSettingsDraftOrderType draftSettings
+        isDraftOrderEditable = areTeamsSetup && draftOrderType == ManuallySet &&
+                not (leagueIsDraftComplete league) && length teams > 1
+
     forms <- do
-        fields <- forM teams (\team -> sequence $
-            if leagueLastCompletedStep league > 4 then
+        draftOrderFields <- forM teams (\team ->
+            mreq intField formControl (Just $ teamDraftOrder team))
+        textFields <- forM teams (\team -> sequence $
+            if areTeamsSetup then
                 [ mreq textField  formControl (Just $ teamName team)
                 , mreq textField  formControl (Just $ teamAbbreviation team)
                 , mreq textField  formControl (Just $ teamOwnerName team)
@@ -31,19 +40,23 @@ teamSettingsForm currentUserId league teams extra = do
                 , mreq textField  (placeholder $ teamOwnerName team) Nothing
                 , mreq emailField (placeholder $ teamOwnerEmail team) Nothing
                 ])
-        return $ zip3 teams fields [1..leagueTeamsCount league]
+        return $ zip4 teams textFields draftOrderFields [1..leagueTeamsCount league]
 
     now <- liftIO getCurrentTime
-    let teamSettingsResult = for forms (\(team, fields, _) -> Team
+    let teamSettingsResult = for forms (\(team, textFields, draftOrderField, _) -> Team
             <$> pure (teamLeagueId team)
-            <*> fst (fields !! 0) -- teamNameRec
-            <*> fst (fields !! 1) -- teamAbbreviationRec
+            <*> fst (textFields !! 0) -- teamNameRec
+            <*> fst (textFields !! 1) -- teamAbbreviationRec
             <*> pure (teamOwnerId team)
-            <*> fst (fields !! 2) -- teamOwnerNameRec
-            <*> fst (fields !! 3) -- teamOwnerEmailRec
+            <*> fst (textFields !! 2) -- teamOwnerNameRec
+            <*> fst (textFields !! 3) -- teamOwnerEmailRec
             <*> pure (teamIsConfirmed team)
             <*> pure (teamPlayersCount team)
             <*> pure (teamStartersCount team)
+            <*> (if isDraftOrderEditable
+                    then fst draftOrderField
+                    else pure (teamDraftOrder team))
+            <*> pure (teamWaiverOrder team)
             <*> pure (teamCreatedBy team)
             <*> pure (teamCreatedAt team)
             <*> updatedByField currentUserId
@@ -62,7 +75,8 @@ getSetupTeamsSettingsR = do
     let action = SetupLeagueR SetupTeamsSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
-    (widget, enctype) <- generateFormPost $ teamSettingsForm userId league $ map extractValue teams
+    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
+    (widget, enctype) <- generateFormPost $ teamSettingsForm userId league draftSettings $ map extractValue teams
     defaultLayout $ do
         setTitle $ leagueSetupStepTitle league action
         $(widgetFile "layouts/league-setup-layout")
@@ -73,7 +87,8 @@ postSetupTeamsSettingsR = do
     let action = SetupLeagueR SetupTeamsSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
-    ((result, widget), enctype) <- runFormPost $ teamSettingsForm userId league $ map extractValue teams
+    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
+    ((result, widget), enctype) <- runFormPost $ teamSettingsForm userId league draftSettings $ map extractValue teams
     case result of
         FormSuccess teams' -> do
             forM_ (zip teams teams') (\(Entity teamId _, team') -> runDB $ replace teamId team')
@@ -93,10 +108,18 @@ getLeagueTeamsR leagueId = do
 getLeagueTeamR :: LeagueId -> TeamId -> Handler Html
 getLeagueTeamR leagueId teamId = do
     maybeUserId <- maybeAuthId
+    maybeUserTeamId <- maybeAuthTeamId leagueId
+    league <- runDB $ get404 leagueId
+    let leagueEntity = Entity leagueId league
     team <- runDB $ get404 teamId
-    teamPlayers <- getTeamPlayers teamId
-    players <- playersWithButtons leagueId teamPlayers
+    teamPlayers <- getTeamPlayers $ Just teamId
+    players <- playersWithButtons leagueEntity teamPlayers
     Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+    transactions <- getSuccessfulTransactions leagueId (Just teamId) Nothing
+    tradeProposals <- getRequestedTransactions leagueId (Just teamId) Trade
+    waiverClaims <- getRequestedTransactions leagueId (Just teamId) Claim
+    currentTeamPlayers <- getTeamPlayers maybeUserTeamId
+    myPlayers <- playersWithButtons leagueEntity currentTeamPlayers
     let tab = if isUserTeamOwner maybeUserId team then "My Team" else "Teams"
         numberOfStarters = generalSettingsNumberOfStarters generalSettings
         rosterSize = generalSettingsRosterSize generalSettings
@@ -129,7 +152,8 @@ editTeamSettings leagueId maybeTeamId pillName = do
     userId <- requireAuthId
     league <- runDB $ get404 leagueId
     teams <- getTeamsForSettings leagueId maybeTeamId
-    (widget, enctype) <- generateFormPost $ teamSettingsForm userId league $ map extractValue teams
+    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
+    (widget, enctype) <- generateFormPost $ teamSettingsForm userId league draftSettings $ map extractValue teams
     let action = teamSettingsAction leagueId maybeTeamId
     leagueSettingsLayout leagueId action enctype widget pillName
 
@@ -138,7 +162,8 @@ updateTeamSettings leagueId maybeTeamId pillName = do
     userId <- requireAuthId
     league <- runDB $ get404 leagueId
     teams <- getTeamsForSettings leagueId maybeTeamId
-    ((result, widget), enctype) <- runFormPost $ teamSettingsForm userId league $ map extractValue teams
+    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
+    ((result, widget), enctype) <- runFormPost $ teamSettingsForm userId league draftSettings $ map extractValue teams
     let action = teamSettingsAction leagueId maybeTeamId
     case result of
         FormSuccess teams' -> do
@@ -156,16 +181,4 @@ getTeamsForSettings _ (Just teamId) = do
 teamSettingsAction :: LeagueId -> Maybe TeamId -> Route App
 teamSettingsAction leagueId (Just teamId) = LeagueTeamSettingsR leagueId teamId
 teamSettingsAction leagueId Nothing = LeagueSettingsR leagueId LeagueTeamsSettingsR
-
-getTeamPlayers :: TeamId -> Handler [(Entity Player, Maybe (Entity Team), Entity Character)]
-getTeamPlayers teamId = runDB
-    $ E.select
-    $ E.from $ \(player `E.InnerJoin` character `E.LeftOuterJoin` team) -> do
-        E.on $ E.just (player ^. PlayerTeamId) E.==. E.just (team ?. TeamId)
-        E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
-        E.where_ $ player ^. PlayerTeamId E.==. E.just (E.val teamId)
-        E.orderBy [ E.desc (player ^. PlayerIsStarter)
-                  , E.asc (character ^. CharacterName)
-                  ]
-        return (player, team, character)
 

@@ -7,4 +7,5 @@ packages:
 extra-deps:
 - load-env-0.1.1
 - path-pieces-0.2.1
+- cron-0.4.0
 resolver: lts-3.4

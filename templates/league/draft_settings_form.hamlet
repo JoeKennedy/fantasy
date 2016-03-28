@@ -35,6 +35,10 @@
                         #{fvLabel timeView}
                     ^{fvInput timeView}
                 <div .form-group>
+                    <label for="#{fvId draftOrderView}">
+                        #{fvLabel draftOrderView}
+                    ^{fvInput draftOrderView}
+                <div .form-group>
                     <label for="#{fvId draftOrderTypeView}">
                         #{fvLabel draftOrderTypeView}
                     ^{fvInput draftOrderTypeView}

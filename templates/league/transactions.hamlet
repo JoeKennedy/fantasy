@@ -1,0 +1,21 @@
+<div .page-header>
+    <h4>
+        #{leagueName league}
+        <small>Transactions
+
+<div .row>
+    <div .col-sm-6 .col-xs-12>
+        <div .panel .panel-default>
+            ^{transactionsTable transactions Nothing True}
+
+    <div .col-sm-6 .col-xs-12>
+        <div .panel .panel-primary>
+            <div .panel-heading>
+                <h1 .panel-title>Trade Proposals
+            ^{transactionsTable tradeProposals Nothing False}
+
+        $if leagueIsDraftComplete league && (not (null draftTransactions))
+            <div .panel .panel-default>
+                <div .panel-heading>
+                    <h1 .panel-title>Draft Results
+                ^{draftResults draftTransactions}

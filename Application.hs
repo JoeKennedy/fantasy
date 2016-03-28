@@ -26,11 +26,13 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              IPAddrSource (..),
                                              OutputFormat (..), destination,
                                              mkRequestLogger, outputFormat)
+import System.Cron
 import System.Environment                   (getEnv)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
 
 import qualified Data.Proxy as P
+import qualified Import.NoWarning as NoWarning
 import qualified Web.ServerSession.Core as SS
 import qualified Web.ServerSession.Backend.Persistent as SS
 
@@ -50,6 +52,7 @@ import Handler.League.ScoringSettings
 -- The below currently has no routes in it
 -- import Handler.League.Setup
 import Handler.League.Team
+import Handler.League.Transaction
 import Handler.Series
 import Handler.Species
 
@@ -99,14 +102,25 @@ makeFoundation appSettings = do
     -- Perform database migration using our application's logging settings.
     runLoggingT (runSqlPool (runMigration migrateAll) pool) logFunc
 
+    let foundation = mkFoundation pool
+
+    threadIds <- execSchedule $ do
+        addJob (fakeHandler foundation processClaimRequests) "0 9 * * *"
+    print threadIds
+
     -- Return the foundation
-    return $ mkFoundation pool
+    return foundation
 
     where
         getOAuth2Keys :: String -> String -> IO OAuth2Keys
         getOAuth2Keys clientIdEnvVar clientSecretEnvVar = OAuth2Keys
             <$> fmap pack (getEnv clientIdEnvVar)
             <*> fmap pack (getEnv clientSecretEnvVar)
+
+        fakeHandler :: App -> Handler a -> IO a
+        fakeHandler app h = NoWarning.runFakeHandler mempty appLogger app h >>= either
+            (error . ("runFakeHandler issue: " <>) . show)
+            return
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.

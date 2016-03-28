@@ -1,9 +1,9 @@
 -- | Common handler functions.
 module Handler.Common where
 
-import           Data.FileEmbed  (embedFile)
-import qualified Data.Map as Map (toList, fromListWith)
-import           Import
+import Import
+
+import Data.FileEmbed (embedFile)
 
 -- These handlers embed files in the executable at compile time to avoid a
 -- runtime dependency, and for efficiency.
@@ -29,26 +29,81 @@ isAdmin Nothing                = False
 embeddedForm :: Route App -> Enctype -> Widget -> Widget
 embeddedForm action enctype widget = $(widgetFile "embedded_form")
 
--------------
--- Helpers --
--------------
-groupByFirst :: Ord k => [(k, t)] -> Map k [t]
-groupByFirst tuples = Map.fromListWith (++) [(x, [y]) | (x, y) <- tuples]
-
-groupByThirdOfFive :: Ord c => [(a, b, c, d, e)] -> Map c [(a, b, d, e)]
-groupByThirdOfFive quintuples =
-    Map.fromListWith (++) $ reverse [(x, [(v, w, y, z)]) | (v, w, x, y, z) <- quintuples]
-
-listByFirst :: Ord k => [(k, t)] -> [(k, [t])]
-listByFirst tuples = Map.toList $ groupByFirst tuples
-
-listByThirdOfFive :: Ord c => [(a, b, c, d, e)] -> [(c, [(a, b, d, e)])]
-listByThirdOfFive quintuples = Map.toList $ groupByThirdOfFive quintuples
-
+--------------------
+-- Entity Helpers --
+--------------------
 extractValue :: (Entity t) -> t
 extractValue (Entity _ value) = value
 
 extractValueMaybe :: Maybe (Entity t) -> Maybe t
 extractValueMaybe (Just (Entity _ value)) = Just value
 extractValueMaybe Nothing                 = Nothing
+
+--------------
+-- Grouping --
+--------------
+groupByFirst :: Eq a => [(a, b)] -> [(a, [b])]
+groupByFirst = map pairsToTuple . groupBy ((==) `on` fst)
+
+groupByFirstOfFour :: Eq a => [(a, b, c, d)] -> [(a, [(b, c, d)])]
+groupByFirstOfFour = groupByFirst . map quadrupleToTuple
+
+groupByThirdOfFive :: Eq c => [(a, b, c, d, e)] -> [(c, [(a, b, d, e)])]
+groupByThirdOfFive = groupByFirst . map quintupleToTuple3
+
+groupByFirstOfSix :: Eq a => [(a, b, c, d, e, f)] -> [(a, [(b, c, d, e, f)])]
+groupByFirstOfSix = groupByFirst . map sextupleToTuple
+
+----------------------
+-- Grouping Helpers --
+----------------------
+pairsToTuple :: [(a, b)] -> (a, [b])
+pairsToTuple pairs = (fst . unsafeHead $ pairs, map snd pairs)
+
+quadrupleToTuple :: (a, b, c, d) -> (a, (b, c, d))
+quadrupleToTuple quadruple = (firstOf4 quadruple, last3Of4 quadruple)
+
+quintupleToTuple :: (a, b, c, d, e) -> (a, (b, c, d, e))
+quintupleToTuple quintuple = (firstOf5 quintuple, last4Of5 quintuple)
+
+quintupleToTuple3 :: (a, b, c, d, e) -> (c, (a, b, d, e))
+quintupleToTuple3 quintuple = (thirdOf5 quintuple, allBut3Of5 quintuple)
+
+sextupleToTuple :: (a, b, c, d, e, f) -> (a, (b, c, d, e, f))
+sextupleToTuple sextuple = (firstOf6 sextuple, last5Of6 sextuple)
+
+firstOf4 :: (a, b, c, d) -> a
+firstOf4 (x, _, _, _) = x
+
+last3Of4 :: (a, b, c, d) -> (b, c, d)
+last3Of4 (_, x, y, z) = (x, y, z)
+
+firstOf5 :: (a, b, c, d, e) -> a
+firstOf5 (x, _, _, _, _) = x
+
+thirdOf5 :: (a, b, c, d, e) -> c
+thirdOf5 (_, _, x, _, _) = x
+
+allBut3Of5 :: (a, b, c, d, e) -> (a, b, d, e)
+allBut3Of5 (v, w, _, y, z) = (v, w, y, z)
+
+last4Of5 :: (a, b, c, d, e) -> (b, c, d, e)
+last4Of5 (_, w, x, y, z) = (w, x, y, z)
+
+firstOf6 :: (a, b, c, d, e, f) -> a
+firstOf6 (x, _, _, _, _, _) = x
+
+last5Of6 :: (a, b, c, d, e, f) -> (b, c, d, e, f)
+last5Of6 (_, v, w, x, y, z) = (v, w, x, y, z)
+
+-----------------
+-- Conversions --
+-----------------
+intToOrdinal :: Int -> String
+intToOrdinal int
+    | int `div` 10 == 1 = show int ++ "th"
+    | otherwise = case int `mod` 10 of 1 -> show int ++ "st"
+                                       2 -> show int ++ "nd"
+                                       3 -> show int ++ "rd"
+                                       _ -> show int ++ "th"
 

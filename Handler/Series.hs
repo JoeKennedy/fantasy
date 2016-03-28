@@ -1,7 +1,7 @@
 module Handler.Series where
 
 import Import
-import Handler.Common (isAdmin, embeddedForm, listByFirst)
+import Handler.Common (isAdmin, embeddedForm, groupByFirst)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -44,11 +44,9 @@ getSeriesListR = do
         $ E.select
         $ E.from $ \(series `E.InnerJoin` episode) -> do
             E.on $ series ^. SeriesId E.==. episode ^. EpisodeSeriesId
-            -- Needs to be reverse ordered because Ord for Entity seems
-            -- to be the opposite of what you'd expect
-            E.orderBy [E.desc (series ^. SeriesNumber), E.desc (episode ^. EpisodeNumber)]
+            E.orderBy [E.asc (series ^. SeriesNumber), E.asc (episode ^. EpisodeNumber)]
             return (series, episode)
-    let seriesList = listByFirst episodesAndSeries
+    let seriesList = groupByFirst episodesAndSeries
     defaultLayout $ do
         setTitle "Game Of Thrones Seasons"
         let action = SeriesListR

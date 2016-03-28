@@ -2,8 +2,12 @@ module Model.LeagueSettings where
 
 import ClassyPrelude.Yesod
 
-teamsCountOptions :: [(Text, Int)]
-teamsCountOptions = toOptions possibleTeamCounts
+teamsCountOptions :: Maybe Int -> [(Text, Int)]
+teamsCountOptions (Just teamsCount) = toOptions [teamsCount]
+teamsCountOptions Nothing = toOptions possibleTeamCounts
+
+teamsCountOption :: Int -> [(Text, Int)]
+teamsCountOption teamsCount = toOptions [teamsCount]
 
 possibleTeamCounts :: [Int]
 possibleTeamCounts = [4..10]
@@ -41,7 +45,7 @@ possibleTradeDeadlineWeeks :: [Int]
 possibleTradeDeadlineWeeks = [7..10]
 
 possibleWaiverPeriodsInDays :: [Int]
-possibleWaiverPeriodsInDays = [0..2]
+possibleWaiverPeriodsInDays = [0..1]
 
 -- Default Values --
 ---------------------

@@ -29,12 +29,17 @@
 /leagues/#LeagueId/teams/#TeamId          LeagueTeamR         GET
 /leagues/#LeagueId/teams/#TeamId/settings LeagueTeamSettingsR GET POST
 
-/leagues/#LeagueId/players                 LeaguePlayersR     GET
-/leagues/#LeagueId/players/#PlayerId       LeaguePlayerR      GET
-/leagues/#LeagueId/players/#PlayerId/start LeaguePlayerStartR POST
-/leagues/#LeagueId/players/#PlayerId/bench LeaguePlayerBenchR POST
-/leagues/#LeagueId/players/#PlayerId/claim LeaguePlayerClaimR POST
-/leagues/#LeagueId/players/#PlayerId/trade LeaguePlayerTradeR POST
+/leagues/#LeagueId/players                           LeaguePlayersR     GET
+/leagues/#LeagueId/players/#PlayerId                 LeaguePlayerR      GET
+/leagues/#LeagueId/players/#PlayerId/start           LeaguePlayerStartR POST
+/leagues/#LeagueId/players/#PlayerId/bench           LeaguePlayerBenchR POST
+/leagues/#LeagueId/players/#PlayerId/claim/#PlayerId LeaguePlayerClaimR POST
+/leagues/#LeagueId/players/#PlayerId/trade/#PlayerId LeaguePlayerTradeR POST
+
+/leagues/#LeagueId/draft/#Int             LeagueDraftR        GET POST
+/leagues/#LeagueId/transactions           LeagueTransactionsR GET
+/leagues/#LeagueId/accept/#TransactionId  LeagueAcceptTradeR  POST
+/leagues/#LeagueId/decline/#TransactionId LeagueDeclineTradeR POST
 
 /leagues/#LeagueId/settings LeagueSettingsR:
     /league  LeagueEditSettingsR    GET POST

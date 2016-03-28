@@ -1,0 +1,7 @@
+<div .page-header>
+    <h4>
+        #{leagueName league}
+        <small>Draft
+
+<form method="post" action=@{LeagueDraftR leagueId 2016} enctype=#{enctype}>
+    ^{widget}

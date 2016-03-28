@@ -117,22 +117,25 @@ instance Yesod App where
     isAuthorized (SeriesEpisodeEventsR _ _)  _      = requireAdmin
     isAuthorized (SeriesEpisodeEventR _ _ _) _      = requireAdmin
 
-    isAuthorized LeaguesR                         _ = return Authorized
-    isAuthorized (LeagueR leagueId)               _ = requirePublicOrLeagueMember leagueId
-    isAuthorized (LeagueTeamsR leagueId)          _ = requirePublicOrLeagueMember leagueId
-    isAuthorized (LeagueTeamR leagueId _)         _ = requirePublicOrLeagueMember leagueId
-    isAuthorized (LeagueTeamSettingsR _ teamId)   _ = requireTeamOwner teamId
+    isAuthorized LeaguesR                          _ = return Authorized
+    isAuthorized (LeagueR leagueId)                _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeagueDraftR leagueId _)         _ = requireLeagueManagerAndIncompleteDraft leagueId
+    isAuthorized (LeagueTransactionsR leagueId)    _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeagueAcceptTradeR _ tid)        _ = requireTradeAcceptable tid
+    isAuthorized (LeagueDeclineTradeR _ tid)       _ = requireTradeDeclinable tid
+    isAuthorized (LeagueTeamsR leagueId)           _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeagueTeamR leagueId _)          _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeagueTeamSettingsR _ teamId)    _ = requireTeamOwner teamId
 
-    isAuthorized (LeaguePlayersR leagueId)        _ = requirePublicOrLeagueMember leagueId
-    isAuthorized (LeaguePlayerR leagueId _)       _ = requirePublicOrLeagueMember leagueId
-    isAuthorized (LeaguePlayerStartR _ playerId)  _ = requirePlayerOwner playerId
-    isAuthorized (LeaguePlayerBenchR _ playerId)  _ = requirePlayerOwner playerId
-    -- TODO - change below two lines to proper authorization
-    isAuthorized (LeaguePlayerClaimR _ _)         _ = requireLoggedIn
-    isAuthorized (LeaguePlayerTradeR _ _)         _ = requireLoggedIn
+    isAuthorized (LeaguePlayersR leagueId)         _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeaguePlayerR leagueId _)        _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeaguePlayerStartR _ playerId)   _ = requirePlayerOwner playerId
+    isAuthorized (LeaguePlayerBenchR _ playerId)   _ = requirePlayerOwner playerId
+    isAuthorized (LeaguePlayerClaimR _ _ playerId) _ = requirePlayerOwner playerId
+    isAuthorized (LeaguePlayerTradeR _ _ playerId) _ = requirePlayerOwner playerId
 
-    isAuthorized (LeagueSettingsR leagueId _)  True = requireLeagueManager leagueId
-    isAuthorized (LeagueSettingsR leagueId _) False = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeagueSettingsR leagueId _)   True = requireLeagueManager leagueId
+    isAuthorized (LeagueSettingsR leagueId _)  False = requirePublicOrLeagueMember leagueId
 
     isAuthorized (SetupLeagueR _) _ = requireLoggedIn
 
@@ -182,18 +185,38 @@ requireAdminIfPost :: Bool -> Handler AuthResult
 requireAdminIfPost True  = requireAdmin
 requireAdminIfPost False = return Authorized
 
-requirePublicOrLeagueMember :: LeagueId -> Handler AuthResult
-requirePublicOrLeagueMember leagueId = do
-    league <- runDB $ get404 leagueId
+requireLeagueMember :: LeagueId -> Handler AuthResult
+requireLeagueMember leagueId = do
     muid <- maybeAuthId
-    case (leagueIsPrivate league, muid) of
-        (False, _) -> return Authorized
-        (True, Nothing) -> return AuthenticationRequired
-        (True, Just uid) -> do
+    case muid of
+        Nothing  -> return AuthenticationRequired
+        Just uid -> do
             teams <- runDB $ selectList [TeamLeagueId ==. leagueId] []
             case find (\(Entity _ t) -> teamOwnerId t == Just uid) teams of
                 Just _  -> return Authorized
-                Nothing -> return $ Unauthorized "This league is private"
+                Nothing -> return $ Unauthorized "You are not a member of this league"
+
+requirePublicOrLeagueMember :: LeagueId -> Handler AuthResult
+requirePublicOrLeagueMember leagueId = do
+    league <- runDB $ get404 leagueId
+    if leagueIsPrivate league
+        then requireLeagueMember leagueId
+        else return Authorized
+
+requireTradeAcceptable :: TransactionId -> Handler AuthResult
+requireTradeAcceptable transactionId = do
+    transaction <- runDB $ get404 transactionId
+    muid <- maybeAuthId
+    case (muid, transactionOtherTeamId transaction) of
+        (Nothing, _)     -> return AuthenticationRequired
+        (_, Nothing)     -> return $ Unauthorized "Transaction must have another team"
+        (_, Just teamId) ->
+            if transactionStatus transaction == Requested && transactionType transaction == Trade
+                then requireTeamOwner teamId
+                else return $ Unauthorized "Must be a trade transaction with status of requested"
+
+requireTradeDeclinable :: TransactionId -> Handler AuthResult
+requireTradeDeclinable = requireTradeAcceptable
 
 requireTeamOwner :: TeamId -> Handler AuthResult
 requireTeamOwner teamId = do
@@ -220,6 +243,16 @@ requireLeagueManager leagueId = do
             if uid == leagueCreatedBy league
                 then Authorized
                 else Unauthorized "You aren't allowed to manage this league"
+
+requireLeagueManagerAndIncompleteDraft :: LeagueId -> Handler AuthResult
+requireLeagueManagerAndIncompleteDraft leagueId = do
+    league <- runDB $ get404 leagueId
+    authResult <- requireLeagueManager leagueId
+    return $ case authResult of
+        Authorized -> if leagueIsDraftComplete league
+                          then Unauthorized "Draft already completed"
+                          else Authorized
+        _ -> authResult
 
 requirePlayerOwner :: PlayerId -> Handler AuthResult
 requirePlayerOwner playerId = do
@@ -270,6 +303,10 @@ instance YesodBreadcrumbs App where
     breadcrumb (LeagueR leagueId) = do
         league <- runDB $ get404 leagueId
         return (leagueName league, Just LeaguesR)
+    breadcrumb (LeagueDraftR leagueId _)        = return ("Draft",        Just $ LeagueR leagueId)
+    breadcrumb (LeagueTransactionsR leagueId)   = return ("Transactions", Just $ LeagueR leagueId)
+    breadcrumb (LeagueAcceptTradeR leagueId _)  = return ("Accept Trade", Just $ LeagueTransactionsR leagueId)
+    breadcrumb (LeagueDeclineTradeR leagueId _) = return ("Decline Trade", Just $ LeagueTransactionsR leagueId)
 
     -- League players breadcrumbs
     breadcrumb (LeaguePlayersR leagueId) = return ("Players", Just $ LeagueR leagueId)
@@ -277,10 +314,10 @@ instance YesodBreadcrumbs App where
         player <- runDB $ get404 playerId
         character <- runDB $ get404 $ playerCharacterId player
         return (characterName character, Just $ LeagueR leagueId)
-    breadcrumb (LeaguePlayerStartR leagueId playerId) = return ("Start", Just $ LeaguePlayerR leagueId playerId)
-    breadcrumb (LeaguePlayerBenchR leagueId playerId) = return ("Bench", Just $ LeaguePlayerR leagueId playerId)
-    breadcrumb (LeaguePlayerClaimR leagueId playerId) = return ("Claim", Just $ LeaguePlayerR leagueId playerId)
-    breadcrumb (LeaguePlayerTradeR leagueId playerId) = return ("Trade", Just $ LeaguePlayerR leagueId playerId)
+    breadcrumb (LeaguePlayerStartR leagueId playerId)   = return ("Start", Just $ LeaguePlayerR leagueId playerId)
+    breadcrumb (LeaguePlayerBenchR leagueId playerId)   = return ("Bench", Just $ LeaguePlayerR leagueId playerId)
+    breadcrumb (LeaguePlayerClaimR leagueId playerId _) = return ("Claim", Just $ LeaguePlayerR leagueId playerId)
+    breadcrumb (LeaguePlayerTradeR leagueId playerId _) = return ("Trade", Just $ LeaguePlayerR leagueId playerId)
 
     -- League teams breadcrumbs
     breadcrumb (LeagueTeamsR leagueId) = return ("Teams", Just $ LeagueR leagueId)
@@ -290,18 +327,18 @@ instance YesodBreadcrumbs App where
     breadcrumb (LeagueTeamSettingsR leagueId teamId) = return ("Settings", Just $ LeagueTeamR leagueId teamId)
 
     -- League settings breadcrumbs
-    breadcrumb (LeagueSettingsR leagueId LeagueEditSettingsR) = return ("League Settings", Just $ LeagueR leagueId)
+    breadcrumb (LeagueSettingsR leagueId LeagueEditSettingsR)    = return ("League Settings", Just $ LeagueR leagueId)
     breadcrumb (LeagueSettingsR leagueId LeagueGeneralSettingsR) = return ("General Settings", Just $ LeagueR leagueId)
     breadcrumb (LeagueSettingsR leagueId LeagueScoringSettingsR) = return ("Scoring Settings", Just $ LeagueR leagueId)
-    breadcrumb (LeagueSettingsR leagueId LeagueDraftSettingsR) = return ("Draft Settings", Just $ LeagueR leagueId)
-    breadcrumb (LeagueSettingsR leagueId LeagueTeamsSettingsR) = return ("Team Settings", Just $ LeagueR leagueId)
+    breadcrumb (LeagueSettingsR leagueId LeagueDraftSettingsR)   = return ("Draft Settings", Just $ LeagueR leagueId)
+    breadcrumb (LeagueSettingsR leagueId LeagueTeamsSettingsR)   = return ("Team Settings", Just $ LeagueR leagueId)
 
     -- League setup breadcrumbs
     breadcrumb (SetupLeagueR SetupNewLeagueR)       = return ("Setup", Just LeaguesR)
     breadcrumb (SetupLeagueR SetupGeneralSettingsR) = return ("General Settings", Just $ SetupLeagueR SetupNewLeagueR)
     breadcrumb (SetupLeagueR SetupScoringSettingsR) = return ("Scoring Settings", Just $ SetupLeagueR SetupGeneralSettingsR)
     breadcrumb (SetupLeagueR SetupDraftSettingsR)   = return ("Draft Settings", Just $ SetupLeagueR SetupScoringSettingsR)
-    breadcrumb (SetupLeagueR SetupTeamsSettingsR)    = return ("Team Settings", Just $ SetupLeagueR SetupDraftSettingsR)
+    breadcrumb (SetupLeagueR SetupTeamsSettingsR)   = return ("Team Settings", Just $ SetupLeagueR SetupDraftSettingsR)
     breadcrumb (SetupLeagueR SetupConfirmSettingsR) = return ("Complete Setup", Just $ SetupLeagueR SetupTeamsSettingsR)
 
     -- These pages never call breadcrumb

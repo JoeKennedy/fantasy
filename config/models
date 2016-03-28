@@ -57,11 +57,14 @@ League
     teamsCount Int
     isSetupComplete Bool default=false
     lastCompletedStep Int default=1
+    isDraftComplete Bool default=false
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId
     updatedAt UTCTime
+    draftCompletedAt UTCTime Maybe
     UniqueLeagueName name
+
 GeneralSettings
     leagueId LeagueId
     numberOfStarters Int
@@ -76,6 +79,7 @@ GeneralSettings
     updatedBy UserId
     updatedAt UTCTime
     UniqueGeneralSettingsLeagueId leagueId
+
 ScoringSettings
     leagueId LeagueId
     action Action
@@ -89,9 +93,11 @@ ScoringSettings
     updatedBy UserId
     updatedAt UTCTime
     UniqueScoringSettingsLeagueIdAction leagueId action
+
 DraftSettings
     leagueId LeagueId
     draftType DraftType
+    draftOrder DraftOrder
     draftOrderType DraftOrderType
     date Day
     time TimeOfDay
@@ -115,6 +121,8 @@ Team
     isConfirmed Bool default=false
     playersCount Int default=0
     startersCount Int default=0
+    draftOrder Int default=0
+    waiverOrder Int default=0
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId
@@ -136,6 +144,32 @@ Player
     updatedBy UserId
     updatedAt UTCTime
     UniquePlayerCharacterLeague characterId leagueId
+
+Transaction
+    leagueId LeagueId
+    type TransactionType
+    status TransactionStatus
+    failureReason Text Maybe
+    teamId TeamId
+    otherTeamId TeamId Maybe
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    completedAt UTCTime Maybe
+    deriving Eq
+
+TransactionPlayer
+    leagueId LeagueId
+    transactionId TransactionId
+    playerId PlayerId
+    oldTeamId TeamId Maybe
+    newTeamId TeamId Maybe
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    UniqueTransactionPlayerTransactionIdPlayerId transactionId playerId
 
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

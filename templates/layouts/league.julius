@@ -1,18 +1,66 @@
 function performPlayerAction(event) {
+    var pieces = $(this).prop('id').split('-');
+    var url = '/leagues/' + pieces[1] + '/players/' + pieces[2] + '/' + pieces[0];
+    switch (pieces[0]) {
+        case 'bench':
+        case 'start':
+            submitTransaction(url);
+            break;
+        case 'claim':
+        case 'trade':
+            playersModal(pieces[0], url, $(this).attr('character-name'));
+            break;
+    }
+}
+
+function performTradeAction(event) {
+    var pieces = $(this).prop('id').split('-');
+    var url = '/leagues/' + pieces[1] + '/' + pieces[0] + '/' + pieces[2];
+    submitTransaction(url);
+}
+
+function playersModal(transactionType, url, characterName) {
+    var modal = '#' + transactionType + '_modal';
+    var title = modal + '_label';
+    var button = 'button#submit_' + transactionType;
+
+    // disable submit transaction button by default
+    $(button).addClass('disabled');
+
+    // set heading title
+    $(title + ' .character-name').text(' ' + characterName);
+
+    // unselect player radio buttons by default
+    // enable submit transaction button and set full url when player is chosen
+    $(modal).find('input.player-radio').off('change').prop('checked', false).change(function() {
+        var full_url = url + '/' + $(this).val();
+        $(button).removeClass('disabled').click(function() {
+            submitTransaction(full_url);
+        });
+    });
+}
+
+function submitTransaction(url) {
     $.ajax ({
-        url: $(this).prop("href"),
-        type: "POST",
+        url: url,
+        type: 'POST',
         success: function() { window.location.reload(true); }
     });
-
-    event.preventDefault();
 }
 
 function leagueLayoutReady(jQuery) {
     var tabs = $('#league_navbar').find('.tab-name')
     tabs.filter(function() { return $(this).text().trim() === #{toJSON activeTab} }).parent().addClass('active')
 
-    $('.player-action a').click(performPlayerAction);
+    if (#{toJSON activeTab} === "My Team") {
+        $('.trade-actions').removeClass('hidden');
+    }
+
+    if (!$('.trade-actions').hasClass('hidden')) {
+      $('.trade-actions button').click(performTradeAction);
+    }
+
+    $('.player-action button').click(performPlayerAction);
 }
 
 $(document).ready(leagueLayoutReady)

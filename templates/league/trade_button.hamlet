@@ -1,0 +1,2 @@
+<button .text-capitalize .btn .btn-xs class="#{buttonClass}" id="#{buttonId}">
+    #{action} Trade

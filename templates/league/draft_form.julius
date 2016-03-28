@@ -1,0 +1,74 @@
+function addBlankOption($selectors) {
+    $selectors.each(function() {
+        if ($(this).find('option').first().val().length > 0) {
+            $(this).prepend("<option value='' selected='selected'>-- Select pick --</option>");
+        }
+    });
+}
+
+function enableSubmitIfDraftComplete() {
+    var blankSelects = $('table.draft-table').find('select').filter(function() {
+        return $(this).val().length == 0;
+    });
+
+    // enable submit button if none of the player selects are blank
+    // disable the button otherwise
+    if (blankSelects.length == 0) {
+      $('button#submit_draft').removeClass('disabled');
+    } else {
+      $('button#submit_draft').addClass('disabled');
+    }
+}
+
+function showNextPlayerSelect(currentRow) {
+    var nextSelect = currentRow.next().find('select');
+
+    if (nextSelect.length == 0) {
+      nextSelect = currentRow.next().next().find('select.hidden');
+    }
+
+    nextSelect.removeClass('hidden');
+}
+
+function handlePlayerSelectChange() {
+    var val = $(this).val();
+    var row = $(this).closest('tr.draft-pick-row');
+
+    // remove the blank option if a non-blank option has been chosen
+    if (val.length > 0) { $(this).find("option[value='']").remove(); };
+
+    // get all currently selected values
+    var selectedVals = $('select.input-sm').map(function() {
+        return $(this).val();
+    }).get();
+
+    // hide player from all succeeding selects
+    // show any options that aren't selected in another dropdown
+    row.nextAll().find("select option").each(function() {
+        if (val.length == 0) { return; }
+
+        if ($(this).val() == val) {
+            $(this).hide();
+
+            if ($(this).prop('selected')) {
+              $(this).prop('selected', false).hide();
+              addBlankOption($(this).parent());
+            }
+
+        } else if (selectedVals.indexOf($(this).val()) == -1) {
+            $(this).show();
+        }
+    });
+
+    enableSubmitIfDraftComplete();
+    showNextPlayerSelect(row);
+}
+
+function draftFormReady(jQuery) {
+    var $playerSelects = $('.draft-table').find('select.hidden');
+    addBlankOption($playerSelects);
+    $playerSelects.first().removeClass('hidden');
+    $playerSelects.on('change', handlePlayerSelectChange);
+}
+
+$(document).ready(draftFormReady)

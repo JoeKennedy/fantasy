@@ -6,7 +6,7 @@
         <span .icon-bar>
         <span .icon-bar>
         <span .icon-bar>
-      <a .visible-xs .navbar-brand href=@{HomeR}>A Fantasy League Of Ice And Fire
+      <a .visible-xs .navbar-brand href=@{LeagueR leagueId}>#{leagueName league}
 
     <div #league_navbar .collapse .navbar-collapse>
       <ul .nav .navbar-nav .navbar-left>
@@ -21,6 +21,8 @@
           <a .tab-name href="#">Standings
         <li>
           <a .tab-name href="#">Scoreboard
+        <li>
+          <a .tab-name href="@{LeagueTransactionsR leagueId}">Transactions
 
         $maybe _ <- maybeUserId
           <li .dropdown .dropdown-hover>
@@ -58,8 +60,6 @@
                 <a href="@{LeagueTeamR leagueId teamId}">#{teamName team}
 
       <ul .nav .navbar-nav .navbar-right>
-        <p .navbar-text .hidden-sm .hidden-xs>
-          <span .text-primary>#{leagueName league}
         <li .dropdown .dropdown-hover>
           $if not (null leagues)
             <a href="#">
@@ -69,6 +69,11 @@
               $forall Entity leagueId league <- leagues
                 <li>
                   <a href="@{LeagueR leagueId}">#{leagueName league}
+
+      $if canEnterDraftResults maybeUserId league
+        <div .nav .navbar-nav .navbar-right>
+          <a .btn .btn-primary .navbar-btn href="@{LeagueDraftR leagueId 2016}">
+            Enter Draft Results!
 
 <div .league-container>
   ^{widget}

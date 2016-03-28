@@ -10,3 +10,9 @@
 
 .table tbody > tr.vertical-align-middle > td
     vertical-align: middle
+
+.modal-content > .panel
+    margin-bottom: 0px
+
+.table tbody > tr > td a.text-decoration-none
+    text-decoration: none

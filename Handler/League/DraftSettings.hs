@@ -12,8 +12,10 @@ draftSettingsForm :: UserId -> LeagueId -> Maybe DraftSettings -> Form DraftSett
 draftSettingsForm currentUserId leagueId draftSettings extra = do
     (draftTypeRes, draftTypeView) <- mreq hiddenField (hidden "Draft type")
         (draftSettingsDraftType <$> draftSettings)
+    (draftOrderRes, draftOrderView) <- mreq (selectFieldList draftOrderOptions)
+        (fieldName "Draft Order") (draftSettingsDraftOrder <$> draftSettings)
     (draftOrderTypeRes, draftOrderTypeView) <- mreq (selectFieldList draftOrderTypeOptions)
-        (fieldName "Draft Order") (draftSettingsDraftOrderType <$> draftSettings)
+        (fieldName "Determination Of Draft Order") (draftSettingsDraftOrderType <$> draftSettings)
     (dateRes, dateView) <- mreq dayField (fieldName "Draft Day")
         (draftSettingsDate <$> draftSettings)
     (timeRes, timeView) <- mreq timeFieldTypeTime (fieldName "Draft Time")
@@ -22,8 +24,8 @@ draftSettingsForm currentUserId leagueId draftSettings extra = do
         (draftSettingsLocation <$> draftSettings)
     (allowDraftPickTradingRes, allowDraftPickTradingView) <- mreq checkBoxField
         "Allow draft pick trading?" (draftSettingsAllowDraftPickTrading <$> draftSettings)
-    (secondsPerPickRes, secondsPerPickView) <- mreq (selectFieldList $ toOptions possibleSecondsPerPick)
-        (fieldName "Seconds Per Pick")
+    (secondsPerPickRes, secondsPerPickView) <- mreq
+        (selectFieldList $ toOptions possibleSecondsPerPick) (fieldName "Seconds Per Pick")
         (existingElseDefault defaultSecondsPerPick $ draftSettingsSecondsPerPick <$> draftSettings)
     (noteRes, noteView) <- mreq textareaField (fieldName "Note")
         (draftSettingsNote <$> draftSettings)
@@ -32,6 +34,7 @@ draftSettingsForm currentUserId leagueId draftSettings extra = do
     let draftSettingsResult = DraftSettings
             <$> pure leagueId
             <*> draftTypeRes
+            <*> draftOrderRes
             <*> draftOrderTypeRes
             <*> dateRes
             <*> timeRes

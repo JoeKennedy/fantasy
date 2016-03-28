@@ -1,0 +1,14 @@
+<div .panel .panel-primary>
+    <div ##{underscore} .panel-heading role="tab">
+        <h3 .panel-title>
+            <a .collapsed role="button" data-toggle="collapse" data-parent="#transaction_request_accordion" href="#collapse_#{underscore}" aria-expanded="false" aria-controls="collapse_#{underscore}">
+                #{upper}
+                <span .badge .pull-right>
+                    #{length groupedTransactions}
+
+    <div #collapse_#{underscore} .panel-collapse .collapse role="tabpanel" aria-labelledby="#{underscore}">
+        $if null transactions
+            <div .panel-body>No #{lower}
+        $else
+            ^{transactionsTable transactions (Just currentTeamId) False}
+

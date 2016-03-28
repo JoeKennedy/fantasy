@@ -1,25 +1,42 @@
 <div .page-header>
     <h4>
-        House #{teamName team}
-        <small>(H#{teamAbbreviation team})
+        #{leagueName league}
+        <small>
+            House #{teamName team}
+            <small>(H#{teamAbbreviation team})
 
 <div .row>
-    <div .col-lg-3 .col-sm-4 .col-xs-12>
-        <ul .list-group>
-            <li .list-group-item>
-                <h6 .list-group-item-heading>Owner
-                <p .list-group-item-text>#{teamOwnerName team}
-            <li .list-group-item>
-                <h6 .list-group-item-heading>Email
-                <p .list-group-item-text>#{teamOwnerEmail team}
-            <li .list-group-item>
-                <h6 .list-group-item-heading>Status
-                <p .list-group-item-text>
-                    $if teamIsConfirmed team
-                        Joined
-                    $else
-                        Unjoined
+    <div .col-md-9 .col-sm-12>
+        <div .row>
+            <div .col-sm-6 .col-xs-12>
+                <ul .list-group>
+                    <li .list-group-item>
+                        <h6 .list-group-item-heading>Owner
+                        <p .list-group-item-text>#{teamOwnerName team}
+                    <li .list-group-item>
+                        <h6 .list-group-item-heading>Email
+                        <p .list-group-item-text>#{teamOwnerEmail team}
+                    <li .list-group-item>
+                        <h6 .list-group-item-heading>Status
+                        <p .list-group-item-text>
+                            $if teamIsConfirmed team
+                                Joined
+                            $else
+                                Unjoined
 
-    <div .col-lg-9 .col-sm-8 .col-xs-12>
-        ^{playersTable players (Players numberOfStarters rosterSize)}
+            <div .col-sm-6 .col-xs-12>
+                <div #transaction_request_accordion .panel-group role="tablist" aria-multiselectable="true">
+                    ^{transactionRequestsPanel tradeProposals Trade teamId}
+                    $if isUserTeamOwner maybeUserId team
+                        ^{transactionRequestsPanel waiverClaims Claim teamId}
 
+            <div .col-xs-12>
+                ^{playersTable players (Players numberOfStarters rosterSize)}
+
+    <div .col-md-3 .col-sm-12>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Transactions
+            ^{transactionsTable transactions (Just teamId) True}
+
+^{playersModal myPlayers (PlayersModal numberOfStarters rosterSize) Trade}

@@ -1,0 +1,30 @@
+<div .modal .fade id="#{modalId}" tabindex="-1" role="dialog" aria-labelledby="##{modalLabelId}">
+    <div .modal-dialog .modal-lg role="document">
+        <div .modal-content>
+            <div .modal-header>
+                <button .close type="button" data-dismiss="modal" aria-label="Close">
+                    <span .fa .fa-times aria-hidden="true">
+                <h5 .modal-title id="#{modalLabelId}">
+                    #{typeText}
+                    $if modalType == Trade
+                        \ for
+                    <span .character-name>
+            <div .modal-body>
+                <p .text-primary>
+                    $case modalType
+                        $of Claim
+                            In order to claim a player, you need to drop a
+                            player from your roster since your roster is
+                            currently full. Choose a player to drop.
+                        $of Trade
+                            In order to get a player from another team, you
+                            need to give that team a player from your roster.
+                            Choose a player to trade.
+                        $of _
+            ^{playersTable players playersTableType}
+            <div .modal-footer>
+                <button .btn .btn-default type="button" data-dismiss="modal" aria-label="Cancel">
+                    Cancel
+                <button .btn .btn-primary .disabled id="#{buttonId}" type="button">
+                    Submit #{typeText}
+

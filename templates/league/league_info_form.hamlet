@@ -5,6 +5,7 @@
         <div .panel .panel-default>
             <div .panel-heading>
                 <h5 .text-center>League Info
+
             <div .panel-body>
                 <div .form-group>
                     <label for="#{fvId nameView}">
@@ -19,6 +20,12 @@
                     <label>
                         ^{fvInput isPrivateView}
                         #{fvLabel isPrivateView}
+
+            <div .panel-footer .text-primary>
+                <b>Important:
+                You can't change how many teams your league has
+                $if isNothing league
+                    \ after this step
 
     <div .col-lg-6 .col-sm-12>
         <div .panel .panel-default>

@@ -17,6 +17,7 @@ library
                      Foundation
                      Import
                      Import.NoFoundation
+                     Import.NoWarning
                      Model
                      Model.Action
                      Model.Bootstrap
@@ -38,6 +39,7 @@ library
                      Handler.League.ScoringSettings
                      Handler.League.Setup
                      Handler.League.Team
+                     Handler.League.Transaction
                      Handler.Series
                      Handler.Species
 
@@ -112,6 +114,9 @@ library
                  , serversession-frontend-yesod     >= 1.0
                  , serversession-backend-persistent >= 1.0
                  , transformers
+                 , random-source
+                 , random-fu
+                 , cron                             >= 0.4.0
 
 executable         fantasy
     if flag(library-only)

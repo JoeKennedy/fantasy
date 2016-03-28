@@ -5,6 +5,10 @@ import Handler.Common        (extractValueMaybe)
 import Handler.League.Setup
 import Handler.League.Layout
 
+import Data.Random.List
+import Data.Random.RVar
+import Data.Random.Source.DevRandom
+
 ----------
 -- Form --
 ----------
@@ -15,8 +19,9 @@ leagueForm currentUserId league extra = do
         (leagueIsPrivate <$> league)
     (scoringTypeRes, scoringTypeView) <- mreq hiddenField (hidden "Scoring type")
         (leagueScoringType <$> league)
-    (teamsCountRes, teamsCountView) <- mreq (selectFieldList teamsCountOptions)
-        (fieldName "Number of teams") (leagueTeamsCount <$> league)
+    let teamsCount = leagueTeamsCount <$> league
+    (teamsCountRes, teamsCountView) <- mreq (selectFieldList $ teamsCountOptions teamsCount)
+        (fieldName "Number of teams") teamsCount
 
     now <- liftIO getCurrentTime
     let leagueResult = League
@@ -26,10 +31,12 @@ leagueForm currentUserId league extra = do
             <*> teamsCountRes
             <*> existingElseDefault False (leagueIsSetupComplete <$> league)
             <*> existingElseDefault 1 (leagueLastCompletedStep <$> league)
+            <*> existingElseDefault False (leagueIsDraftComplete <$> league)
             <*> createdByField currentUserId (leagueCreatedBy <$> league)
             <*> existingElseDefault now (leagueCreatedAt <$> league)
             <*> updatedByField currentUserId
             <*> pure now
+            <*> existingElseDefault Nothing (leagueDraftCompletedAt <$> league)
     return (leagueResult, $(widgetFile "league/league_info_form"))
 
 
@@ -105,30 +112,33 @@ postLeagueEditSettingsR leagueId = do
 -- Create League --
 -------------------
 createLeague :: League -> Handler ()
-createLeague league = runDB $ do
-    leagueId <- insert league
-    let teamsCount = leagueTeamsCount league
-        leagueEntity = Entity leagueId league
-    insert_ $ GeneralSettings
-        { generalSettingsLeagueId = leagueId
-        , generalSettingsNumberOfStarters = fst $ defaultRosterSize teamsCount
-        , generalSettingsRosterSize = snd $ defaultRosterSize teamsCount
-        , generalSettingsRegularSeasonLength = fst $ defaultSeasonLength teamsCount
-        , generalSettingsPlayoffLength = snd $ defaultSeasonLength teamsCount
-        , generalSettingsNumberOfTeamsInPlayoffs = defaultNumberOfTeamsInPlayoffs teamsCount
-        , generalSettingsTradeDeadlineWeek = defaultTradeDeadlineWeek teamsCount
-        , generalSettingsWaiverPeriodInDays = defaultWaiverPeriodInDays
-        , generalSettingsCreatedBy = leagueCreatedBy league
-        , generalSettingsCreatedAt = leagueCreatedAt league
-        , generalSettingsUpdatedBy = leagueUpdatedBy league
-        , generalSettingsUpdatedAt = leagueUpdatedAt league
-        }
-    mapM_ (createScoringSettingsRow leagueEntity) allActions
-    createFirstTeam leagueEntity
-    mapM_ (createTeam leagueEntity) [2..(leagueTeamsCount league)]
-    characters <- selectKeysList [] [Asc CharacterName]
-    mapM_ (createPlayer leagueEntity) characters
-    return ()
+createLeague league = do
+    let teamNumbers = [1..(leagueTeamsCount league)]
+    draftOrder <- liftIO (runRVar (shuffle teamNumbers) DevRandom :: IO [Int])
+    runDB $ do
+        leagueId <- insert league
+        let teamsCount = leagueTeamsCount league
+            leagueEntity = Entity leagueId league
+        insert_ $ GeneralSettings
+            { generalSettingsLeagueId = leagueId
+            , generalSettingsNumberOfStarters = fst $ defaultRosterSize teamsCount
+            , generalSettingsRosterSize = snd $ defaultRosterSize teamsCount
+            , generalSettingsRegularSeasonLength = fst $ defaultSeasonLength teamsCount
+            , generalSettingsPlayoffLength = snd $ defaultSeasonLength teamsCount
+            , generalSettingsNumberOfTeamsInPlayoffs = defaultNumberOfTeamsInPlayoffs teamsCount
+            , generalSettingsTradeDeadlineWeek = defaultTradeDeadlineWeek teamsCount
+            , generalSettingsWaiverPeriodInDays = defaultWaiverPeriodInDays
+            , generalSettingsCreatedBy = leagueCreatedBy league
+            , generalSettingsCreatedAt = leagueCreatedAt league
+            , generalSettingsUpdatedBy = leagueUpdatedBy league
+            , generalSettingsUpdatedAt = leagueUpdatedAt league
+            }
+        mapM_ (createScoringSettingsRow leagueEntity) allActions
+        -- createFirstTeam leagueEntity
+        mapM_ (createTeam leagueEntity) $ zip teamNumbers draftOrder
+        characters <- selectKeysList [] [Asc CharacterName]
+        mapM_ (createPlayer leagueEntity) characters
+        return ()
 
 createScoringSettingsRow :: Entity League -> Action -> ReaderT SqlBackend Handler ()
 createScoringSettingsRow (Entity leagueId league) action =
@@ -148,43 +158,32 @@ createScoringSettingsRow (Entity leagueId league) action =
             , scoringSettingsUpdatedAt = leagueUpdatedAt league
             }
 
-createFirstTeam :: Entity League -> ReaderT SqlBackend Handler ()
-createFirstTeam (Entity leagueId league) =
-    insert_ $ Team { teamLeagueId      = leagueId
-                   , teamName          = "Number 1"
-                   , teamAbbreviation  = "N1"
-                   , teamOwnerId       = Just $ leagueCreatedBy league
-                   , teamOwnerName     = "Owner 1"
-                   , teamOwnerEmail    = "Enter your email"
-                   , teamIsConfirmed   = True
-                   , teamPlayersCount  = 0
-                   , teamStartersCount = 0
-                   , teamCreatedBy     = leagueCreatedBy league
-                   , teamCreatedAt     = leagueCreatedAt league
-                   , teamUpdatedBy     = leagueUpdatedBy league
-                   , teamUpdatedAt     = leagueUpdatedAt league
-                   , teamConfirmedBy   = Just $ leagueCreatedBy league
-                   , teamConfirmedAt   = Just $ leagueCreatedAt league
-                   }
+createTeam :: Entity League -> (Int, Int) -> ReaderT SqlBackend Handler ()
+createTeam (Entity leagueId league) (teamNumber, draftOrder) =
+    let (maybeTeamOwnerId, maybeConfirmedAt) = teamAttributes league teamNumber
+    in  insert_ $ Team { teamLeagueId      = leagueId
+                       , teamName          = pack $ "Number " ++ show teamNumber
+                       , teamAbbreviation  = pack $ "N" ++ show teamNumber
+                       , teamOwnerId       = maybeTeamOwnerId
+                       , teamOwnerName     = pack $ "Owner " ++ show teamNumber
+                       , teamOwnerEmail    = pack $ "Enter Team " ++ show teamNumber ++ "'s email"
+                       , teamIsConfirmed   = isJust maybeConfirmedAt
+                       , teamPlayersCount  = 0
+                       , teamStartersCount = 0
+                       , teamDraftOrder    = draftOrder
+                       , teamWaiverOrder   = teamNumber
+                       , teamCreatedBy     = leagueCreatedBy league
+                       , teamCreatedAt     = leagueCreatedAt league
+                       , teamUpdatedBy     = leagueUpdatedBy league
+                       , teamUpdatedAt     = leagueUpdatedAt league
+                       , teamConfirmedBy   = maybeTeamOwnerId
+                       , teamConfirmedAt   = maybeConfirmedAt
+                       }
 
-createTeam :: Entity League -> Int -> ReaderT SqlBackend Handler ()
-createTeam (Entity leagueId league) int =
-    insert_ $ Team { teamLeagueId      = leagueId
-                   , teamName          = pack $ "Number " ++ show int
-                   , teamAbbreviation  = pack $ "N" ++ show int
-                   , teamOwnerId       = Nothing
-                   , teamOwnerName     = pack $ "Owner " ++ show int
-                   , teamOwnerEmail    = pack $ "Enter Team " ++ show int ++ "'s email"
-                   , teamIsConfirmed   = False
-                   , teamPlayersCount  = 0
-                   , teamStartersCount = 0
-                   , teamCreatedBy     = leagueCreatedBy league
-                   , teamCreatedAt     = leagueCreatedAt league
-                   , teamUpdatedBy     = leagueUpdatedBy league
-                   , teamUpdatedAt     = leagueUpdatedAt league
-                   , teamConfirmedBy   = Nothing
-                   , teamConfirmedAt   = Nothing
-                   }
+teamAttributes :: League -> Int -> (Maybe UserId, Maybe UTCTime)
+teamAttributes league 1 =
+    (Just $ leagueCreatedBy league, Just $ leagueCreatedAt league)
+teamAttributes _ _ = (Nothing, Nothing)
 
 createPlayer :: Entity League -> CharacterId -> ReaderT SqlBackend Handler ()
 createPlayer (Entity leagueId league) characterId =

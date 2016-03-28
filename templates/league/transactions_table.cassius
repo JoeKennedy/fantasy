@@ -1,0 +1,11 @@
+table.transactions-table
+    margin-bottom: 0px
+
+table.transactions-table > tbody > tr > td, table.transactions-table > thead > tr > td
+    padding-left: 15px
+
+table.transactions-table > tbody > tr > td > ul
+    margin-top: 10px
+
+table.transactions-table > tbody > tr > td > .trade-actions
+    margin-bottom: 10px

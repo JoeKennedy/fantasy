@@ -35,6 +35,9 @@ hidden name = FieldSettings (SomeMessage ("" :: Text)) Nothing (Just (fieldId na
 inputSm :: FieldSettings site
 inputSm = FieldSettings (SomeMessage ("" :: Text)) Nothing Nothing Nothing [("class", "form-control input-sm")]
 
+inputSmHidden :: Text -> FieldSettings site
+inputSmHidden text = FieldSettings (SomeMessage text) Nothing Nothing Nothing [("class", "form-control input-sm hidden")]
+
 inputRight :: FieldSettings site
 inputRight = FieldSettings (SomeMessage ("" :: Text)) Nothing Nothing Nothing [("class", "form-control text-right input-sm")]
 
