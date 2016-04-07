@@ -53,14 +53,17 @@ draftForm draftSettings generalSettings teams playersForSelect extra = do
 getLeagueDraftR :: LeagueId -> Int -> Handler Html
 getLeagueDraftR leagueId _year = do
     league <- runDB $ get404 leagueId
-    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
-    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamDraftOrder]
-    playersAndCharacters <- getPlayersAndCharacters leagueId
-    let playersForSelect =
-            map (\(Entity pid _, Entity _ c) -> (characterName c, pid)) playersAndCharacters
-    (widget, enctype) <- generateFormPost $ draftForm draftSettings generalSettings teams playersForSelect
-    leagueLayout leagueId "Draft" $(widgetFile "league/draft")
+    if foldr (\(Entity _ t) acc -> teamIsConfirmed t && acc) True teams
+        then do
+            Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+            Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
+            playersAndCharacters <- getPlayersAndCharacters leagueId
+            let playersForSelect =
+                    map (\(Entity pid _, Entity _ c) -> (characterName c, pid)) playersAndCharacters
+            (widget, enctype) <- generateFormPost $ draftForm draftSettings generalSettings teams playersForSelect
+            leagueLayout leagueId "Transactions" $(widgetFile "league/draft")
+        else leagueLayout leagueId "Transactions" $(widgetFile "league/no_draft")
 
 postLeagueDraftR :: LeagueId -> Int -> Handler Html
 postLeagueDraftR leagueId _year = do

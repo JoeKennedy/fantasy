@@ -18,6 +18,7 @@ import Database.Persist.Postgresql          (createPostgresqlPool, pgConnStr,
 import Import
 import Language.Haskell.TH.Syntax           (qLocation)
 import LoadEnv                              (loadEnv)
+import Network.Mail.Mime.SES
 import Network.Wai.Handler.Warp             (Settings, defaultSettings,
                                              defaultShouldDisplayException,
                                              runSettings, setHost,
@@ -31,8 +32,8 @@ import System.Environment                   (getEnv)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
 
+import qualified Data.ByteString.Char8 as S8
 import qualified Data.Proxy as P
-import qualified Import.NoWarning as NoWarning
 import qualified Web.ServerSession.Core as SS
 import qualified Web.ServerSession.Backend.Persistent as SS
 
@@ -81,6 +82,13 @@ makeFoundation appSettings = do
         (appStaticDir appSettings)
     appFacebookOAuth2Keys <- getOAuth2Keys "FACEBOOK_OAUTH2_APP_ID" "FACEBOOK_OAUTH2_APP_SECRET"
     appGoogleOAuth2Keys <- getOAuth2Keys "GOOGLE_OAUTH2_CLIENT_ID" "GOOGLE_OAUTH2_CLIENT_SECRET"
+    (appAmazonAccessKey, appAmazonSecretKey) <- getAmazonKeys
+    let appSesCreds = \email -> SES { sesFrom = "grandmaester@fantasygameofthrones.com"
+                                    , sesTo = [encodeUtf8 email]
+                                    , sesAccessKey = S8.pack appAmazonAccessKey
+                                    , sesSecretKey = S8.pack appAmazonSecretKey
+                                    , sesRegion = usEast1
+                                    }
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
@@ -105,7 +113,7 @@ makeFoundation appSettings = do
     let foundation = mkFoundation pool
 
     threadIds <- execSchedule $ do
-        addJob (fakeHandler foundation processClaimRequests) "0 9 * * *"
+        addJob (unsafeHandler foundation processClaimRequests) "0 9 * * *"
     print threadIds
 
     -- Return the foundation
@@ -117,10 +125,11 @@ makeFoundation appSettings = do
             <$> fmap pack (getEnv clientIdEnvVar)
             <*> fmap pack (getEnv clientSecretEnvVar)
 
-        fakeHandler :: App -> Handler a -> IO a
-        fakeHandler app h = NoWarning.runFakeHandler mempty appLogger app h >>= either
-            (error . ("runFakeHandler issue: " <>) . show)
-            return
+        getAmazonKeys :: IO (String, String)
+        getAmazonKeys = do
+            accessKey <- getEnv ("AWS_ACCESS_KEY")
+            secretKey <- getEnv ("AWS_SECRET_KEY")
+            return (accessKey, secretKey)
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.

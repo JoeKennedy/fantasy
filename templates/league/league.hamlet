@@ -2,34 +2,36 @@
     <h4>#{leagueName league}
 
 <div .row>
-    <div .col-md-8 .col-xs-12>
-        <div>
-            <div>
-                <strong>Creator:
-                $maybe Entity _ creatorTeam <- maybeCreatorTeam
-                    <span>#{teamOwnerName creatorTeam}
-                $nothing
-                    <span>Unknown
-            <div>
-                <strong>Scoring:
-                <span>#{show $ leagueScoringType league}
-            <div>
-                <strong>Teams:
-                <span>#{show $ leagueTeamsCount league}
-            <div>
-                <strong>Visibility:
-                $if leagueIsPrivate league
-                    <span>Private
-                $else
-                    <span>Public
-
     <div .col-md-4 .col-xs-12>
+        <ul .list-group>
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Creator
+                <p .list-group-item-text>
+                    $maybe Entity _ creatorTeam <- maybeCreatorTeam
+                        #{teamOwnerName creatorTeam}
+                    $nothing
+                        Unknown
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Scoring
+                <p .list-group-item-text>#{show $ leagueScoringType league}
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Teams
+                <p .list-group-item-text>#{leagueTeamsCount league}
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Visibility
+                <p .list-group-item-text>
+                    $if leagueIsPrivate league
+                        Private
+                    $else
+                        Public
+
+    <div .col-md-8 .col-xs-12>
         <div .panel .panel-default>
             <div .panel-heading>
                 <h5 .text-center>Teams
             <table .table>
                 $forall Entity teamId team <- teams
-                    <tr .small>
+                    <tr>
                         <td>
                             <a href="@{LeagueTeamR leagueId teamId}">
                                 House #{teamName team}

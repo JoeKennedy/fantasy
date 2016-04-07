@@ -123,6 +123,7 @@ Team
     startersCount Int default=0
     draftOrder Int default=0
     waiverOrder Int default=0
+    verificationKey Text
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId

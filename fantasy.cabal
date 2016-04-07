@@ -17,7 +17,6 @@ library
                      Foundation
                      Import
                      Import.NoFoundation
-                     Import.NoWarning
                      Model
                      Model.Action
                      Model.Bootstrap
@@ -106,6 +105,7 @@ library
                  , fb
                  , yesod-fb
                  , yesod-auth-fb
+                 , blaze-html
                  , blaze-markup
                  , old-locale
                  , load-env
@@ -117,6 +117,10 @@ library
                  , random-source
                  , random-fu
                  , cron                             >= 0.4.0
+                 , mime-mail
+                 , mime-mail-ses
+                 , utf8-string
+                 , random
 
 executable         fantasy
     if flag(library-only)

@@ -12,6 +12,6 @@ import Import
 getHomeR :: Handler Html
 getHomeR = 
     defaultLayout $ do
-        setTitle "A Fantasy League Of Ice And Fire"
+        setTitle "Fantasy Game Of Thrones"
         $(widgetFile "homepage")
 

@@ -25,9 +25,10 @@
 /leagues/          LeaguesR GET
 /leagues/#LeagueId LeagueR  GET
 
-/leagues/#LeagueId/teams                  LeagueTeamsR        GET
-/leagues/#LeagueId/teams/#TeamId          LeagueTeamR         GET
-/leagues/#LeagueId/teams/#TeamId/settings LeagueTeamSettingsR GET POST
+/leagues/#LeagueId/teams                    LeagueTeamsR        GET
+/leagues/#LeagueId/teams/#TeamId            LeagueTeamR         GET
+/leagues/#LeagueId/teams/#TeamId/settings   LeagueTeamSettingsR GET POST
+/leagues/#LeagueId/teams/#TeamId/join/#Text LeagueTeamJoinR     GET POST
 
 /leagues/#LeagueId/players                           LeaguePlayersR     GET
 /leagues/#LeagueId/players/#PlayerId                 LeaguePlayerR      GET

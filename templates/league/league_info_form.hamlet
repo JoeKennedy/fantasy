@@ -1,7 +1,7 @@
 #{extra}
 
 <div .row>
-    <div .col-lg-6 .col-sm-12>
+    <div .col-md-6 .col-xs-12>
         <div .panel .panel-default>
             <div .panel-heading>
                 <h5 .text-center>League Info
@@ -27,7 +27,7 @@
                 $if isNothing league
                     \ after this step
 
-    <div .col-lg-6 .col-sm-12>
+    <div .col-md-6 .col-xs-12>
         <div .panel .panel-default>
             <div .panel-heading>
                 <h5 .text-center>Scoring

@@ -61,10 +61,12 @@ isTeamOwner (Just userId) (Just team) = Just userId == teamOwnerId team
 isTeamOwner _ _ = False
 
 disableSettingsFields :: Maybe UserId -> Maybe Team -> League -> Route App -> Bool
-disableSettingsFields maybeUserId _ league (LeagueSettingsR _ LeagueDraftSettingsR) =
-    leagueIsDraftComplete league || (not $ isLeagueManager maybeUserId league)
-disableSettingsFields maybeUserId _ league (LeagueSettingsR _ _) =
+disableSettingsFields maybeUserId _ league (LeagueSettingsR _ LeagueTeamsSettingsR) =
     not $ isLeagueManager maybeUserId league
+disableSettingsFields maybeUserId _ league (LeagueSettingsR _ LeagueEditSettingsR) =
+    not $ isLeagueManager maybeUserId league
+disableSettingsFields maybeUserId _ league (LeagueSettingsR _ _) =
+    leagueIsDraftComplete league || (not $ isLeagueManager maybeUserId league)
 disableSettingsFields maybeUserId maybeTeam _ (LeagueTeamSettingsR _ _) =
     not $ isTeamOwner maybeUserId maybeTeam
 disableSettingsFields _ _ _ _ =

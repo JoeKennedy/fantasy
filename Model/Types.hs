@@ -29,6 +29,10 @@ isRecommendedScoringType :: ScoringType -> Bool
 isRecommendedScoringType Weighted = True
 isRecommendedScoringType _        = False
 
+isDisabledScoringType :: ScoringType -> Bool
+isDisabledScoringType Scorekeeper = True
+isDisabledScoringType _           = False
+
 
 ---------------
 -- DraftType --
@@ -55,6 +59,9 @@ draftTypes = [minBound .. maxBound] :: [DraftType]
 isRecommendedDraftType :: DraftType -> Bool
 isRecommendedDraftType Offline = True
 isRecommendedDraftType _       = False
+
+isDisabledDraftType :: DraftType -> Bool
+isDisabledDraftType = not . isRecommendedDraftType
 
 
 -----------------

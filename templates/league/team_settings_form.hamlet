@@ -9,7 +9,7 @@
                     $else
                         My Team
 
-            <table .table .table-hover>
+            <table .table .table-hover .table-striped>
                 <thead>
                     <tr>
                         $if length teams > 1

@@ -10,20 +10,22 @@
                 <a href="#free_agents" aria-controls="free_agents" role="tab" data-toggle="pill">
                     Free Agents
                     <span .badge .pull-right>#{length freeAgents}
-            <li role="presentation">
-                <a href="#on_rosters" aria-controls="on_rosters" role="tab" data-toggle="pill">
-                    On Rosters
-                    <span .badge .pull-right>#{length onRosters}
+            $if leagueIsDraftComplete league
+                <li role="presentation">
+                    <a href="#on_rosters" aria-controls="on_rosters" role="tab" data-toggle="pill">
+                        On Rosters
+                        <span .badge .pull-right>#{length onRosters}
             $forall (Entity _ team, _) <- teamsAndPlayers
                 <li role="presentation">
                     $with abbrev <- teamAbbreviation team
                         <a href="#team_#{abbrev}" aria-controls="team_#{abbrev}" role="tab" data-toggle="pill">
                             House #{teamName team}
                             <span .badge .pull-right>#{teamPlayersCount team}
-            <li role="presentation">
-                <a href="#all_players" aria-controls="all_players" role="tab" data-toggle="pill">
-                    All Players
-                    <span .badge .pull-right>#{length allPlayers}
+            $if leagueIsDraftComplete league
+                <li role="presentation">
+                    <a href="#all_players" aria-controls="all_players" role="tab" data-toggle="pill">
+                        All Players
+                        <span .badge .pull-right>#{length allPlayers}
 
     <div .col-lg-9 .col-sm-8 .col-xs-12>
         <div .tab-content>

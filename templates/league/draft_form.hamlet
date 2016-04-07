@@ -14,6 +14,11 @@
                                     <td .col-xs-5>House #{teamName team}
                                     <td .col-xs-6>^{fvInput $ snd playerIdField}
 
+            <div .panel-footer .text-primary>
+                <b>Important:
+                \ You will not be able to edit your draft, scoring, or general
+                \ settings after completing your draft.
+
         <button #submit_draft .btn .btn-primary .pull-right .disabled type="submit" name="commit">
             Complete Draft
 

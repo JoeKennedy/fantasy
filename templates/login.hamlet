@@ -1,7 +1,7 @@
 <div .col-md-4 .col-sm-6 .col-xs-8 .col-md-offset-4 .col-sm-offset-3 .col-xs-offset-2>
     <div .panel .panel-default>
         <div .panel-heading>
-            <h5 .text-center>Sign In
+            <h5 .text-center>Sign In/Up
         <div .panel-body>
             <div .col-xs-12>
                 <p>

@@ -1,0 +1,32 @@
+<div .row>
+    <div .col-md-4 .col-sm-6 .col-xs-8 .col-md-offset-4 .col-sm-offset-3 .col-xs-offset-2>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Join League
+
+            <ul .list-group>
+                <li .list-group-item>
+                    <span .text-primary>#{teamOwnerName leagueManagerTeam}
+                    has invited you to join a Game
+                    Of Thrones fantasy league, #
+                    <span .text-primary>#{leagueName league}</span>!
+                    Your house name is
+                    <span .text-primary>House #{teamName team}</span>.*
+                <li .list-group-item>
+                        Click the button below to
+                        $if isNothing maybeUserId
+                            \ sign in to or sign up for our site and then you'll
+                            \ be able to
+                        \ get started in your new league!
+                <li .list-group-item .text-center>
+                    $if isNothing maybeUserId
+                        <a .btn .btn-primary .btn-lg .text-center href=@{AuthR LoginR}>
+                            Sign In/Up
+                    $else
+                        <form method="post" action=@{LeagueTeamJoinR leagueId teamId verificationKey}>
+                            <button .btn .btn-primary .btn-lg .text-center type="submit" name="commit">
+                                Join League
+
+            <div .panel-footer>
+                <span .text-primary>
+                    * Don't worry, you can change the name of your house later.

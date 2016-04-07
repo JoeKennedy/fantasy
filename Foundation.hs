@@ -6,6 +6,7 @@ import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.))
 import           Database.Persist.Sql                 (ConnectionPool, runSqlPool)
 import           Facebook                             (Credentials(..))
+import           Network.Mail.Mime.SES
 import           Text.Hamlet                          (hamletFile)
 import           Text.Jasmine                         (minifym)
 import           Web.ServerSession.Backend.Persistent
@@ -30,6 +31,7 @@ data App = App
     , appLogger             :: Logger
     , appFacebookOAuth2Keys :: OAuth2Keys
     , appGoogleOAuth2Keys   :: OAuth2Keys
+    , appSesCreds           :: Text -> SES
     }
 
 instance HasHttpManager App where
@@ -117,14 +119,18 @@ instance Yesod App where
     isAuthorized (SeriesEpisodeEventsR _ _)  _      = requireAdmin
     isAuthorized (SeriesEpisodeEventR _ _ _) _      = requireAdmin
 
+    -- TODO - For team and player routes, make sure that each
+    -- entity is in the correct league
     isAuthorized LeaguesR                          _ = return Authorized
     isAuthorized (LeagueR leagueId)                _ = requirePublicOrLeagueMember leagueId
-    isAuthorized (LeagueDraftR leagueId _)         _ = requireLeagueManagerAndIncompleteDraft leagueId
+    isAuthorized (LeagueDraftR leagueId draftYear) _ = requireLeagueManagerAndIncompleteDraft leagueId draftYear
     isAuthorized (LeagueTransactionsR leagueId)    _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueAcceptTradeR _ tid)        _ = requireTradeAcceptable tid
     isAuthorized (LeagueDeclineTradeR _ tid)       _ = requireTradeDeclinable tid
     isAuthorized (LeagueTeamsR leagueId)           _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueTeamR leagueId _)          _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeagueTeamJoinR _ tid verKey) True = requireCorrectVerKeyAndLoggedIn tid verKey
+    isAuthorized (LeagueTeamJoinR _ tid vkey)  False = requireCorrectVerificationKey tid vkey
     isAuthorized (LeagueTeamSettingsR _ teamId)    _ = requireTeamOwner teamId
 
     isAuthorized (LeaguePlayersR leagueId)         _ = requirePublicOrLeagueMember leagueId
@@ -179,7 +185,8 @@ requireAdmin = do
     mu <- maybeAuth
     return $ case mu of
         Nothing -> AuthenticationRequired
-        Just (Entity _ u) -> if userIsAdmin u then Authorized else Unauthorized "You must be an admin"
+        Just (Entity _ u) ->
+            if userIsAdmin u then Authorized else Unauthorized "You must be an admin"
 
 requireAdminIfPost :: Bool -> Handler AuthResult
 requireAdminIfPost True  = requireAdmin
@@ -218,6 +225,19 @@ requireTradeAcceptable transactionId = do
 requireTradeDeclinable :: TransactionId -> Handler AuthResult
 requireTradeDeclinable = requireTradeAcceptable
 
+requireCorrectVerificationKey :: TeamId -> Text -> Handler AuthResult
+requireCorrectVerificationKey teamId verificationKey = do
+    team <- runDB $ get404 teamId
+    return $ if teamVerificationKey team == verificationKey
+        then Authorized
+        else Unauthorized "You aren't allowed to join this league"
+
+requireCorrectVerKeyAndLoggedIn :: TeamId -> Text -> Handler AuthResult
+requireCorrectVerKeyAndLoggedIn teamId verKey = do
+    authResult <- requireLoggedIn
+    case authResult of Authorized -> requireCorrectVerificationKey teamId verKey
+                       _ -> return authResult
+
 requireTeamOwner :: TeamId -> Handler AuthResult
 requireTeamOwner teamId = do
     team <- runDB $ get404 teamId
@@ -244,15 +264,17 @@ requireLeagueManager leagueId = do
                 then Authorized
                 else Unauthorized "You aren't allowed to manage this league"
 
-requireLeagueManagerAndIncompleteDraft :: LeagueId -> Handler AuthResult
-requireLeagueManagerAndIncompleteDraft leagueId = do
-    league <- runDB $ get404 leagueId
-    authResult <- requireLeagueManager leagueId
-    return $ case authResult of
-        Authorized -> if leagueIsDraftComplete league
-                          then Unauthorized "Draft already completed"
-                          else Authorized
-        _ -> authResult
+requireLeagueManagerAndIncompleteDraft :: LeagueId -> Int -> Handler AuthResult
+requireLeagueManagerAndIncompleteDraft leagueId draftYear
+    | draftYear /= 2016 = return $ Unauthorized "Draft can't happen for that year"
+    | otherwise = do
+        league <- runDB $ get404 leagueId
+        authResult <- requireLeagueManager leagueId
+        return $ case authResult of
+            Authorized -> if leagueIsDraftComplete league
+                              then Unauthorized "Draft already completed"
+                              else Authorized
+            _ -> authResult
 
 requirePlayerOwner :: PlayerId -> Handler AuthResult
 requirePlayerOwner playerId = do
@@ -325,6 +347,7 @@ instance YesodBreadcrumbs App where
         team <- runDB $ get404 teamId
         return ("House " ++ teamName team, Just $ LeagueTeamsR leagueId)
     breadcrumb (LeagueTeamSettingsR leagueId teamId) = return ("Settings", Just $ LeagueTeamR leagueId teamId)
+    breadcrumb (LeagueTeamJoinR leagueId teamId _)   = return ("Join", Just $ LeagueTeamR leagueId teamId)
 
     -- League settings breadcrumbs
     breadcrumb (LeagueSettingsR leagueId LeagueEditSettingsR)    = return ("League Settings", Just $ LeagueR leagueId)

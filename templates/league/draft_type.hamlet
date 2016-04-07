@@ -5,5 +5,9 @@
         &nbsp;
         <span .label .label-primary>
             Recommended!
+    $elseif (isDisabledDraftType draftType)
+        &nbsp;
+        <span .label .label-danger>
+            Not yet available
 <p .list-group-item-text>
     #{draftTypeDescription draftType}

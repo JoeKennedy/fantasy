@@ -1,13 +1,14 @@
 #{extra}
 <div .row>
     <div .col-md-5>
-        <div .panel .panel-default>
-            <div .panel-heading>
-                <h5 .text-center>Weighted Scoring Settings
-            <ul .list-group>
-                <li .list-group-item>
-                    <h6 .list-group-item-heading>What is "weighted" scoring?
-                    <p .list-group-item-text>
+        <div #weighted_panel .panel-group role="tablist" arai-multiselectable="true">
+            <div .panel .panel-primary>
+                <div #what_is_weighted .panel-heading role="tab">
+                    <h1 .panel-title>
+                        <a .collapsed role="button" data-toggle="collapse" data-parent="#weighted_panel" href="#collapse_what_is_weighted" aria-expanded="false" aria-controls="collapse_what_is_weighted">
+                            What is "weighted" scoring?
+                <div #collapse_what_is_weighted .panel-collapse .collapse role="tabpanel" aria-labelledby="what_is_weighted">
+                    <div .panel-body>
                         As an overview, weighted scoring is a way to assure that
                         \ important actions relative to the plot, action, or
                         \ fictional universe, i.e. Snape killing Dumbledore
@@ -16,9 +17,13 @@
                         \ Legolas killing a random
                         \ Orc (shoot, different wrong series).
 
-                <li .list-group-item>
-                    <h6 .list-group-item-heading>How does weighted scoring work?
-                    <p .list-group-item-text>
+            <div .panel .panel-primary>
+                <div #how_does_weighted_work .panel-heading role="tab">
+                    <h1 .panel-title>
+                        <a .collapsed role="button" data-toggle="collapse" data-parent="#weighted_panel" href="#collapse_how_does_weighted_work" aria-expanded="false" aria-controls="collapse_how_does_weighted_work">
+                            How does weighted scoring work?
+                <div #collapse_how_does_weighted_work .panel-collapse .collapse role="tabpanel" aria-labelledby="how_does_weighted_work">
+                    <div .panel-body>
                         Each action, like a kill or an insult, rather than
                         \ being just X number of points, now has a weight,
                         \ which is calculated as the percent of points the
@@ -28,10 +33,13 @@
                         \ actions) has accrued over the course of the series up
                         \ to the moment the action happened.
 
-                <li .list-group-item>
-                    <h6 .list-group-item-heading>
-                        Can I have an example for a single character action?
-                    <div .list-group-item-text>
+            <div .panel .panel-primary>
+                <div #single_example .panel-heading role="tab">
+                    <h1 .panel-title>
+                        <a .collapsed role="button" data-toggle="collapse" data-parent="#weighted_panel" href="#collapse_single_example" aria-expanded="false" aria-controls="collapse_single_example">
+                            Can I have an example for a single character action?
+                <div #collapse_single_example .panel-collapse .collapse role="tabpanel" aria-labelledby="single_example">
+                    <div .panel-body>
                         <p> Up-to-date show watchers should remember (spoiler
                             \ alert) when Lady Selyse Baratheon, wife of the
                             \ (probably?) late Stannis Baratheon, hung herself
@@ -59,10 +67,13 @@
                             <dt>Selyse Baratheon
                             <dd>-83 points
 
-                <li .list-group-item>
-                    <h6 .list-group-item-heading>
-                        Can I have an example for a multi-character action?
-                    <div .list-group-item-text>
+            <div .panel .panel-primary>
+                <div #double_example .panel-heading role="tab">
+                    <h1 .panel-title>
+                        <a .collapsed role="button" data-toggle="collapse" data-parent="#weighted_panel" href="#collapse_double_example" aria-expanded="false" aria-controls="collapse_double_example">
+                            Can I have an example for a multi-character action?
+                <div #collapse_double_example .panel-collapse .collapse role="tabpanel" aria-labelledby="double_example">
+                    <div .panel-body>
                         <p> As an example, let's go with the moment that
                             \ (spoiler alert)
                             <strong .text-primary>Roose Bolton
@@ -121,10 +132,13 @@
                             <dt .text-muted>Robb Stark
                             <dd>-265 points
 
-                <li .list-group-item>
-                    <h6 .list-group-item-heading>
-                        Why don't some actions have weights?
-                    <div .list-group-item-text>
+            <div .panel .panel-primary>
+                <div #why_no_weights .panel-heading role="tab">
+                    <h1 .panel-title>
+                        <a .collapsed role="button" data-toggle="collapse" data-parent="#weighted_panel" href="#collapse_why_no_weights" aria-expanded="false" aria-controls="collapse_why_no_weights">
+                            Why don't some actions have weights?
+                <div #collapse_why_no_weights .panel-collapse .collapse role="tabpanel" aria-labelledby="why_no_weights">
+                    <div .panel-body>
                         <p> Some actions, like those related to drinking, aren't
                             \ more important when done by, say, Tyrion Lannister
                             \ than by an unnamed Stark bannerman. Sure, it's fun
@@ -137,10 +151,6 @@
                             \ However, we've allowed all weights to be
                             \ adjustable, because it's up to you to decide
                             \ how your league is scored.
-            <div .panel-body .text-primary>
-                Hopefully this section has answered any questions
-                \ you might have had about weighted scoring. Go forth and
-                \ configure your scoring settings!
 
     <div .col-md-7>
         <div .panel .panel-default>

@@ -8,6 +8,8 @@ import Handler.League.Layout
 import Data.Random.List
 import Data.Random.RVar
 import Data.Random.Source.DevRandom
+import Network.Mail.Mime
+import System.Random                (newStdGen)
 
 ----------
 -- Form --
@@ -159,31 +161,41 @@ createScoringSettingsRow (Entity leagueId league) action =
             }
 
 createTeam :: Entity League -> (Int, Int) -> ReaderT SqlBackend Handler ()
-createTeam (Entity leagueId league) (teamNumber, draftOrder) =
-    let (maybeTeamOwnerId, maybeConfirmedAt) = teamAttributes league teamNumber
-    in  insert_ $ Team { teamLeagueId      = leagueId
-                       , teamName          = pack $ "Number " ++ show teamNumber
-                       , teamAbbreviation  = pack $ "N" ++ show teamNumber
-                       , teamOwnerId       = maybeTeamOwnerId
-                       , teamOwnerName     = pack $ "Owner " ++ show teamNumber
-                       , teamOwnerEmail    = pack $ "Enter Team " ++ show teamNumber ++ "'s email"
-                       , teamIsConfirmed   = isJust maybeConfirmedAt
-                       , teamPlayersCount  = 0
-                       , teamStartersCount = 0
-                       , teamDraftOrder    = draftOrder
-                       , teamWaiverOrder   = teamNumber
-                       , teamCreatedBy     = leagueCreatedBy league
-                       , teamCreatedAt     = leagueCreatedAt league
-                       , teamUpdatedBy     = leagueUpdatedBy league
-                       , teamUpdatedAt     = leagueUpdatedAt league
-                       , teamConfirmedBy   = maybeTeamOwnerId
-                       , teamConfirmedAt   = maybeConfirmedAt
-                       }
+createTeam (Entity leagueId league) (teamNumber, draftOrder) = do
+    stdgen <- liftIO newStdGen
+    let (name, abbrev, owner, email) = teamTextAttributes teamNumber
+        (maybeTeamOwnerId, maybeConfirmedAt) = teamNonTextAttributes league teamNumber
+        verificationKey = pack $ fst $ randomString 24 stdgen
+    insert_ $ Team { teamLeagueId        = leagueId
+                   , teamName            = name
+                   , teamAbbreviation    = abbrev
+                   , teamOwnerId         = maybeTeamOwnerId
+                   , teamOwnerName       = owner
+                   , teamOwnerEmail      = email
+                   , teamIsConfirmed     = isJust maybeConfirmedAt
+                   , teamPlayersCount    = 0
+                   , teamStartersCount   = 0
+                   , teamDraftOrder      = draftOrder
+                   , teamWaiverOrder     = teamNumber
+                   , teamVerificationKey = verificationKey
+                   , teamCreatedBy       = leagueCreatedBy league
+                   , teamCreatedAt       = leagueCreatedAt league
+                   , teamUpdatedBy       = leagueUpdatedBy league
+                   , teamUpdatedAt       = leagueUpdatedAt league
+                   , teamConfirmedBy     = maybeTeamOwnerId
+                   , teamConfirmedAt     = maybeConfirmedAt
+                   }
 
-teamAttributes :: League -> Int -> (Maybe UserId, Maybe UTCTime)
-teamAttributes league 1 =
+teamTextAttributes :: Int -> (Text, Text, Text, Text)
+teamTextAttributes 1 = ("My House Name", "N1", "My Name", "My Email Address")
+teamTextAttributes n =
+    let s = (pack . show) n
+    in  ("Number " ++ s, "N" ++ s, "Owner " ++ s, "Owner " ++ s ++ "'s email")
+
+teamNonTextAttributes :: League -> Int -> (Maybe UserId, Maybe UTCTime)
+teamNonTextAttributes league 1 =
     (Just $ leagueCreatedBy league, Just $ leagueCreatedAt league)
-teamAttributes _ _ = (Nothing, Nothing)
+teamNonTextAttributes _ _ = (Nothing, Nothing)
 
 createPlayer :: Entity League -> CharacterId -> ReaderT SqlBackend Handler ()
 createPlayer (Entity leagueId league) characterId =
@@ -208,6 +220,8 @@ leagueListGroupItem (Just league) scoringType
     | leagueScoringType league == scoringType =
         [whamlet|<div .list-group-item .active>^{scoringTypeWidget scoringType}|]
     | otherwise = [whamlet|<div .list-group-item>^{scoringTypeWidget scoringType}|]
-leagueListGroupItem Nothing scoringType =
-    [whamlet|<a .list-group-item href="#">^{scoringTypeWidget scoringType}|]
+leagueListGroupItem Nothing scoringType
+    | isDisabledScoringType scoringType =
+        [whamlet|<a .list-group-item .disabled href="#">^{scoringTypeWidget scoringType}|]
+    | otherwise = [whamlet|<a .list-group-item href="#">^{scoringTypeWidget scoringType}|]
 

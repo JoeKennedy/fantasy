@@ -12,6 +12,7 @@ import Handler.League.Transaction (getRequestedTransactions, getSuccessfulTransa
 import Handler.League.Setup
 
 import Data.List  ((!!))
+import Data.Maybe (fromJust)
 import Text.Blaze (toMarkup)
 
 ----------
@@ -57,6 +58,7 @@ teamSettingsForm currentUserId league draftSettings teams extra = do
                     then fst draftOrderField
                     else pure (teamDraftOrder team))
             <*> pure (teamWaiverOrder team)
+            <*> pure (teamVerificationKey team)
             <*> pure (teamCreatedBy team)
             <*> pure (teamCreatedAt team)
             <*> updatedByField currentUserId
@@ -139,6 +141,34 @@ postLeagueTeamSettingsR leagueId teamId = updateTeamSettings leagueId (Just team
 
 postLeagueTeamsSettingsR :: LeagueId -> Handler Html
 postLeagueTeamsSettingsR leagueId = updateTeamSettings leagueId Nothing "Teams"
+
+getLeagueTeamJoinR :: LeagueId -> TeamId -> Text -> Handler Html
+getLeagueTeamJoinR leagueId teamId verificationKey = do
+    maybeUserId <- maybeAuthId
+    league <- runDB $ get404 leagueId
+    team <- runDB $ get404 teamId
+    maybeLeagueManagerTeam <- runDB $ selectFirst [ TeamLeagueId ==. leagueId
+                                                  , TeamOwnerId ==. Just (leagueCreatedBy league)
+                                                  ] []
+    let (Entity _ leagueManagerTeam) = fromJust maybeLeagueManagerTeam
+    defaultLayout $ do
+        setTitle $ toMarkup $ "Join League " ++ leagueName league
+        $(widgetFile "league/join")
+
+postLeagueTeamJoinR :: LeagueId -> TeamId -> Text -> Handler Html
+postLeagueTeamJoinR leagueId teamId _verificationKey = do
+    userId <- requireAuthId
+    now <- liftIO getCurrentTime
+    runDB $ update teamId [ TeamIsConfirmed =. True
+                          , TeamOwnerId =. Just userId
+                          , TeamUpdatedBy =. userId
+                          , TeamUpdatedAt =. now
+                          , TeamConfirmedBy =. Just userId
+                          , TeamConfirmedAt =. Just now
+                          ]
+    -- TODO - send an email to the owner who just joined
+    setMessage "Congrats! You've successfully joined the league!"
+    redirect $ LeagueTeamR leagueId teamId
 
 -------------
 -- Helpers --

@@ -1,0 +1,8 @@
+<div .page-header>
+    <h4>
+        #{leagueName league}
+        <small>Draft
+
+<h6 .text-center>
+    You cannot enter draft results until all team owners have joined league.
+    <a href=@{LeagueTeamsR leagueId}>See which team owners haven't joined.

@@ -8,7 +8,7 @@
         <div .panel .panel-default>
             <div .panel-heading>
                 <h5 .text-center>Teams
-            <table .table .table-hover>
+            <table .table .table-hover .table-striped>
                 <thead>
                     <tr>
                         <th .col-xs-3>Name
