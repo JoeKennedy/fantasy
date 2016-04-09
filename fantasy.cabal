@@ -171,16 +171,3 @@ test-suite test
                  , classy-prelude
                  , classy-prelude-yesod
 
-executable Seed
-    if flag(library-only)
-        Buildable: False
-
-    main-is:           Seed.hs
-    hs-source-dirs:    test
-    build-depends:     base
-                     , fantasy
-                     , monad-logger
-                     , persistent
-                     , persistent-postgresql
-                     , time
-
