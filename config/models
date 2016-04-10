@@ -17,17 +17,22 @@ Species
     name Text
     description Text
     UniqueSpeciesName name
+    UniqueSpeciesDescription description
 House
     name Text
     words Text
     description Text
     UniqueHouseName name
+    UniqueHouseDescription description
+
 Character
     name Text
     bio Text
     speciesId SpeciesId
     houseId HouseId Maybe
     UniqueCharacterName name
+    UniqueCharacterBio bio
+
 Series
     number Int
     UniqueSeriesNumber number
