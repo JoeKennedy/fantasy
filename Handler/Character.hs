@@ -25,6 +25,7 @@ getCharactersR = do
         $ E.from $ \(character `E.InnerJoin` species `E.LeftOuterJoin` house) -> do
             E.on $ E.just (character ^. CharacterHouseId) E.==. E.just (house ?. HouseId)
             E.on $ character ^. CharacterSpeciesId E.==. species ^. SpeciesId
+            E.orderBy [E.asc (character ^. CharacterName)]
             return (character, species, house)
     defaultLayout $ do
       setTitle "Character list"
