@@ -58,7 +58,7 @@ createdAtField (Just createdAt) = pure createdAt
 createdAtField Nothing          = updatedAtField
 
 updatedByField :: (Applicative f) => UserId -> f UserId
-updatedByField currentUserId = pure currentUserId
+updatedByField = pure
 
 updatedAtField :: (Applicative (t m), MonadTrans t, MonadIO m) => t m UTCTime
 updatedAtField = lift (liftIO getCurrentTime)
