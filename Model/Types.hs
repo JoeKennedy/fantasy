@@ -3,6 +3,22 @@ module Model.Types where
 import ClassyPrelude.Yesod
 import Web.PathPieces
 
+---------------------
+-- CharacterStatus --
+---------------------
+data CharacterStatus = Alive | Dead | Uncertain
+    deriving (Show, Read, Eq, Ord, Enum, Bounded)
+derivePersistField "CharacterStatus"
+
+instance PathPiece CharacterStatus where
+    fromPathPiece = readFromPathPiece
+    toPathPiece = showToPathPiece
+
+isDead :: CharacterStatus -> Bool
+isDead Dead = True
+isDead    _ = False
+
+
 -----------------
 -- ScoringType --
 -----------------
@@ -81,6 +97,7 @@ draftOrders = [minBound .. maxBound] :: [DraftOrder]
 draftOrderOptions :: [(Text, DraftOrder)]
 draftOrderOptions = map (\draftOrder ->
     (pack $ show draftOrder, draftOrder)) draftOrders 
+
 
 --------------------
 -- DraftOrderType --

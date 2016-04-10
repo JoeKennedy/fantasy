@@ -9,12 +9,17 @@ import           Database.Esqueleto ((^.), (?.))
 import           Text.Blaze (toMarkup)
 import           Yesod.Form.Bootstrap3 (renderBootstrap3)
 
-characterForm :: Maybe Character -> Form Character
-characterForm character = renderBootstrap3 defaultBootstrapForm $ Character
+characterForm :: UserId -> Maybe Character -> Form Character
+characterForm userId character = renderBootstrap3 defaultBootstrapForm $ Character
     <$> areq textField (fieldName "Name") (characterName <$> character)
     <*> areq textField (fieldName "Bio") (characterBio <$> character)
     <*> areq (selectField speciesList) (fieldName "Species") (characterSpeciesId <$> character)
     <*> aopt (selectField houses) (fieldName "House") (characterHouseId <$> character)
+    <*> areq (selectField optionsEnum) (fieldName "Status") (characterStatus <$> character)
+    <*> createdByField userId (characterCreatedBy <$> character)
+    <*> createdAtField (characterCreatedAt <$> character)
+    <*> updatedByField userId
+    <*> updatedAtField
     where speciesList = optionsPersistKey [] [Asc SpeciesName] speciesName
           houses = optionsPersistKey [] [Asc HouseName] houseName
 
@@ -53,7 +58,8 @@ getCharacterR characterId = do
 
 getNewCharacterR :: Handler Html
 getNewCharacterR = do
-    (widget, enctype) <- generateFormPost $ characterForm Nothing
+    userId <- requireAuthId
+    (widget, enctype) <- generateFormPost $ characterForm userId Nothing
     defaultLayout $ do
         let title = "Create a new character" :: Html
             action = NewCharacterR
@@ -62,7 +68,8 @@ getNewCharacterR = do
 
 postNewCharacterR :: Handler Html
 postNewCharacterR = do
-    ((result, widget), enctype) <- runFormPost $ characterForm Nothing
+    userId <- requireAuthId
+    ((result, widget), enctype) <- runFormPost $ characterForm userId Nothing
     case result of
         FormSuccess character -> do
             characterId <- runDB $ insert character
@@ -77,8 +84,9 @@ postNewCharacterR = do
 
 getEditCharacterR :: CharacterId -> Handler Html
 getEditCharacterR characterId = do
+    userId <- requireAuthId
     character <- runDB $ get404 characterId
-    (widget, enctype) <- generateFormPost $ characterForm $ Just character
+    (widget, enctype) <- generateFormPost $ characterForm userId $ Just character
     defaultLayout $ do
         let title = toMarkup $ "Edit " ++ characterName character
             action = EditCharacterR characterId
@@ -87,8 +95,9 @@ getEditCharacterR characterId = do
 
 postEditCharacterR :: CharacterId -> Handler Html
 postEditCharacterR characterId = do
+    userId <- requireAuthId
     character <- runDB $ get404 characterId
-    ((result, widget), enctype) <- runFormPost $ characterForm $ Just character
+    ((result, widget), enctype) <- runFormPost $ characterForm userId $ Just character
     case result of
         FormSuccess character' -> do
             runDB $ replace characterId character'
