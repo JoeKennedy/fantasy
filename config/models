@@ -30,11 +30,11 @@ Character
     bio Text
     speciesId SpeciesId
     houseId HouseId Maybe
-    status CharacterStatus default='Alive'
-    createdBy UserId default=1
-    createdAt UTCTime default=now()
-    updatedBy UserId default=1
-    updatedAt UTCTime default=now()
+    status CharacterStatus
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
     UniqueCharacterName name
     UniqueCharacterBio bio
 
