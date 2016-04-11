@@ -4,7 +4,7 @@ $if isAdmin maybeUser
     ^{embeddedForm action enctype widget}
 
 <div .table-responsive>
-    <table .table>
+    <table .table .table-striped .table-hover>
         <thead>
             <th>Species
             <th>Description

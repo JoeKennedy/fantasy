@@ -1,6 +1,6 @@
 $if not (null characters)
-    <div class="table-responsive">
-        <table class="table">
+    <div .table-responsive>
+        <table .table .table-striped .table-hover>
             <thead>
                 <th>Character
                 <th>Status

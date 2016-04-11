@@ -2,7 +2,7 @@
 
 $if not (null leagues)
     <div .table-responsive>
-        <table .table>
+        <table .table .table-striped .table-hover>
             <thead>
                 <tr>
                     <th>League
