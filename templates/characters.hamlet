@@ -1,6 +1,4 @@
-$if null characters
-    <span>
-$else
+$if not (null characters)
     <div class="table-responsive">
         <table class="table">
             <thead>
