@@ -5,8 +5,6 @@
                 <h3 .panel-title>
                     <a role="button" data-toggle="collapse" data-parent="#seasons_accordion" href="#collapse#{seriesNumber series}" aria-expanded="true" aria-controls="collapse#{seriesNumber series}">Season #{seriesNumber series}
             <div .panel-collapse .collapse .in #collapse#{seriesNumber series} role="tabpanel" aria-labelledby="heading#{seriesNumber series}">
-                <div .panel-body>
-                    Statistics
                 <table .table>
                     <thead>
                         <tr>

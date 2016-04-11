@@ -3,9 +3,7 @@
         <h3 .panel-title>
             <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse#{seriesNumber series}" aria-expanded="true" aria-controls="collapse#{seriesNumber series}">#{panelTitle}
     <div .panel-collapse .collapse .in #collapse#{seriesNumber series} role="tabpanel" aria-labelledby="heading#{seriesNumber series}">
-        <div .panel-body>
-            Statistics
-        <table .table>
+        <table .table .table-hover .table-striped>
             <thead>
                 <tr>
                     <th .col-sm-1># Overall
@@ -18,6 +16,8 @@
                         <td>#{episodeOverallNumber episode}
                         <td>#{episodeNumber episode}
                         <td>
-                            <a href=@{SeriesEpisodeR (seriesNumber series) (episodeNumber episode)}>#{episodeName episode}
+                            $with (seriesNo, episodeNo) <- (seriesNumber series, episodeNumber episode)
+                                <a href=@{SeriesEpisodeR seriesNo episodeNo}>
+                                    #{episodeName episode}
                         <td>#{displayAirDate $ episodeAirTime episode}
 
