@@ -4,7 +4,7 @@ import Model.Types
 
 import ClassyPrelude.Yesod
 
-data Action = Appear | Kill | Defeat | Insult | Maim | Injure | Sentence | Torture | Sex | Guilty | Innocent | Clear | Death | Raise | Pour | Drink | Finish
+data Action = Appear | Kill | Defeat | Insult | Attack | Injure | Sentence | Torture | Sex | Guilty | Innocent | Clear | Death | Raise | Pour | Drink | Finish
     deriving (Show, Read, Eq, Enum, Bounded)
 derivePersistField "Action"
 
@@ -19,7 +19,7 @@ isMultiCharacter Appear   = False
 isMultiCharacter Kill     = True
 isMultiCharacter Defeat   = True
 isMultiCharacter Insult   = True
-isMultiCharacter Maim     = True
+isMultiCharacter Attack   = True
 isMultiCharacter Injure   = True
 isMultiCharacter Sentence = True
 isMultiCharacter Torture  = True
@@ -38,7 +38,7 @@ actionToSplitString Appear   = (" appeared in the episode ", " ")
 actionToSplitString Kill     = (" killed ", " ")
 actionToSplitString Defeat   = (" defeated ", " in combat ")
 actionToSplitString Insult   = (" insulted ", " ")
-actionToSplitString Maim     = (" maimed ", " ")
+actionToSplitString Attack   = (" attacked ", " ")
 actionToSplitString Injure   = (" injured ", " ")
 actionToSplitString Sentence = (" sentenced ", " to death ")
 actionToSplitString Torture  = (" tortured ", " ")
@@ -56,7 +56,7 @@ reverseActionString :: Action -> String
 reverseActionString Kill     = " killed by "
 reverseActionString Defeat   = " defeated in combat by "
 reverseActionString Insult   = " insulted by "
-reverseActionString Maim     = " maimed by "
+reverseActionString Attack   = " attacked by "
 reverseActionString Injure   = " injured by "
 reverseActionString Sentence = " sentenced to death by "
 reverseActionString Torture  = " tortured by "
