@@ -2,17 +2,16 @@
 <div .row>
     <div .col-lg-6 .col-lg-offset-3 .col-md-8 .col-md-offset-2 .col-sm-10 .col-sm-offset-1 .col-xs-12>
         <div .panel .panel-primary .draft-panel>
-            <div .table-responsive>
-                <table .table .table-hover .table-striped .draft-table>
-                    <tbody>
-                        $forall (round, roundForms) <- groupedForms
-                            <tr>
-                                <th .lead .text-center .bg-primary colspan="3">ROUND #{round}
-                            $forall (number, Entity _ team, playerIdField) <- roundForms
-                                <tr .draft-pick-row .vertical-align-middle>
-                                    <td .col-xs-1>#{show number}
-                                    <td .col-xs-5>House #{teamName team}
-                                    <td .col-xs-6>^{fvInput $ snd playerIdField}
+            <table .table .table-hover .table-striped .draft-table>
+                <tbody>
+                    $forall (round, roundForms) <- groupedForms
+                        <tr>
+                            <th .lead .text-center .bg-primary colspan="3">ROUND #{round}
+                        $forall (number, Entity _ team, playerIdField) <- roundForms
+                            <tr .draft-pick-row .vertical-align-middle>
+                                <td .col-xs-1>#{show number}
+                                <td .col-xs-5>House #{teamName team}
+                                <td .col-xs-6>^{fvInput $ snd playerIdField}
 
             <div .panel-footer .text-primary>
                 <b>Important:

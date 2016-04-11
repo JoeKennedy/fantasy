@@ -5,9 +5,8 @@
             $if isAdmin maybeUser
                 <a .pull-right href=@{CharacterBlurbR characterId blurbId}>
                     <i .fa .fa-pencil>
-    <div .table-responsive>
-        <table .table .panel-table>
-            <tbody>
-                <tr>
-                    <td>#{blurbContent blurb}
+    <table .table .panel-table>
+        <tbody>
+            <tr>
+                <td>#{blurbContent blurb}
 

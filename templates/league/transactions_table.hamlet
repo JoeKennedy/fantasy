@@ -3,44 +3,43 @@ $if null transactions
         <h5 .text-center>No transactions yet
 
 $else 
-    <div .table-responsive>
-        <table .table .table-condensed .table-striped .transactions-table>
-            $forall (num, (Entity transactionId transaction, tps)) <- zippedTransactions
-                $maybe (Entity teamId team, _, _, _, _) <- listToMaybe tps
-                    <thead>
-                        <tr .active>
-                            <td>
-                                <small>
-                                    $maybe completedAt <- transactionCompletedAt transaction
-                                        #{displayUTCTime completedAt}
-                                    $nothing
-                                        $if transactionType transaction == Trade
-                                            \ Proposed by
-                                            <a href="@{LeagueTeamR (teamLeagueId team) teamId}">
-                                                House #{teamName team}
-                                        $if transactionType transaction == Claim
-                                            #{intToOrdinal num}
-                                            \ to be processed
-
-                    <tbody>
-                        <tr>
-                            <td>
-                                $if isNothing maybeCurrentTeamId && usePastTense
-                                    <a .text-decoration-none href="@{LeagueTeamR (teamLeagueId team) teamId}">
-                                        <h6 .text-primary>
+    <table .table .table-condensed .table-striped .transactions-table>
+        $forall (num, (Entity transactionId transaction, tps)) <- zippedTransactions
+            $maybe (Entity teamId team, _, _, _, _) <- listToMaybe tps
+                <thead>
+                    <tr .active>
+                        <td>
+                            <small>
+                                $maybe completedAt <- transactionCompletedAt transaction
+                                    #{displayUTCTime completedAt}
+                                $nothing
+                                    $if transactionType transaction == Trade
+                                        \ Proposed by
+                                        <a href="@{LeagueTeamR (teamLeagueId team) teamId}">
                                             House #{teamName team}
+                                    $if transactionType transaction == Claim
+                                        #{intToOrdinal num}
+                                        \ to be processed
 
-                                <ul .list-unstyled>
-                                    $forall transactionPlayer <- tps
-                                        $with (Entity tid _, fullTP) <- quintupleToTuple transactionPlayer
-                                            $with teamId <- fromMaybe tid maybeCurrentTeamId
-                                                <li>^{transactionPlayerWidget transaction fullTP teamId usePastTense}
+                <tbody>
+                    <tr>
+                        <td>
+                            $if isNothing maybeCurrentTeamId && usePastTense
+                                <a .text-decoration-none href="@{LeagueTeamR (teamLeagueId team) teamId}">
+                                    <h6 .text-primary>
+                                        House #{teamName team}
 
-                                $if transactionOtherTeamId transaction == maybeCurrentTeamId
-                                    $if isJust maybeCurrentTeamId && not usePastTense
-                                        $if transactionType transaction == Trade
-                                            $with leagueId <- transactionLeagueId transaction
-                                                <div .trade-actions .hidden>
-                                                    ^{tradeButton "accept" leagueId transactionId}
-                                                    ^{tradeButton "decline" leagueId transactionId}
+                            <ul .list-unstyled>
+                                $forall transactionPlayer <- tps
+                                    $with (Entity tid _, fullTP) <- quintupleToTuple transactionPlayer
+                                        $with teamId <- fromMaybe tid maybeCurrentTeamId
+                                            <li>^{transactionPlayerWidget transaction fullTP teamId usePastTense}
+
+                            $if transactionOtherTeamId transaction == maybeCurrentTeamId
+                                $if isJust maybeCurrentTeamId && not usePastTense
+                                    $if transactionType transaction == Trade
+                                        $with leagueId <- transactionLeagueId transaction
+                                            <div .trade-actions .hidden>
+                                                ^{tradeButton "accept" leagueId transactionId}
+                                                ^{tradeButton "decline" leagueId transactionId}
 
