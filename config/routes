@@ -4,10 +4,12 @@
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
 
-/characters                   CharactersR    GET
-/characters/new               NewCharacterR  GET POST
-!/characters/#CharacterId     CharacterR     GET
-/characters/#CharacterId/edit EditCharacterR GET POST
+/characters                              CharactersR      GET
+/characters/new                          NewCharacterR    GET POST
+!/characters/#CharacterId                CharacterR       GET
+/characters/#CharacterId/edit            EditCharacterR   GET POST
+/characters/#CharacterId/blurbs          CharacterBlurbsR GET POST
+/characters/#CharacterId/blurbs/#BlurbId CharacterBlurbR  GET POST
 
 /species            SpeciesListR GET POST
 /species/#SpeciesId SpeciesR     GET POST

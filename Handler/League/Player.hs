@@ -1,7 +1,7 @@
 module Handler.League.Player where
 
 import Import
-import Handler.Common             (extractValue, groupByThirdOfFive)
+import Handler.Common             (isAdmin, extractValue, groupByThirdOfFive)
 import Handler.League.Layout
 import Handler.League.Transaction
 
@@ -29,11 +29,20 @@ getLeaguePlayersR leagueId = do
         rosterSize = generalSettingsRosterSize generalSettings
     leagueLayout leagueId "Players" $(widgetFile "league/players")
 
-getLeaguePlayerR :: LeagueId -> PlayerId -> Handler ()
+getLeaguePlayerR :: LeagueId -> PlayerId -> Handler Html
 getLeaguePlayerR leagueId playerId = do
+    maybeUser <- maybeAuth
+    league <- runDB $ get404 leagueId
     player <- runDB $ get404 playerId
-    redirect $ case playerTeamId player of Just teamId -> LeagueTeamR leagueId teamId
-                                           Nothing -> LeaguePlayersR leagueId
+    let characterId = playerCharacterId player
+    character <- runDB $ get404 characterId
+    blurbs <- runDB $ selectList [BlurbCharacterId ==. characterId] [Desc BlurbId]
+    maybeTeam <- case playerTeamId player of
+        Nothing     -> return Nothing
+        Just teamId -> do
+            team <- runDB $ get404 teamId
+            return $ Just $ Entity teamId team
+    leagueLayout leagueId "Players" $(widgetFile "league/player")
 
 postLeaguePlayerStartR :: LeagueId -> PlayerId -> Handler ()
 postLeaguePlayerStartR leagueId playerId = do
@@ -134,6 +143,9 @@ playersModal players playersTableType modalType =
         modalLabelId = modalId ++ "_label"
         buttonId = "submit_" ++ typeLower
     in  $(widgetFile "league/players_modal")
+
+blurbPanel :: Maybe (Entity User) -> CharacterId -> Entity Blurb -> Widget
+blurbPanel maybeUser characterId (Entity blurbId blurb) = $(widgetFile "blurb_panel")
 
 -------------
 -- Queries --

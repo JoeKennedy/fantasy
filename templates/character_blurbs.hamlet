@@ -1,0 +1,15 @@
+<div .row>
+    <div .col-sm-6>
+        <form method="post" action=@{action} enctype=#{enctype}>
+            <div .panel .panel-default>
+                <div .panel-heading>
+                    <h5 .text-center>Create New Blurb
+                <div .panel-body>
+                    ^{widget}
+                <div .panel-footer .text-right>
+                    <input type="submit" name="commit" value="Submit" .btn .btn-primary>
+
+    <div .col-sm-6>
+        $with maybeUser <- Just (Entity userId user)
+            $forall blurb <- blurbs
+                ^{blurbPanel maybeUser characterId blurb}

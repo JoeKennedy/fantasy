@@ -5,15 +5,19 @@
                   <th>##
                   <th>Team
                   <th>Player
+
         <tbody>
-              $forall (number, Entity teamId team, _, Entity _ character) <- draftPicks
-                  <tr .draft-pick-row>
-                      <td .col-xs-1>#{show number}
-                      <td .col-xs-5 .hidden-sm .hidden-xs>
-                          <a href="@{LeagueTeamR (teamLeagueId team) teamId}">
-                              House #{teamName team}
-                      <td .col-xs-3 .hidden-lg .hidden-md>
-                          <a href="@{LeagueTeamR (teamLeagueId team) teamId}">
-                              H#{teamAbbreviation team}
-                      <td .col-md-6 .col-xs-8>#{characterName character}
+              $forall (number, Entity teamId team, Entity playerId _, Entity _ character) <- draftPicks
+                  $with leagueId <- teamLeagueId team
+                      <tr .draft-pick-row>
+                          <td .col-xs-1>#{show number}
+                          <td .col-xs-5 .hidden-sm .hidden-xs>
+                              <a href="@{LeagueTeamR leagueId teamId}">
+                                  House #{teamName team}
+                          <td .col-xs-3 .hidden-lg .hidden-md>
+                              <a href="@{LeagueTeamR leagueId teamId}">
+                                  H#{teamAbbreviation team}
+                          <td .col-md-6 .col-xs-8>
+                              <a href=@{LeaguePlayerR leagueId playerId}>
+                                  #{characterName character}
 

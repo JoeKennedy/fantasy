@@ -19,16 +19,19 @@ body
     margin-left: 0px
 
 @media (min-width: 979px)
-  ul.nav li.dropdown.dropdown-hover:hover > ul.dropdown-menu
-    display: block
+    ul.nav li.dropdown.dropdown-hover:hover > ul.dropdown-menu
+        display: block
 
 #header_nav.navbar-static-top
-  z-index: 1001
+    z-index: 1001
 
 .vertical-align-middle
     vertical-align: middle
 
-.table tbody > tr.vertical-align-middle > td
+table.table.panel-table > tbody > tr > td
+    padding: 10px 15px
+
+table.table > tbody > tr.vertical-align-middle > td
     vertical-align: middle
 
 .modal-content > .panel

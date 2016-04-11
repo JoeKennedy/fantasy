@@ -1,16 +1,18 @@
 <i .fa .fa-lg .fa-#{icon} .text-muted>
 \ &nbsp;
 $if usePastTense
-    #{pastTense}
+    #{pastTense} #
 $else
-    #{presentTense}
-\ #{characterName character}
+    #{presentTense} #
+$with leagueId <- transactionLeagueId transaction
+    <a href=@{LeaguePlayerR leagueId playerId}>
+        #{characterName character}
     $if showTeam
         \ to
         <b>
             $maybe Entity newTeamId newTeam <- maybeNewTeam
                 \
-                <a href="@{LeagueTeamR (teamLeagueId newTeam) newTeamId}">
+                <a href="@{LeagueTeamR leagueId newTeamId}">
                     House #{teamName newTeam}
             $nothing
                 \ Waivers

@@ -105,9 +105,11 @@ instance Yesod App where
     isAuthorized HomeR       _ = return Authorized
 
     isAuthorized CharactersR                 _      = return Authorized
+    isAuthorized (CharacterR _)              _      = return Authorized
     isAuthorized NewCharacterR               _      = requireAdmin
-    isAuthorized (CharacterR _)              _      = requireAdmin
     isAuthorized (EditCharacterR _)          _      = requireAdmin
+    isAuthorized (CharacterBlurbsR _)        _      = requireAdmin
+    isAuthorized (CharacterBlurbR _ _)       _      = requireAdmin
     isAuthorized HousesR                     isPost = requireAdminIfPost isPost
     isAuthorized (HouseR _)                  isPost = requireAdminIfPost isPost
     isAuthorized SpeciesListR                isPost = requireAdminIfPost isPost
@@ -300,6 +302,8 @@ instance YesodBreadcrumbs App where
         character <- runDB $ get404 characterId
         return (characterName character, Just CharactersR)
     breadcrumb (EditCharacterR characterId) = return ("Edit", Just $ CharacterR characterId)
+    breadcrumb (CharacterBlurbsR characterId) = return ("Blurbs", Just $ CharacterR characterId)
+    breadcrumb (CharacterBlurbR characterId blurbId) = return (toPathPiece blurbId, Just $ CharacterBlurbsR characterId)
 
     breadcrumb SpeciesListR = return ("Species", Just HomeR)
     breadcrumb (SpeciesR speciesId) = do

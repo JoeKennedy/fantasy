@@ -27,7 +27,10 @@
                                 <td>#{num}
                             $if subTableHeader == "Bench"
                                 <td>Bench
-                            <td>#{characterName character}
+                            <td>
+                                $with leagueId <- playerLeagueId player
+                                    <a href=@{LeaguePlayerR leagueId playerId}>
+                                        #{characterName character}
                             $if isMultipleTeams playersTableType
                                 <td>
                                     $maybe Entity teamId team <- maybeTeam

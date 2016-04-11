@@ -38,6 +38,15 @@ Character
     UniqueCharacterName name
     UniqueCharacterBio bio
 
+Blurb
+    characterId CharacterId
+    content Textarea
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    UniqueBlurbContent content
+
 Series
     number Int
     UniqueSeriesNumber number

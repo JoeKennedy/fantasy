@@ -1,51 +1,59 @@
 <h1>#{characterName character}
-<div .col-sm-3 .col-xs-12>
-    <div .panel .panel-primary>
-        <div .panel-heading>
-            <h3 .panel-title .text-center>Info
-        <div .panel-body>
-            <dl class="dl-vertical">
-                <dt>Bio
-                <dd>#{characterBio character}
-                <dt>Species
-                <dd>
-                    <a href=@{SpeciesR (characterSpeciesId character)}>#{speciesName species}
-                <dt>House
-                <dd>
-                    $maybe house <- join maybeHouse
-                        $maybe houseId <- characterHouseId character
-                            <a href=@{HouseR houseId}>#{houseName house}
+
+<div .row>
+    <div .col-sm-3 .col-xs-12>
+        <div .panel .panel-primary>
+            <div .panel-heading>
+                <h3 .panel-title .text-center>Info
+
+            <div .panel-body>
+                <dl class="dl-vertical">
+                    <dt>Bio
+                    <dd>#{characterBio character}
+                    <dt>Species
+                    <dd>
+                        <a href=@{SpeciesR (characterSpeciesId character)}>#{speciesName species}
+                    <dt>House
+                    <dd>
+                        $maybe house <- join maybeHouse
+                            $maybe houseId <- characterHouseId character
+                                <a href=@{HouseR houseId}>#{houseName house}
+                            $nothing
+                                -
                         $nothing
                             -
-                    $nothing
-                        -
+            $if isAdmin maybeUser
+                <div .panel-footer>
+                    <div .text-right>
+                        <a .btn .btn-primary href=@{CharacterBlurbsR characterId}>
+                            Blurbs
 
-$if not (null events)
-    <div .col-sm-9 .col-xs-12>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <th>Episode
-                    <th>Time In Episode
-                    <th>Event
-                <tbody>
-                    $forall (Entity _ event, Entity _ episode, Entity _ series, Entity _ actingCharacter, maybeReceivingCharacter) <- events
-                        <tr>
-                            <td>
-                                <a href=@{SeriesEpisodeR (seriesNumber series) (episodeNumber episode)}>#{episodeName episode}
-                            <td>#{displayTime (eventTimeInEpisode event)}
-                            <td>
-                                $if (eventCharacterId event) == characterId
-                                    $with (actionBefore, actionAfter) <- actionToSplitString (eventAction event)
-                                        <a href=@{CharacterR (eventCharacterId event)}>#{characterName actingCharacter}
-                                        #{actionBefore}
-                                        $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
-                                            <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
-                                            #{actionAfter}
-                                $else
-                                    $with actionString <- reverseActionString (eventAction event)
-                                        $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
-                                            <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
-                                            #{actionString}
+    $if not (null events)
+        <div .col-sm-9 .col-xs-12>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <th>Episode
+                        <th>Time In Episode
+                        <th>Event
+                    <tbody>
+                        $forall (Entity _ event, Entity _ episode, Entity _ series, Entity _ actingCharacter, maybeReceivingCharacter) <- events
+                            <tr>
+                                <td>
+                                    <a href=@{SeriesEpisodeR (seriesNumber series) (episodeNumber episode)}>#{episodeName episode}
+                                <td>#{displayTime (eventTimeInEpisode event)}
+                                <td>
+                                    $if (eventCharacterId event) == characterId
+                                        $with (actionBefore, actionAfter) <- actionToSplitString (eventAction event)
                                             <a href=@{CharacterR (eventCharacterId event)}>#{characterName actingCharacter}
+                                            #{actionBefore}
+                                            $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
+                                                <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
+                                                #{actionAfter}
+                                    $else
+                                        $with actionString <- reverseActionString (eventAction event)
+                                            $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
+                                                <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
+                                                #{actionString}
+                                                <a href=@{CharacterR (eventCharacterId event)}>#{characterName actingCharacter}
 

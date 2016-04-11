@@ -1,0 +1,37 @@
+<div .page-header>
+    <h4>
+        #{leagueName league}
+        <small>
+            #{characterName character}
+
+<div .row>
+    <div .col-sm-6>
+        <ul .list-group>
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Team
+                <p .list-group-item-text>
+                    $maybe Entity teamId team <- maybeTeam
+                        <a href=@{LeagueTeamR leagueId teamId}>
+                            House #{teamName team}
+                    $nothing
+                        <a href=@{LeaguePlayersR leagueId}>
+                            Free Agent
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Status
+                <p .list-group-item-text>
+                    #{toPathPiece $ characterStatus character}
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Bio
+                <p .list-group-item-text>#{characterBio character}
+
+    <div .col-sm-6>
+        <div .panel .panel-primary>
+            <div .panel-heading>
+                <h1 .panel-title>
+                    $if null blurbs
+                        No #
+                    News
+                    $if null blurbs
+                        \ for #{characterName character}
+        $forall blurb <- blurbs
+            ^{blurbPanel maybeUser characterId blurb}

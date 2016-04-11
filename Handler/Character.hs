@@ -2,13 +2,18 @@ module Handler.Character where
 
 import Import
 
-import Handler.League (createPlayer)
+import Handler.Common        (isAdmin)
+import Handler.League        (createPlayer)
+import Handler.League.Player (blurbPanel)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
 import           Text.Blaze (toMarkup)
 import           Yesod.Form.Bootstrap3 (renderBootstrap3)
 
+-----------
+-- Forms --
+-----------
 characterForm :: UserId -> Maybe Character -> Form Character
 characterForm userId character = renderBootstrap3 defaultBootstrapForm $ Character
     <$> areq textField (fieldName "Name") (characterName <$> character)
@@ -23,6 +28,18 @@ characterForm userId character = renderBootstrap3 defaultBootstrapForm $ Charact
     where speciesList = optionsPersistKey [] [Asc SpeciesName] speciesName
           houses = optionsPersistKey [] [Asc HouseName] houseName
 
+blurbForm :: CharacterId -> UserId -> Maybe Blurb -> Form Blurb
+blurbForm characterId userId blurb = renderBootstrapPanelForm $ Blurb
+    <$> pure characterId
+    <*> areq textareaField (fieldName "Content") (blurbContent <$> blurb)
+    <*> createdByField userId (blurbCreatedBy <$> blurb)
+    <*> createdAtField (blurbCreatedAt <$> blurb)
+    <*> updatedByField userId
+    <*> updatedAtField
+
+------------
+-- Routes --
+------------
 getCharactersR :: Handler Html
 getCharactersR = do
     characters <- runDB
@@ -39,6 +56,7 @@ getCharactersR = do
 getCharacterR :: CharacterId -> Handler Html
 getCharacterR characterId = do
     -- later try to make this get by character name if possible
+    maybeUser  <- maybeAuth
     character  <- runDB $ get404 characterId
     species    <- runDB $ get404 $ characterSpeciesId character
     maybeHouse <- runDB $ mapM get $ characterHouseId character
@@ -107,6 +125,62 @@ postEditCharacterR characterId = do
                 action = EditCharacterR characterId
             setTitle title
             $(widgetFile "character_form")
+
+getCharacterBlurbsR :: CharacterId -> Handler Html
+getCharacterBlurbsR characterId = do
+    (Entity userId user) <- requireAuth
+    character <- runDB $ get404 characterId
+    blurbs <- runDB $ selectList [BlurbCharacterId ==. characterId] [Desc BlurbId]
+    (widget, enctype) <- generateFormPost $ blurbForm characterId userId Nothing
+    defaultLayout $ do
+        setTitle $ toMarkup $ "Blurbs about " ++ characterName character
+        let action = CharacterBlurbsR characterId
+        $(widgetFile "character_blurbs")
+
+postCharacterBlurbsR :: CharacterId -> Handler Html
+postCharacterBlurbsR characterId = do
+    (Entity userId user) <- requireAuth
+    character <- runDB $ get404 characterId
+    blurbs <- runDB $ selectList [] [Desc BlurbId]
+    ((result, widget), enctype) <- runFormPost $ blurbForm characterId userId Nothing
+    case result of
+        FormSuccess blurb -> do
+            _blurbId <- runDB $ insert blurb
+            setMessage "Successfully created blurb"
+            redirect $ CharacterBlurbsR characterId
+        _ -> defaultLayout $ do
+            setTitle $ toMarkup $ "Blurbs about " ++ characterName character
+            let action = CharacterBlurbsR characterId
+            setMessage "Failed to create blurb"
+            $(widgetFile "character_blurbs")
+
+getCharacterBlurbR :: CharacterId -> BlurbId -> Handler Html
+getCharacterBlurbR characterId blurbId = do
+    (Entity userId user) <- requireAuth
+    character <- runDB $ get404 characterId
+    blurb <- runDB $ get404 blurbId
+    (widget, enctype) <- generateFormPost $ blurbForm characterId userId $ Just blurb
+    defaultLayout $ do
+        setTitle $ toMarkup $ "Blurb about " ++ characterName character
+        let action = CharacterBlurbR characterId blurbId
+        $(widgetFile "character_blurb")
+
+postCharacterBlurbR :: CharacterId -> BlurbId -> Handler Html
+postCharacterBlurbR characterId blurbId = do
+    (Entity userId user) <- requireAuth
+    character <- runDB $ get404 characterId
+    blurb <- runDB $ get404 blurbId
+    ((result, widget), enctype) <- runFormPost $ blurbForm characterId userId $ Just blurb
+    case result of
+        FormSuccess blurb' -> do
+            runDB $ replace blurbId blurb'
+            setMessage "Successfully updated blurb"
+            redirect $ CharacterBlurbR characterId blurbId
+        _ -> defaultLayout $ do
+            setTitle $ toMarkup $ "Blurb about " ++ characterName character
+            let action = CharacterBlurbR characterId blurbId
+            setMessage "Failed to update blurb"
+            $(widgetFile "character_blurb")
 
 
 -------------
