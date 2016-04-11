@@ -71,13 +71,7 @@ instance Yesod App where
 
         seriesList <- runDB $ selectList [] [Asc SeriesNumber]
 
-        leagues <- runDB
-            $ E.select
-            $ E.from $ \(team `E.InnerJoin` league) -> do
-                E.on $ team ^. TeamLeagueId E.==. league ^. LeagueId
-                E.where_ (team ^. TeamOwnerId E.==. E.val maybeUserId)
-                E.orderBy [E.asc (league ^. LeagueName)]
-                return league
+        leagues <- getLeaguesByUser maybeUserId
 
         -- We break up the default layout into two components:
         -- default-layout is the contents of the body tag, and
@@ -125,6 +119,7 @@ instance Yesod App where
     -- entity is in the correct league
     isAuthorized LeaguesR                          _ = return Authorized
     isAuthorized (LeagueR leagueId)                _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeagueCancelR leagueId)          _ = requireLeagueManager leagueId
     isAuthorized (LeagueDraftR leagueId draftYear) _ = requireLeagueManagerAndIncompleteDraft leagueId draftYear
     isAuthorized (LeagueTransactionsR leagueId)    _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueAcceptTradeR _ tid)        _ = requireTradeAcceptable tid
@@ -329,6 +324,7 @@ instance YesodBreadcrumbs App where
     breadcrumb (LeagueR leagueId) = do
         league <- runDB $ get404 leagueId
         return (leagueName league, Just LeaguesR)
+    breadcrumb (LeagueCancelR leagueId)         = return ("Cancel", Just $ LeagueR leagueId)
     breadcrumb (LeagueDraftR leagueId _)        = return ("Draft",        Just $ LeagueR leagueId)
     breadcrumb (LeagueTransactionsR leagueId)   = return ("Transactions", Just $ LeagueR leagueId)
     breadcrumb (LeagueAcceptTradeR leagueId _)  = return ("Accept Trade", Just $ LeagueTransactionsR leagueId)
@@ -460,6 +456,17 @@ instance RenderMessage App FormMessage where
 
 unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = US.fakeHandlerGetLogger appLogger
+
+getLeaguesByUser :: Maybe UserId -> Handler [Entity League]
+getLeaguesByUser maybeUserId = runDB
+    $ E.select
+    $ E.from $ \(team `E.InnerJoin` league) -> do
+        E.on $ team ^. TeamLeagueId E.==. league ^. LeagueId
+        E.where_ $
+            team ^. TeamOwnerId E.==. E.val maybeUserId E.&&.
+            league ^. LeagueIsActive E.==. E.val True
+        E.orderBy [E.asc (league ^. LeagueName)]
+        return league
 
 -- Note: Some functionality previously present in the scaffolding has been
 -- moved to documentation in the Wiki. Following are some hopefully helpful

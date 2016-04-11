@@ -15,10 +15,11 @@ getSetupConfirmSettingsR :: Handler Html
 getSetupConfirmSettingsR = do
     userId <- requireAuthId
     let action = SetupLeagueR SetupConfirmSettingsR
-    (Entity _ league, lastCompletedStep) <- leagueOrRedirect userId action
+    (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     defaultLayout $ do
         let widget = $(widgetFile "league/confirm_setup")
             enctype = UrlEncoded
+            maybeLeagueId = Just leagueId
         setTitle $ leagueSetupStepTitle league action
         $(widgetFile "layouts/league-setup-layout")
 

@@ -5,9 +5,7 @@ import Import
 import Handler.Common       (extractValueMaybe)
 import Handler.League.Setup
 
-import qualified Database.Esqueleto as E
-import           Database.Esqueleto ((^.))
-import           Text.Blaze         (toMarkup)
+import Text.Blaze (toMarkup)
 
 leagueLayout :: LeagueId -> Text -> Widget -> Handler Html
 leagueLayout leagueId activeTab widget = do
@@ -22,15 +20,6 @@ leagueLayout leagueId activeTab widget = do
 
 leagueLayoutTitle :: League -> Text -> Text
 leagueLayoutTitle league subtitle = leagueName league ++ " | " ++ subtitle
-
-getLeaguesByUser :: Maybe UserId -> Handler [Entity League]
-getLeaguesByUser maybeUserId = runDB
-    $ E.select
-    $ E.from $ \(team `E.InnerJoin` league) -> do
-        E.on $ team ^. TeamLeagueId E.==. league ^. LeagueId
-        E.where_ (team ^. TeamOwnerId E.==. E.val maybeUserId)
-        E.orderBy [E.asc (league ^. LeagueName)]
-        return league
 
 getCurrentTeam :: LeagueId -> Maybe UserId -> Handler (Maybe (Entity Team))
 getCurrentTeam leagueId maybeUserId =

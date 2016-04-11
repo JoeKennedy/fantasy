@@ -60,6 +60,7 @@ getSetupDraftSettingsR = do
     (widget, enctype) <- generateFormPost $ draftSettingsForm userId leagueId $ extractValueMaybe maybeDraftSettings
     defaultLayout $ do
         setTitle $ leagueSetupStepTitle league action
+        let maybeLeagueId = Just leagueId
         $(widgetFile "layouts/league-setup-layout")
 
 postSetupDraftSettingsR :: Handler Html
@@ -77,6 +78,7 @@ postSetupDraftSettingsR = do
             redirect $ SetupLeagueR SetupTeamsSettingsR
         _ -> defaultLayout $ do
             setTitle $ leagueSetupStepTitle league action
+            let maybeLeagueId = Just leagueId
             $(widgetFile "layouts/league-setup-layout")
 
 getLeagueDraftSettingsR :: LeagueId -> Handler Html

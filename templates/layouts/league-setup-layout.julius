@@ -1,0 +1,15 @@
+function cancelLeague(event) {
+    event.preventDefault();
+    var pieces = $(this).prop('id').split('_');
+    $.ajax ({
+        url: '/leagues/' + pieces[1] + '/cancel',
+        type: 'POST',
+        success: function() { window.location.reload(true); }
+    })
+}
+
+function leagueSetupReady(jQuery) {
+    $('.cancel-button').click(cancelLeague);
+}
+
+$(document).ready(leagueSetupReady);

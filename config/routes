@@ -24,8 +24,9 @@
 /seasons/#Int/episodes/#Int/events          SeriesEpisodeEventsR     POST
 /seasons/#Int/episodes/#Int/events/#EventId SeriesEpisodeEventR  GET POST
 
-/leagues/          LeaguesR GET
-/leagues/#LeagueId LeagueR  GET
+/leagues/                 LeaguesR      GET
+/leagues/#LeagueId        LeagueR       GET
+/leagues/#LeagueId/cancel LeagueCancelR POST
 
 /leagues/#LeagueId/teams                    LeagueTeamsR        GET
 /leagues/#LeagueId/teams/#TeamId            LeagueTeamR         GET

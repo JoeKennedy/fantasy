@@ -73,7 +73,7 @@ leagueOrRedirect userId action = do
                 else redirect $ leagueSetupNextStepToComplete league
 
 leagueBeingSetUp :: UserId -> Handler (Maybe (Entity League))
-leagueBeingSetUp userId = runDB $ selectFirst [LeagueCreatedBy ==. userId, LeagueIsSetupComplete ==. False] []
+leagueBeingSetUp userId = runDB $ selectFirst [LeagueCreatedBy ==. userId, LeagueIsSetupComplete ==. False, LeagueIsActive ==. True] []
 
 updateLeagueLastCompletedStep :: LeagueId -> League -> Int -> Handler ()
 updateLeagueLastCompletedStep leagueId league stepNumber =

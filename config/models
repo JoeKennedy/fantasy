@@ -71,6 +71,7 @@ Event
 
 League
     name Text
+    isActive Bool default=true
     isPrivate Bool default=false
     scoringType ScoringType
     teamsCount Int

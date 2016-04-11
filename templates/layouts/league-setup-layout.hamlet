@@ -15,15 +15,21 @@ $with currentStep <- leagueSetupCurrentStep action
 
     <form method="post" action=@{action} enctype=#{enctype}>
         ^{widget}
-        $maybe (_, stepName, stepRoute) <- leagueSetupPreviousStep currentStep
-            <div .pull-left>
-                <a #previous .btn .btn-primary href=@{stepRoute}>
-                    <i .fa .fa-long-arrow-left aria-hidden="true">
-                    #{stepName}
+        <div .row>
+            <div .col-xs-4>
+                $maybe (_, stepName, stepRoute) <- leagueSetupPreviousStep currentStep
+                    <a #previous .btn .btn-primary href=@{stepRoute}>
+                        <i .fa .fa-long-arrow-left aria-hidden="true">
+                        #{stepName}
 
-        $maybe (_, stepName, _) <- leagueSetupNextStep currentStep
-            <div .pull-right>
-                <button #next .btn .btn-primary type="submit" name="commit">
-                    #{stepName}
-                    <i .fa .fa-long-arrow-right aria-hidden="true">
+            <div .col-xs-4 .text-center>
+                $maybe leagueId <- maybeLeagueId
+                    <a #cancel_#{toPathPiece leagueId} .btn .btn-danger .cancel-button href="#">
+                        Cancel League
+
+            <div .col-xs-4 .text-right>
+                $maybe (_, stepName, _) <- leagueSetupNextStep currentStep
+                    <button #next .btn .btn-primary type="submit" name="commit">
+                        #{stepName}
+                        <i .fa .fa-long-arrow-right aria-hidden="true">
 

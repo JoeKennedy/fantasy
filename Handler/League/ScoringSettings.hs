@@ -60,6 +60,7 @@ getSetupScoringSettingsR = do
     (widget, enctype) <- generateFormPost $ scoringSettingsForm userId league $ map extractValue scoringSettingsList
     defaultLayout $ do
         setTitle $ leagueSetupStepTitle league action
+        let maybeLeagueId = Just leagueId
         $(widgetFile "layouts/league-setup-layout")
 
 postSetupScoringSettingsR :: Handler Html
@@ -77,6 +78,7 @@ postSetupScoringSettingsR = do
             redirect $ SetupLeagueR SetupDraftSettingsR
         _ -> defaultLayout $ do
             setTitle $ leagueSetupStepTitle league action
+            let maybeLeagueId = Just leagueId
             $(widgetFile "layouts/league-setup-layout")
 
 getLeagueScoringSettingsR :: LeagueId -> Handler Html

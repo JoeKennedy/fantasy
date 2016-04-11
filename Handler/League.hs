@@ -1,7 +1,7 @@
 module Handler.League where
 
 import Import
-import Handler.Common        (extractValueMaybe)
+import Handler.Common        (extractKeyMaybe, extractValueMaybe)
 import Handler.League.Setup
 import Handler.League.Layout
 
@@ -28,6 +28,7 @@ leagueForm currentUserId league extra = do
     now <- liftIO getCurrentTime
     let leagueResult = League
             <$> nameRes
+            <*> existingElseDefault True (leagueIsActive <$> league)
             <*> isPrivateRes
             <*> scoringTypeRes
             <*> teamsCountRes
@@ -52,6 +53,24 @@ getLeaguesR = do
         setTitle "Leagues"
         $(widgetFile "league/leagues")
 
+getLeagueR :: LeagueId -> Handler Html
+getLeagueR leagueId = do
+    league <- runDB $ get404 leagueId
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
+    leagueLayout leagueId "League" $ do
+        let maybeCreatorTeam = listToMaybe teams
+        $(widgetFile "league/league")
+
+postLeagueCancelR :: LeagueId -> Handler ()
+postLeagueCancelR leagueId = do
+    userId <- requireAuthId
+    now <- liftIO getCurrentTime
+    runDB $ update leagueId [ LeagueIsActive =. False
+                            , LeagueUpdatedBy =. userId
+                            , LeagueUpdatedAt =. now
+                            ]
+    setMessage "Your league has been successfully canceled"
+
 getSetupNewLeagueR :: Handler Html
 getSetupNewLeagueR = do
     userId <- requireAuthId
@@ -61,6 +80,7 @@ getSetupNewLeagueR = do
         let title = "Create A League!" :: Html
             action = SetupLeagueR SetupNewLeagueR
             lastCompletedStep = fromMaybe 0 (leagueLastCompletedStep <$> extractValueMaybe maybeLeague)
+            maybeLeagueId = extractKeyMaybe maybeLeague
         setTitle title
         $(widgetFile "layouts/league-setup-layout")
 
@@ -78,16 +98,9 @@ postSetupNewLeagueR = do
             let title = "Create A League!" :: Html
                 action = SetupLeagueR SetupNewLeagueR
                 lastCompletedStep = fromMaybe 0 (leagueLastCompletedStep <$> extractValueMaybe maybeLeague)
+                maybeLeagueId = extractKeyMaybe maybeLeague
             setTitle title
             $(widgetFile "layouts/league-setup-layout")
-
-getLeagueR :: LeagueId -> Handler Html
-getLeagueR leagueId = do
-    league <- runDB $ get404 leagueId
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
-    leagueLayout leagueId "League" $ do
-        let maybeCreatorTeam = listToMaybe teams
-        $(widgetFile "league/league")
 
 getLeagueEditSettingsR :: LeagueId -> Handler Html
 getLeagueEditSettingsR leagueId = do

@@ -52,6 +52,7 @@ getSetupGeneralSettingsR = do
     (widget, enctype) <- generateFormPost $ generalSettingsForm (leagueTeamsCount league) userId generalSettings
     defaultLayout $ do
         setTitle $ leagueSetupStepTitle league action
+        let maybeLeagueId = Just leagueId
         $(widgetFile "layouts/league-setup-layout")
 
 postSetupGeneralSettingsR :: Handler Html
@@ -68,6 +69,7 @@ postSetupGeneralSettingsR = do
             redirect $ SetupLeagueR SetupScoringSettingsR
         _ -> defaultLayout $ do
             setTitle $ leagueSetupStepTitle league action
+            let maybeLeagueId = Just leagueId
             $(widgetFile "layouts/league-setup-layout")
 
 getLeagueGeneralSettingsR :: LeagueId -> Handler Html

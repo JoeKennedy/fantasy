@@ -39,6 +39,13 @@ extractValueMaybe :: Maybe (Entity t) -> Maybe t
 extractValueMaybe (Just (Entity _ value)) = Just value
 extractValueMaybe Nothing                 = Nothing
 
+extractKey :: (Entity t) -> Key t
+extractKey (Entity key _) = key
+
+extractKeyMaybe :: Maybe (Entity t) -> Maybe (Key t)
+extractKeyMaybe (Just (Entity key _)) = Just key
+extractKeyMaybe Nothing               = Nothing
+
 --------------
 -- Grouping --
 --------------
