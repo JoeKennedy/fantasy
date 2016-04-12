@@ -97,7 +97,7 @@ getLeagueTransactionsR leagueId = do
 postLeagueAcceptTradeR :: LeagueId -> TransactionId -> Handler ()
 postLeagueAcceptTradeR _ transactionId = do
     userId <- requireAuthId
-    processMultiPlayerTransaction userId transactionId
+    processMultiPlayerTransaction_ userId transactionId
     setMessage $ toMarkup ("Trade accepted!" :: Text)
 
 postLeagueDeclineTradeR :: LeagueId -> TransactionId -> Handler ()
@@ -289,9 +289,9 @@ processClaimRequests = do
         [ TransactionStatus ==. Requested
         , TransactionType ==. Claim
         ] [Asc TransactionId]
-    mapM_ (processMultiPlayerTransaction adminUserId) transactionIds
+    mapM_ (processMultiPlayerTransaction_ adminUserId) transactionIds
 
-processMultiPlayerTransaction :: UserId -> TransactionId -> Handler ()
+processMultiPlayerTransaction :: UserId -> TransactionId -> Handler Bool
 processMultiPlayerTransaction userId transactionId = do
     transactionPlayers <- runDB $ selectList [TransactionPlayerTransactionId ==. transactionId] []
     transactionPlayersWithPlayer <- mapM joinWithPlayer transactionPlayers
@@ -300,8 +300,16 @@ processMultiPlayerTransaction userId transactionId = do
         then do
             mapM_ (movePlayerToNewTeam userId) transactionPlayersWithPlayer
             succeedTransactionWithUserId transactionId userId
-        else failTransactionWithUserId_ transactionId userId
-                                        "One or more players not on expected team"
+            return True
+        else do
+            failTransactionWithUserId_ transactionId userId
+                                       "One or more players not on expected team"
+            return False
+
+processMultiPlayerTransaction_ :: UserId -> TransactionId -> Handler ()
+processMultiPlayerTransaction_ userId transactionId = do
+    _ <- processMultiPlayerTransaction userId transactionId
+    return ()
 
 succeedTransaction :: TransactionId -> Handler ()
 succeedTransaction transactionId = completeTransaction transactionId Nothing Nothing
