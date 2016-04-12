@@ -1,0 +1,23 @@
+<div .panel .panel-default>
+    <table .table .table-striped .table-hover>
+        <thead>
+            <th>Character
+            <th>Status
+            <th .hidden-sm .hidden-xs>Bio
+            <th .hidden-xs>Species
+            <th>House
+
+        <tbody>
+            $forall (Entity characterId character, Entity speciesId species, maybeHouse) <- fullCharacters
+                <tr>
+                    <td>
+                        <a href=@{CharacterR characterId}>#{characterName character}
+                    <td>#{toPathPiece $ characterStatus character}
+                    <td .hidden-sm .hidden-xs>#{characterBio character}
+                    <td .hidden-xs>
+                        <a href=@{SpeciesR speciesId}>#{speciesName species}
+                    <td>
+                        $maybe Entity houseId house <- maybeHouse
+                            <a href=@{HouseR houseId}>#{houseName house}
+                        $nothing
+                            -

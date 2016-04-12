@@ -1,3 +1,6 @@
+<div .page-header>
+    <h4>Seasons
+
 <div .panel-group #accordion role="tablist" aria-multiselectable="true">
     $forall (Entity _ series, episodeList) <- seriesList
         ^{seriesEpisodesPanel series episodeList ("Season " ++ show (seriesNumber series))}

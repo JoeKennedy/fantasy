@@ -1,20 +1,20 @@
-<h1>#{characterName character}
+<div .page-header>
+    <h4>
+        Character
+        <small>#{characterName character}
 
 <div .row>
     <div .col-sm-3 .col-xs-12>
-        <div .panel .panel-primary>
-            <div .panel-heading>
-                <h3 .panel-title .text-center>Info
-
-            <div .panel-body>
-                <dl class="dl-vertical">
-                    <dt>Bio
-                    <dd>#{characterBio character}
-                    <dt>Species
-                    <dd>
-                        <a href=@{SpeciesR (characterSpeciesId character)}>#{speciesName species}
-                    <dt>House
-                    <dd>
+        <div .panel .panel-default>
+            <ul .list-group>
+                <li .list-group-item>
+                    <h6 .list-group-item-heading>Species
+                    <p .list-group-item-text>
+                        <a href=@{SpeciesR (characterSpeciesId character)}>
+                            #{speciesName species}
+                <li .list-group-item>
+                    <h6 .list-group-item-heading>House
+                    <p .list-group-item-text>
                         $maybe house <- join maybeHouse
                             $maybe houseId <- characterHouseId character
                                 <a href=@{HouseR houseId}>#{houseName house}
@@ -22,6 +22,10 @@
                                 -
                         $nothing
                             -
+                <li .list-group-item>
+                    <h6 .list-group-item-heading>Bio
+                    <p .list-group-item-text>#{characterBio character}
+
             $if isAdmin maybeUser
                 <div .panel-footer>
                     <div .text-right>
@@ -30,12 +34,13 @@
 
     $if not (null events)
         <div .col-sm-9 .col-xs-12>
-            <div class="table-responsive">
-                <table class="table">
+            <div .panel .panel-default>
+                <table .table .table-hover .table-striped>
                     <thead>
                         <th>Episode
                         <th>Time In Episode
                         <th>Event
+
                     <tbody>
                         $forall (Entity _ event, Entity _ episode, Entity _ series, Entity _ actingCharacter, maybeReceivingCharacter) <- events
                             <tr>

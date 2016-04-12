@@ -24,7 +24,7 @@
             $forall Entity _ series <- seriesList
               <li>
                 <a href=@{SeriesR (seriesNumber series)}>#{seriesNumber series}
-        <li .hidden-sm>
+        <li>
           <a href=@{LeaguesR}>Leagues
 
       <ul .nav .navbar-nav .navbar-right>

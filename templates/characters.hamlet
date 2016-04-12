@@ -1,25 +1,4 @@
-$if not (null characters)
-    <div .table-responsive>
-        <table .table .table-striped .table-hover>
-            <thead>
-                <th>Character
-                <th>Status
-                <th .hidden-sm .hidden-xs>Bio
-                <th .hidden-xs>Species
-                <th>House
+<div .page-header>
+    <h4>Characters
 
-            <tbody>
-                $forall (Entity characterId character, Entity speciesId species, maybeHouse) <- characters
-                    <tr>
-                        <td>
-                            <a href=@{CharacterR characterId}>#{characterName character}
-                        <td>#{toPathPiece $ characterStatus character}
-                        <td .hidden-sm .hidden-xs>#{characterBio character}
-                        <td .hidden-xs>
-                            <a href=@{SpeciesR speciesId}>#{speciesName species}
-                        <td>
-                            $maybe Entity houseId house <- maybeHouse
-                                <a href=@{HouseR houseId}>#{houseName house}
-                            $nothing
-                                -
-
+^{charactersTable characters}

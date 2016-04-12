@@ -1,7 +1,7 @@
 module Handler.House where
 
 import Import
-import Handler.Character (characterList)
+import Handler.Character (charactersTable)
 import Handler.Common    (isAdmin, embeddedForm)
 
 import qualified Database.Esqueleto as E

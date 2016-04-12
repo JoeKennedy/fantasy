@@ -1,7 +1,10 @@
-<h1>Leagues
+<div .page-header>
+    <h4>Leagues
 
-$if not (null leagues)
-    <div .table-responsive>
+$if null leagues
+    <p>No leagues yet
+$else
+    <div .panel .panel-default>
         <table .table .table-striped .table-hover>
             <thead>
                 <tr>

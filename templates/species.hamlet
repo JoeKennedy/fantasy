@@ -1,11 +1,18 @@
-<h1>#{speciesName s}
-<dl class="dl-horizontal">
-    <dt>Description
-    <dd>#{speciesDescription s}
+<div .page-header>
+    <h4>
+        Species
+        <small>#{speciesName s}
 
-$if isAdmin maybeUser
-    <div>
-        <a href="#" role="button" .btn .btn-primary>Edit this species
-    ^{embeddedForm action enctype widget}
+<div .row>
+    <div .col-md-3 .col-sm-4 .col-xs-12>
+        <ul .list-group>
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Description
+                <p .list-group-item-text>#{speciesDescription s}
 
-^{characterList characters}
+    $if isAdmin maybeUser
+        <div .col-md-9 .col-xs-12>
+            <a href="#" role="button" .btn .btn-primary>Edit this species
+            ^{embeddedForm action enctype widget}
+
+^{charactersTable characters}

@@ -1,22 +1,39 @@
-<h1>#{episodeName episode}
-<h5>Episode ##{episodeOverallNumber episode} overall
-<h5>Originally aired #{displayAirDate $ episodeAirTime episode}
+<div .page-header>
+    <h4>
+        Episode
+        <small>#{episodeName episode}
 
-$if isAdmin maybeUser
-    ^{embeddedForm episodeAction episodeEnctype episodeWidget}
-    ^{eventFormWidget eventHtmlAction eventEnctype eventWidget}
+<div .row>
+    <div .col-md-3 .col-sm-4 .col-xs-12>
+        <ul .list-group>
+            <li .list-group-item>
+                <h6 .list-group-item-heading># In Season
+                <p .list-group-item-text>#{episodeNumber episode}
+            <li .list-group-item>
+                <h6 .list-group-item-heading># Overall
+                <p .list-group-item-text>#{episodeOverallNumber episode}
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Original Air Date
+                <p .list-group-item-text>
+                    #{displayAirDate $ episodeAirTime episode}
+
+    $if isAdmin maybeUser
+        <div .col-md-9 .col-xs-12>
+            ^{embeddedForm episodeAction episodeEnctype episodeWidget}
+            ^{eventFormWidget eventHtmlAction eventEnctype eventWidget}
 
 $if not (null events)
-    <div class="table-responsive">
-        <table class="table">
+    <div .panel .panel-default>
+        <table .table .table-striped .table-hover>
             <thead>
                 $if isAdmin maybeUser
                     <th>
                 <th>Time In Episode
-                <th>Character
-                <th>Action
-                <th>Receiving Character
+                <th .hidden-sm .hidden-xs>Character
+                <th .hidden-sm .hidden-xs>Action
+                <th .hidden-sm .hidden-xs>Receiving Character
                 <th>Event
+
             <tbody>
                 $forall (Entity eventId event, Entity _ character, maybeReceivingCharacter) <- events
                     <tr>
@@ -25,10 +42,10 @@ $if not (null events)
                                 <a href=@{SeriesEpisodeEventR seriesNo episodeNo eventId}>
                                     <span .fa .fa-pencil>
                         <td>#{displayTime (eventTimeInEpisode event)}
-                        <td>
+                        <td .hidden-sm .hidden-xs>
                             <a href=@{CharacterR (eventCharacterId event)}>#{characterName character}
-                        <td>#{show (eventAction event)}
-                        <td>
+                        <td .hidden-sm .hidden-xs>#{show (eventAction event)}
+                        <td .hidden-sm .hidden-xs>
                             $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
                                 <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
                             $nothing

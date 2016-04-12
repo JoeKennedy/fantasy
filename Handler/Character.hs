@@ -184,9 +184,9 @@ postCharacterBlurbR characterId blurbId = do
 
 
 -------------
--- Helpers --
+-- Widgets --
 -------------
 type FullCharacter = (Entity Character, Entity Species, Maybe (Entity House))
 
-characterList :: [FullCharacter] -> Widget
-characterList characters = $(widgetFile "characters")
+charactersTable :: [FullCharacter] -> Widget
+charactersTable fullCharacters = $(widgetFile "characters_table")

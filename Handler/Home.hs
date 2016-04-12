@@ -10,7 +10,10 @@ import Import
 -- functions. You can spread them across multiple files if you are so
 -- inclined, or create a single monolithic file.
 getHomeR :: Handler Html
-getHomeR = 
+getHomeR = do
+    maybeUserId <- maybeAuthId
+    seriesList <- runDB $ selectList [] [Asc SeriesNumber]
+    leagues <- getLeaguesByUser maybeUserId
     defaultLayout $ do
         setTitle "Fantasy Game Of Thrones"
         $(widgetFile "homepage")

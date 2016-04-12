@@ -6,10 +6,11 @@
         <table .table .table-hover .table-striped>
             <thead>
                 <tr>
-                    <th .col-sm-1># Overall
-                    <th .col-sm-1># In Season
-                    <th>Title
-                    <th>Original Air Date
+                    <th .col-xs-1># Overall
+                    <th .col-xs-1># In Season
+                    <th .col-xs-6>Title
+                    <th .col-xs-4>Original Air Date
+
             <tbody>
                 $forall (Entity _ episode) <- episodes
                     <tr>

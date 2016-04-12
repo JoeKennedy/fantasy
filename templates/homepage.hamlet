@@ -1,7 +1,34 @@
-<h1>Fantasy Game Of Thrones
+<div .jumbotron>
+    <h1>Fantasy Game Of Thrones
+    <p>
+        Welcome to FantasyGameOfThrones.com, where you can create a fantasy
+        sports style league for HBO's Game Of Thrones.
+    <div .btn-toolbar>
+        <div .btn-group>
+            <a .btn .btn-default .btn-lg href=@{CharactersR}>Characters
+            <a .btn .btn-default .btn-lg href=@{HousesR}>Houses
+            <a .btn .btn-default .btn-lg href=@{SpeciesListR}>Species
+        <div .btn-group>
+            <a .btn .btn-default .btn-lg href=@{SeriesListR}>Seasons
+            <a .btn .btn-default .btn-lg .dropdown-toggle data-toggle="dropdown">
+                <i .fa .fa-caret-down>
+            <ul .dropdown-menu>
+                $forall Entity _ series <- seriesList
+                    <li>
+                        <a href=@{SeriesR (seriesNumber series)}>
+                                #{seriesNumber series}
 
-<p>
-    Click
-    <a href=@{CharactersR}>here
-    \ to view the characters!
+        <div .btn-group>
+            <a .btn .btn-default .btn-lg href=@{LeaguesR}>Leagues
+            $if not (null leagues)
+                <a .btn .btn-default .btn-lg .dropdown-toggle data-toggle="dropdown">
+                    <i .fa .fa-caret-down>
+                <ul .dropdown-menu>
+                    $forall Entity leagueId league <- leagues
+                        <li>
+                            <a href="@{LeagueR leagueId}">
+                                #{leagueName league}
 
+        <div .btn-group>
+            <a .btn .btn-primary .btn-lg href=@{SetupLeagueR SetupNewLeagueR}>
+                Create A League!
