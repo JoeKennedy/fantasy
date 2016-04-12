@@ -23,6 +23,7 @@ getSpeciesListR = do
         $ E.from $ \(species `E.LeftOuterJoin` character) -> do
             E.on $ species ^. SpeciesId E.==. character ^. CharacterSpeciesId
             E.groupBy (species ^. SpeciesId, species ^. SpeciesName, species ^. SpeciesDescription)
+            E.orderBy [E.asc (species ^. SpeciesName)]
             return (species, E.count (character ^. CharacterId) :: E.SqlExpr (E.Value Int))
     defaultLayout $ do
         setTitle "Species list"

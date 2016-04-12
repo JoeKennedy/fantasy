@@ -23,7 +23,6 @@ House
     words Text
     description Text
     UniqueHouseName name
-    UniqueHouseDescription description
 
 Character
     name Text

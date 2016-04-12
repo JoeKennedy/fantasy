@@ -24,6 +24,7 @@ getHousesR = do
         $ E.from $ \(house `E.LeftOuterJoin` character) -> do
             E.on $ E.just (house ^. HouseId) E.==. character ^. CharacterHouseId
             E.groupBy (house ^. HouseId, house ^. HouseName, house ^. HouseDescription, house ^. HouseWords)
+            E.orderBy [E.asc (house ^. HouseName)]
             return (house, E.count (character ^. CharacterId) :: E.SqlExpr (E.Value Int))
     defaultLayout $ do
         setTitle "Houses"
