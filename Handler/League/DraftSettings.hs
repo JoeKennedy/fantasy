@@ -5,6 +5,8 @@ import Handler.Common        (extractValueMaybe)
 import Handler.League.Setup
 import Handler.League.Layout
 
+import Data.Time.LocalTime
+
 ----------
 -- Form --
 ----------
@@ -16,17 +18,17 @@ draftSettingsForm currentUserId leagueId draftSettings extra = do
         (fieldName "Draft Order") (draftSettingsDraftOrder <$> draftSettings)
     (draftOrderTypeRes, draftOrderTypeView) <- mreq (selectFieldList draftOrderTypeOptions)
         (fieldName "Determination Of Draft Order") (draftSettingsDraftOrderType <$> draftSettings)
-    (dateRes, dateView) <- mreq dayField (fieldName "Draft Day")
-        (draftSettingsDate <$> draftSettings)
-    (timeRes, timeView) <- mreq timeFieldTypeTime (fieldName "Draft Time")
-        (draftSettingsTime <$> draftSettings)
+    -- (dateRes, dateView) <- mreq dayField (fieldName "Draft Day")
+    --     (draftSettingsDate <$> draftSettings)
+    -- (timeRes, timeView) <- mreq timeFieldTypeTime (fieldName "Draft Time")
+    --     (draftSettingsTime <$> draftSettings)
     (locationRes, locationView) <- mreq textField (fieldName "Location")
         (draftSettingsLocation <$> draftSettings)
-    (allowDraftPickTradingRes, allowDraftPickTradingView) <- mreq checkBoxField
-        "Allow draft pick trading?" (draftSettingsAllowDraftPickTrading <$> draftSettings)
-    (secondsPerPickRes, secondsPerPickView) <- mreq
-        (selectFieldList $ toOptions possibleSecondsPerPick) (fieldName "Seconds Per Pick")
-        (existingElseDefault defaultSecondsPerPick $ draftSettingsSecondsPerPick <$> draftSettings)
+    -- (allowDraftPickTradingRes, allowDraftPickTradingView) <- mreq checkBoxField
+    --     "Allow draft pick trading?" (draftSettingsAllowDraftPickTrading <$> draftSettings)
+    -- (secondsPerPickRes, secondsPerPickView) <- mreq
+    --     (selectFieldList $ toOptions possibleSecondsPerPick) (fieldName "Seconds Per Pick")
+    --     (existingElseDefault defaultSecondsPerPick $ draftSettingsSecondsPerPick <$> draftSettings)
     (noteRes, noteView) <- mreq textareaField (fieldName "Note")
         (draftSettingsNote <$> draftSettings)
 
@@ -36,11 +38,11 @@ draftSettingsForm currentUserId leagueId draftSettings extra = do
             <*> draftTypeRes
             <*> draftOrderRes
             <*> draftOrderTypeRes
-            <*> dateRes
-            <*> timeRes
+            <*> existingElseDefault (utctDay now) (draftSettingsDate <$> draftSettings) -- dateRes
+            <*> existingElseDefault (timeToTimeOfDay (utctDayTime now)) (draftSettingsTime <$> draftSettings)-- timeRes
             <*> locationRes
-            <*> allowDraftPickTradingRes
-            <*> secondsPerPickRes
+            <*> pure True -- allowDraftPickTradingRes
+            <*> pure 60   -- secondsPerPickRes
             <*> noteRes
             <*> createdByField currentUserId (draftSettingsCreatedBy <$> draftSettings)
             <*> existingElseDefault now (draftSettingsCreatedAt <$> draftSettings)
