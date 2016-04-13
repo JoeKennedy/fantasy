@@ -11,7 +11,7 @@ $if isAdmin maybeUser
         <thead>
             <th>House
             <th>Words
-            <th>Description
+            <th .hidden-xs>Description
             <th>Number Of Characters
         <tbody>
             $forall (Entity houseId house, E.Value characterCount) <- houses
@@ -19,6 +19,6 @@ $if isAdmin maybeUser
                     <td>
                         <a href=@{HouseR houseId}>#{houseName house}
                     <td>#{houseWords house}
-                    <td>#{houseDescription house}
+                    <td .hidden-xs>#{houseDescription house}
                     <td>#{characterCount}
 
