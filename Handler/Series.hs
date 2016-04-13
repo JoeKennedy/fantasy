@@ -9,6 +9,9 @@ import           Text.Blaze (toMarkup)
 import           Text.Read (readMaybe)
 import           Yesod.Form.Bootstrap3 (renderBootstrap3)
 
+-----------
+-- Forms --
+-----------
 seriesForm :: Maybe Series -> Form Series
 seriesForm series = renderBootstrap3 defaultBootstrapForm $ Series
     <$> areq intField (fieldName "Number") (seriesNumber <$> series)
@@ -30,12 +33,9 @@ eventForm episodeId event = renderBootstrap3 defaultBootstrapForm $ Event
     <*> areq intField  (fieldName "Time in episode") (eventTimeInEpisode <$> event)
     where characters = optionsPersistKey [] [Asc CharacterName] characterName
 
-eventFormWidget :: Route App -> Enctype -> Widget -> Widget
-eventFormWidget action enctype widget = $(widgetFile "event_form")
-
-seriesEpisodesPanel :: Series -> [Entity Episode] -> String -> Widget
-seriesEpisodesPanel series episodes panelTitle = $(widgetFile "series_episodes_panel")
-
+------------
+-- Routes --
+------------
 getSeriesListR :: Handler Html
 getSeriesListR = do
     maybeUser <- maybeAuth
@@ -106,21 +106,6 @@ postSeriesEpisodesR seriesNo = do
             setTitle "Episode creation failed"
             let action = SeriesEpisodesR $ seriesNumber series
             $(widgetFile "embedded_form")
-
-utcDateField :: Field Handler UTCTime
-utcDateField = Field
-    { fieldParse  = parseHelper $ parseUTCDate . unpack
-    , fieldView   = \theId name attrs val isReq -> 
-        [whamlet|
-          <input id="#{theId}" name="#{name}" *{attrs} type="text" step=any :isReq:required="" value="#{showVal val}" placeholder="yyyy-mm-dd hh:mm:ss" maxlength="#{datetimeLength}">
-        |]
-    , fieldEnctype = UrlEncoded
-    }
-    where datetimeLength = 19 :: Int
-          showVal = either id (pack . take datetimeLength . show)
-
-parseUTCDate :: String -> Either FormMessage UTCTime
-parseUTCDate = maybe (Left MsgInvalidDay) Right . readMaybe
 
 getSeriesEpisodeR :: Int -> Int -> Handler Html
 getSeriesEpisodeR seriesNo episodeNo = do
@@ -197,4 +182,31 @@ postSeriesEpisodeEventR seriesNo episodeNo eventId = do
             setTitle "Edit of event failed"
             let action = SeriesEpisodeEventR seriesNo episodeNo eventId
             $(widgetFile "event_form")
+
+-------------
+-- Widgets --
+-------------
+eventFormWidget :: Route App -> Enctype -> Widget -> Widget
+eventFormWidget action enctype widget = $(widgetFile "event_form")
+
+seriesEpisodesPanel :: Series -> [Entity Episode] -> String -> Widget
+seriesEpisodesPanel series episodes panelTitle = $(widgetFile "series_episodes_panel")
+
+------------
+-- Fields --
+------------
+utcDateField :: Field Handler UTCTime
+utcDateField = Field
+    { fieldParse  = parseHelper $ parseUTCDate . unpack
+    , fieldView   = \theId name attrs val isReq ->
+        [whamlet|
+          <input id="#{theId}" name="#{name}" *{attrs} type="text" step=any :isReq:required="" value="#{showVal val}" placeholder="yyyy-mm-dd hh:mm:ss" maxlength="#{datetimeLength}">
+        |]
+    , fieldEnctype = UrlEncoded
+    }
+    where datetimeLength = 19 :: Int
+          showVal = either id (pack . take datetimeLength . show)
+
+parseUTCDate :: String -> Either FormMessage UTCTime
+parseUTCDate = maybe (Left MsgInvalidDay) Right . readMaybe
 
