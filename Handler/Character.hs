@@ -21,12 +21,20 @@ characterForm userId character = renderBootstrap3 defaultBootstrapForm $ Charact
     <*> areq (selectField speciesList) (fieldName "Species") (characterSpeciesId <$> character)
     <*> aopt (selectField houses) (fieldName "House") (characterHouseId <$> character)
     <*> areq (selectField optionsEnum) (fieldName "Status") (characterStatus <$> character)
+    <*> areq intField (fieldName "Season 5 Score") (characterPointsLastSeason <$> character)
+    <*> areq intField (fieldName "Episode Count") (characterEpisodesAppearedIn <$> character)
+    <*> aopt (selectField seriesList) (fieldName "Rookie Season") (characterRookieSeriesId <$> character)
     <*> createdByField userId (characterCreatedBy <$> character)
     <*> createdAtField (characterCreatedAt <$> character)
     <*> updatedByField userId
     <*> updatedAtField
     where speciesList = optionsPersistKey [] [Asc SpeciesName] speciesName
           houses = optionsPersistKey [] [Asc HouseName] houseName
+
+          seriesNumberText :: Series -> Text
+          seriesNumberText = pack . show . seriesNumber
+
+          seriesList = optionsPersistKey [] [Asc SeriesNumber] seriesNumberText
 
 blurbForm :: CharacterId -> UserId -> Maybe Blurb -> Form Blurb
 blurbForm characterId userId blurb = renderBootstrapPanelForm $ Blurb
@@ -60,6 +68,7 @@ getCharacterR characterId = do
     character  <- runDB $ get404 characterId
     species    <- runDB $ get404 $ characterSpeciesId character
     maybeHouse <- runDB $ mapM get $ characterHouseId character
+    maybeRookieSeries <- runDB $ mapM get $ characterRookieSeriesId character
     events     <- runDB
         $ E.select
         $ E.from $ \(event `E.InnerJoin` episode `E.InnerJoin` series `E.InnerJoin` actingCharacter `E.LeftOuterJoin` receivingCharacter) -> do

@@ -23,6 +23,18 @@
                         $nothing
                             -
                 <li .list-group-item>
+                    <h6 .list-group-item-heading>Points Last Season
+                    <p .list-group-item-text>#{characterPointsLastSeason character}
+                <li .list-group-item>
+                    <h6 .list-group-item-heading>Episodes Appeared In
+                    <p .list-group-item-text>#{characterEpisodesAppearedIn character}
+                $maybe rookieSeries <- join maybeRookieSeries
+                    <li .list-group-item>
+                        <h6 .list-group-item-heading>Rookie Season
+                        <p .list-group-item-text>
+                            <a href=@{SeriesR (seriesNumber rookieSeries)}>
+                                #{seriesNumber rookieSeries}
+                <li .list-group-item>
                     <h6 .list-group-item-heading>Bio
                     <p .list-group-item-text>#{characterBio character}
 
