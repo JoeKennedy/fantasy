@@ -97,7 +97,7 @@ getLeagueTransactionsR leagueId = do
 postLeagueAcceptTradeR :: LeagueId -> TransactionId -> Handler ()
 postLeagueAcceptTradeR _ transactionId = do
     userId <- requireAuthId
-    processMultiPlayerTransaction_ userId transactionId
+    processMultiPlayerTransaction userId transactionId
     setMessage $ toMarkup ("Trade accepted!" :: Text)
 
 postLeagueDeclineTradeR :: LeagueId -> TransactionId -> Handler ()
@@ -215,12 +215,14 @@ getPlayersAndCharacters leagueId = runDB
 -------------------------
 createTransaction :: Player -> Maybe (Entity Team) -> TransactionType -> Handler (Entity Transaction)
 createTransaction player maybeDraftTeam transactionType = do
-    let (leagueId, maybeOtherTeamId) = (playerLeagueId player, playerTeamId player)
     userId <- requireAuthId
-    maybeTeam <- case maybeDraftTeam of Just draftTeam -> return $ Just draftTeam
-                                        Nothing -> runDB $ selectFirst [TeamLeagueId ==. leagueId,
-                                                                        TeamOwnerId ==. Just userId] []
     now <- liftIO getCurrentTime
+    let (leagueId, maybeOtherTeamId) = (playerLeagueId player, playerTeamId player)
+    processableAt <- if transactionType == Claim then claimProcessableAt leagueId now else return now
+    maybeTeam <- case maybeDraftTeam of
+        Just draftTeam -> return $ Just draftTeam
+        Nothing -> runDB $ selectFirst [TeamLeagueId ==. leagueId, TeamOwnerId ==. Just userId] []
+
     case maybeTeam of
         Nothing -> error "You are not a member of this league"
         Just (Entity teamId team) -> do
@@ -235,6 +237,7 @@ createTransaction player maybeDraftTeam transactionType = do
                     , transactionCreatedAt = now
                     , transactionUpdatedBy = userId
                     , transactionUpdatedAt = now
+                    , transactionProcessableAt = processableAt
                     , transactionCompletedAt = Nothing
                     }
             transactionId <- runDB $ insert transaction
@@ -285,13 +288,15 @@ processClaimRequests :: Handler ()
 processClaimRequests = do
     maybeAdmin <- runDB $ selectFirst [UserIsAdmin ==. True] [Asc UserId]
     let Entity adminUserId _ = fromJust maybeAdmin
+    now <- liftIO getCurrentTime
     transactionIds <- runDB $ selectKeysList
         [ TransactionStatus ==. Requested
         , TransactionType ==. Claim
+        , TransactionProcessableAt <=. now
         ] [Asc TransactionId]
-    mapM_ (processMultiPlayerTransaction_ adminUserId) transactionIds
+    mapM_ (processMultiPlayerTransaction adminUserId) transactionIds
 
-processMultiPlayerTransaction :: UserId -> TransactionId -> Handler Bool
+processMultiPlayerTransaction :: UserId -> TransactionId -> Handler ()
 processMultiPlayerTransaction userId transactionId = do
     transactionPlayers <- runDB $ selectList [TransactionPlayerTransactionId ==. transactionId] []
     transactionPlayersWithPlayer <- mapM joinWithPlayer transactionPlayers
@@ -300,16 +305,8 @@ processMultiPlayerTransaction userId transactionId = do
         then do
             mapM_ (movePlayerToNewTeam userId) transactionPlayersWithPlayer
             succeedTransactionWithUserId transactionId userId
-            return True
-        else do
-            failTransactionWithUserId_ transactionId userId
-                                       "One or more players not on expected team"
-            return False
-
-processMultiPlayerTransaction_ :: UserId -> TransactionId -> Handler ()
-processMultiPlayerTransaction_ userId transactionId = do
-    _ <- processMultiPlayerTransaction userId transactionId
-    return ()
+        else failTransactionWithUserId_ transactionId userId
+                                        "One or more players not on expected team"
 
 succeedTransaction :: TransactionId -> Handler ()
 succeedTransaction transactionId = completeTransaction transactionId Nothing Nothing
@@ -434,4 +431,12 @@ joinWithPlayer (Entity transactionPlayerId transactionPlayer) = do
     player <- runDB $ get404 playerId
     return (Entity transactionPlayerId transactionPlayer, Entity playerId player)
 
+claimProcessableAt :: LeagueId -> UTCTime -> Handler UTCTime
+claimProcessableAt leagueId utcTime = do
+    Entity seriesId _ <- runDB $ getBy404 $ UniqueSeriesNumber 6
+    Entity _ episode <- runDB $ getBy404 $ UniqueEpisodeNumberSeries 1 seriesId
+    if utcTime < episodeAirTime episode then return utcTime else do
+        Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+        let daysToAdd = min 0 $ generalSettingsWaiverPeriodInDays generalSettings - dayOfWeek utcTime
+        return $ if daysToAdd == 0 then utcTime else addXDays daysToAdd utcTime
 

@@ -176,6 +176,7 @@ Transaction
     createdAt UTCTime
     updatedBy UserId
     updatedAt UTCTime
+    processableAt UTCTime default=now()
     completedAt UTCTime Maybe
     deriving Eq
 

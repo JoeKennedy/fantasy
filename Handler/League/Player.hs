@@ -102,15 +102,14 @@ postLeaguePlayerClaimR leagueId playerIdToAdd playerIdToDrop = do
                      (Entity playerIdToDrop playerToDrop) Claim
     didAutoFail <- autoFailClaimTransaction leagueId transactionId playerToAdd playerToDrop
     if didAutoFail then return () else do
+        transaction <- runDB $ get404 transactionId
         Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
-        userId <- requireAuthId
-        let messageStart = "Claim to pick up " ++ characterName characterToAdd ++ " and drop " ++
-                           characterName characterToDrop
-        if generalSettingsWaiverPeriodInDays generalSettings == 1
-            then setMessage $ toMarkup $ messageStart ++ " will be processed at 9am UTC."
-            else do
-                didSucceed <- processMultiPlayerTransaction userId transactionId
-                setMessage $ toMarkup $ messageStart ++ if didSucceed then " was successful!" else " failed."
+        let day = if transactionCreatedAt transaction == transactionProcessableAt transaction
+                      then ""
+                      else " " ++ (dayOfWeekToText $ generalSettingsWaiverPeriodInDays generalSettings + 1)
+        setMessage $ toMarkup $
+            "Claim to pick up " ++ characterName characterToAdd ++ " and drop " ++
+            characterName characterToDrop ++ " will be processed" ++ day ++ " at 9am UTC."
 
 postLeaguePlayerTradeR :: LeagueId -> PlayerId -> PlayerId -> Handler ()
 postLeaguePlayerTradeR leagueId playerIdToTake playerIdToGive = do

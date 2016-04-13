@@ -45,7 +45,7 @@ possibleTradeDeadlineWeeks :: [Int]
 possibleTradeDeadlineWeeks = [7..10]
 
 possibleWaiverPeriodsInDays :: [Int]
-possibleWaiverPeriodsInDays = [0..1]
+possibleWaiverPeriodsInDays = [0..3]
 
 -- Default Values --
 ---------------------
