@@ -2,10 +2,12 @@ module Model.Bootstrap where
 
 import Model
 
-import           Data.Char         (isLetter, isSpace)
-import qualified Data.Text as Text (toLower, replace)
-import ClassyPrelude.Yesod
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), BootstrapGridOptions (..), renderBootstrap3)
+import           ClassyPrelude.Yesod
+import           Data.Char             (isLetter, isSpace)
+import qualified Data.Text as Text     (toLower, replace)
+import           Yesod.Form.Bootstrap3 ( BootstrapFormLayout (..)
+                                       , BootstrapGridOptions (..)
+                                       , renderBootstrap3)
 
 -------------------
 --- Bootstrap 3 ---
@@ -24,7 +26,12 @@ fieldId :: Text -> Text
 fieldId name = Text.toLower $ Text.replace " " "_" $ filter (\c -> isLetter c || isSpace c) name
 
 fieldName :: Text -> FieldSettings site
-fieldName name = FieldSettings (SomeMessage name) Nothing (Just (fieldId name)) Nothing [("class", "form-control")]
+fieldName name = fieldNameWithPlaceholder name ""
+
+fieldNameWithPlaceholder :: Text -> Text -> FieldSettings site
+fieldNameWithPlaceholder name fieldPlaceholder =
+    FieldSettings (SomeMessage name) Nothing (Just (fieldId name)) Nothing
+                  [("class", "form-control"), ("placeholder", fieldPlaceholder)]
 
 formControl :: FieldSettings site
 formControl = FieldSettings (SomeMessage ("" :: Text)) Nothing Nothing Nothing [("class", "form-control")]

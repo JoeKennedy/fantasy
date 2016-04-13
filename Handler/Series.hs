@@ -30,6 +30,7 @@ eventForm episodeId event = renderBootstrap3 defaultBootstrapForm $ Event
     <*> areq (selectField optionsEnum) (fieldName "Action") (eventAction <$> event)
     <*> aopt (selectField characters)  (fieldName "Receiving Character") (eventReceivingCharacterId <$> event)
     <*> pure episodeId
+    <*> aopt textField (fieldName "Further description") (eventNote <$> event)
     <*> areq intField  (fieldName "Time in episode") (eventTimeInEpisode <$> event)
     where characters = optionsPersistKey [] [Asc CharacterName] characterName
 

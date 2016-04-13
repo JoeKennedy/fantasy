@@ -55,6 +55,8 @@
                                             $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
                                                 <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
                                                 #{actionAfter}
+                                            $maybe note <- eventNote event
+                                                \ #{note}
                                     $else
                                         $with actionString <- reverseActionString (eventAction event)
                                             $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter

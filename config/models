@@ -65,6 +65,7 @@ Event
     action Action
     receivingCharacterId CharacterId Maybe
     episodeId EpisodeId
+    note Text Maybe
     timeInEpisode Int
     UniqueEvent characterId action episodeId timeInEpisode
 
