@@ -65,7 +65,12 @@ postLeagueCancelR :: LeagueId -> Handler ()
 postLeagueCancelR leagueId = do
     userId <- requireAuthId
     now <- liftIO getCurrentTime
-    runDB $ update leagueId [ LeagueIsActive =. False
+    stdgen <- liftIO newStdGen
+    -- Give the league a random name to avoid conflicting with new leagues
+    let newLeagueName = "Canceled League " ++ toPathPiece leagueId
+        randomText    = pack $ fst $ randomString 24 stdgen
+    runDB $ update leagueId [ LeagueName =. newLeagueName ++ randomText
+                            , LeagueIsActive =. False
                             , LeagueUpdatedBy =. userId
                             , LeagueUpdatedAt =. now
                             ]
