@@ -115,6 +115,6 @@ draftSettingsListGroupItem (Just draftSettings) draftType
     | otherwise = [whamlet|<div .list-group-item>^{draftTypeWidget draftType}|]
 draftSettingsListGroupItem Nothing draftType
     | isDisabledDraftType draftType =
-        [whamlet|<a .list-group-item .disabled href="#">^{draftTypeWidget draftType}|]
+        [whamlet|<div .list-group-item .disabled>^{draftTypeWidget draftType}|]
     | otherwise = [whamlet|<a .list-group-item href="#">^{draftTypeWidget draftType}|]
 

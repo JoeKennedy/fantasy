@@ -235,6 +235,6 @@ leagueListGroupItem (Just league) scoringType
     | otherwise = [whamlet|<div .list-group-item>^{scoringTypeWidget scoringType}|]
 leagueListGroupItem Nothing scoringType
     | isDisabledScoringType scoringType =
-        [whamlet|<a .list-group-item .disabled href="#">^{scoringTypeWidget scoringType}|]
+        [whamlet|<div .list-group-item .disabled>^{scoringTypeWidget scoringType}|]
     | otherwise = [whamlet|<a .list-group-item href="#">^{scoringTypeWidget scoringType}|]
 
