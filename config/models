@@ -122,12 +122,12 @@ DraftSettings
     draftType DraftType
     draftOrder DraftOrder
     draftOrderType DraftOrderType
-    date Day
-    time TimeOfDay
-    location Text
+    date Day Maybe
+    time TimeOfDay Maybe
+    location Text Maybe
     allowDraftPickTrading Bool
     secondsPerPick Int
-    note Textarea
+    note Textarea Maybe
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId

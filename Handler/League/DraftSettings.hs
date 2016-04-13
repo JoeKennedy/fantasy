@@ -5,8 +5,6 @@ import Handler.Common        (extractValueMaybe)
 import Handler.League.Setup
 import Handler.League.Layout
 
-import Data.Time.LocalTime
-
 ----------
 -- Form --
 ----------
@@ -18,18 +16,18 @@ draftSettingsForm currentUserId leagueId draftSettings extra = do
         (fieldName "Draft Order") (draftSettingsDraftOrder <$> draftSettings)
     (draftOrderTypeRes, draftOrderTypeView) <- mreq (selectFieldList draftOrderTypeOptions)
         (fieldName "Determination Of Draft Order") (draftSettingsDraftOrderType <$> draftSettings)
-    -- (dateRes, dateView) <- mreq dayField (fieldName "Draft Day")
-    --     (draftSettingsDate <$> draftSettings)
-    -- (timeRes, timeView) <- mreq timeFieldTypeTime (fieldName "Draft Time")
-    --     (draftSettingsTime <$> draftSettings)
-    (locationRes, locationView) <- mreq textField (fieldName "Location")
+    (dateRes, dateView) <- mopt dayField (fieldName "Draft Day")
+        (draftSettingsDate <$> draftSettings)
+    (timeRes, timeView) <- mopt timeFieldTypeTime (fieldName "Draft Time")
+        (draftSettingsTime <$> draftSettings)
+    (locationRes, locationView) <- mopt textField (fieldName "Location")
         (draftSettingsLocation <$> draftSettings)
-    -- (allowDraftPickTradingRes, allowDraftPickTradingView) <- mreq checkBoxField
-    --     "Allow draft pick trading?" (draftSettingsAllowDraftPickTrading <$> draftSettings)
-    -- (secondsPerPickRes, secondsPerPickView) <- mreq
-    --     (selectFieldList $ toOptions possibleSecondsPerPick) (fieldName "Seconds Per Pick")
-    --     (existingElseDefault defaultSecondsPerPick $ draftSettingsSecondsPerPick <$> draftSettings)
-    (noteRes, noteView) <- mreq textareaField (fieldName "Note")
+    (allowDraftPickTradingRes, allowDraftPickTradingView) <- mreq checkBoxField
+        "Allow draft pick trading?" (draftSettingsAllowDraftPickTrading <$> draftSettings)
+    (secondsPerPickRes, secondsPerPickView) <- mreq
+        (selectFieldList $ toOptions possibleSecondsPerPick) (fieldName "Seconds Per Pick")
+        (existingElseDefault defaultSecondsPerPick $ draftSettingsSecondsPerPick <$> draftSettings)
+    (noteRes, noteView) <- mopt textareaField (fieldName "Note")
         (draftSettingsNote <$> draftSettings)
 
     now <- liftIO getCurrentTime
@@ -38,11 +36,11 @@ draftSettingsForm currentUserId leagueId draftSettings extra = do
             <*> draftTypeRes
             <*> draftOrderRes
             <*> draftOrderTypeRes
-            <*> existingElseDefault (utctDay now) (draftSettingsDate <$> draftSettings) -- dateRes
-            <*> existingElseDefault (timeToTimeOfDay (utctDayTime now)) (draftSettingsTime <$> draftSettings)-- timeRes
+            <*> dateRes
+            <*> timeRes
             <*> locationRes
-            <*> pure True -- allowDraftPickTradingRes
-            <*> pure 60   -- secondsPerPickRes
+            <*> allowDraftPickTradingRes
+            <*> secondsPerPickRes
             <*> noteRes
             <*> createdByField currentUserId (draftSettingsCreatedBy <$> draftSettings)
             <*> existingElseDefault now (draftSettingsCreatedAt <$> draftSettings)

@@ -26,14 +26,14 @@
                 <h5 .text-center>Draft Info
             <div .panel-body>
                 ^{fvInput draftTypeView}
-                $# <div .form-group>
-                $#     <label for="#{fvId dateView}">
-                $#         #{fvLabel dateView}
-                $#     ^{fvInput dateView}
-                $# <div .form-group>
-                $#     <label for="#{fvId timeView}">
-                $#         #{fvLabel timeView}
-                $#     ^{fvInput timeView}
+                <div .form-group>
+                    <label for="#{fvId dateView}">
+                        #{fvLabel dateView}
+                    ^{fvInput dateView}
+                <div .form-group>
+                    <label for="#{fvId timeView}">
+                        #{fvLabel timeView}
+                    ^{fvInput timeView}
                 <div .form-group>
                     <label for="#{fvId draftOrderView}">
                         #{fvLabel draftOrderView}
@@ -46,16 +46,16 @@
                     <label for="#{fvId locationView}">
                         #{fvLabel locationView}
                     ^{fvInput locationView}
-                $# <div .form-group>
-                $#     <label for="#{fvId secondsPerPickView}">
-                $#         #{fvLabel secondsPerPickView}
-                $#     ^{fvInput secondsPerPickView}
+                <div .form-group>
+                    <label for="#{fvId secondsPerPickView}">
+                        #{fvLabel secondsPerPickView}
+                    ^{fvInput secondsPerPickView}
                 <div .form-group>
                     <label for="#{fvId noteView}">
                         #{fvLabel noteView}
                     ^{fvInput noteView}
-                $# <div .checkbox>
-                $#     <label>
-                $#         ^{fvInput allowDraftPickTradingView}
-                $#         #{fvLabel allowDraftPickTradingView}
+                <div .checkbox>
+                    <label>
+                        ^{fvInput allowDraftPickTradingView}
+                        #{fvLabel allowDraftPickTradingView}
 
