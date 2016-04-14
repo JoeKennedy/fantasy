@@ -47,6 +47,10 @@
       <div .nav .navbar-nav .navbar-right>
         <a .btn .btn-primary .navbar-btn href="@{SetupLeagueR SetupNewLeagueR}">Create A League!
 
+      <ul .nav .navbar-nav .navbar-right>
+        <li>
+          <a href=@{FAQR}>How To Play
+
 <div .container>
   $maybe msg <- mmsg
     <div #message .alert .alert-dismissible .alert-primary .bg-primary>

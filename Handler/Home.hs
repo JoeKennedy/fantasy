@@ -18,3 +18,7 @@ getHomeR = do
         setTitle "Fantasy Game Of Thrones"
         $(widgetFile "homepage")
 
+getFAQR :: Handler Html
+getFAQR = defaultLayout $ do
+    setTitle "Fantasy Game Of Thrones | How To Play"
+    $(widgetFile "faq")

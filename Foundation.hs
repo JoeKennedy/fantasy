@@ -97,6 +97,7 @@ instance Yesod App where
     isAuthorized RobotsR     _ = return Authorized
     isAuthorized (StaticR _) _ = return Authorized
     isAuthorized HomeR       _ = return Authorized
+    isAuthorized FAQR        _ = return Authorized
 
     isAuthorized CharactersR                 _      = return Authorized
     isAuthorized (CharacterR _)              _      = return Authorized
@@ -289,6 +290,7 @@ requirePlayerOwner playerId = do
 instance YesodBreadcrumbs App where
     breadcrumb HomeR = return ("Home", Nothing)
     breadcrumb (AuthR LoginR) = return ("Sign In", Just HomeR)
+    breadcrumb FAQR = return ("How To Play", Just HomeR)
 
     -- Character, species, and house breadcrumbs
     breadcrumb CharactersR = return ("Characters", Just HomeR)

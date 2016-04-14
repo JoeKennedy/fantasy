@@ -4,6 +4,8 @@
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
 
+/faq FAQR GET
+
 /characters                              CharactersR      GET
 /characters/new                          NewCharacterR    GET POST
 !/characters/#CharacterId                CharacterR       GET

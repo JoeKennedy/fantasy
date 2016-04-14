@@ -1,0 +1,167 @@
+<div .row>
+    <div .col-md-6 .col-xs-12>
+        <div .page-header>
+            <h4>How To Play
+
+        <div .panel .panel-primary>
+            <div #p1 .panel-heading>
+                <div .panel-title>How does it work?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            Just like fantasy football! Each league of 4-12 "houses" will draft characters from the show, such that one character is only owned by one team. During each week's episode, each house will put forward a certain number of characters on their team to score points for them. Points are scored by drinking, fighting, having sex, and generally being awesome.  At the end of the regular season, the top teams will head to the playoffs and compete from 0 points again. The team with the most points after the playoffs wins the league and glory for all time (one year)!
+
+        <div .panel .panel-primary>
+            <div #p2 .panel-heading>
+                <div .panel-title>How do you draft characters?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            Currently, because this site is under development, the only option for drafting is to have your own offline draft. What we recommend is that you submit to your league commissioner ("Lord Commander," if you will) a list of 40 or so characters that you would have on your team, ranked in order of how much you want them. As a guide, you can see how many points this character scored last year (though keep in mind those scores were made using a different system altogether so they are just a helpful indication). The site will randomly select draft order (that your commissioner can edit), then enter a snake or linear draft (google them) by entering the characters one by one into the system. At the end you'll have your team!
+
+        <div .panel .panel-primary>
+            <div #p3 .panel-heading>
+                <div .panel-title>How does a single week work?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            Each house will have a certain number of characters affiliated with it, depending on total league size, and will be able to play only a few of them each week. For instance, in a 7-person league, each house might have 5 characters on it, with 3 to play each week. If you didn't put forward a character to play that week (you "benched" them) then the points they score are worthless to you! Sorry not sorry! So don't be like me and bench Jon Snow right before he kills like 100 wildlings.  Regret tastes like tears.
+
+        <div .panel .panel-primary>
+            <div #p4 .panel-heading>
+                <div .panel-title>How do you win?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            This is not like fantasy football in that you are not matched head-to-head with an opponent each week. Your total points are aggregated over the course of the regular season, such that the houses with the highest scores at the end of the regular season move on to the playoffs!
+
+        <div .panel .panel-primary>
+            <div #p5 .panel-heading>
+                <div .panel-title>What are the playoffs?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <p>During the playoffs, the few weeks (variable based on league) at the end of the season, the stakes get higher! Only the top few teams from the regular season advance, and have to compete again with only each other, starting from zero. The team with the highest score after the playoffs wins the entire league!
+                            <p>
+                                <b>Note:
+                                \ Playoffs are optional, your Lord Commander may choose not to include them.
+
+        <div .panel .panel-primary>
+            <div #p6 .panel-heading>
+                <div .panel-title>Can I trade characters?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            Yes! Until the trade deadline. I don't need to explain this.
+
+        <div .panel .panel-primary>
+            <div #p7 .panel-heading>
+                <div .panel-title>What is the waiver wire?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <p>If one of your characters dies (psh that won't happen), or a new character is introduced that looks super badass, or you just don't feel like fucking with Melisandre anymore, you gotta change up your team! Every week after the episode airs there is a period where houses can make "claims" on unowned characters, with the intent of adding them to their house while dropping an under-performing player back to the waiver pool. This period is variable based on league, but generally will be a couple days. The houses with the lower accumulated ranking (or lower draft pick in week 1) will have first pick on these characters. After this first waiver period there are waiver periods every day until the next episode.
+                            <p>
+                                <b>Note:
+                                \ You can put in multiple waiver claims each period. One option is to look to add multiple characters, in which case you have to pick the one you want more which will be processed based on your waiver priority. After everyone else gets their waiver picks considered your second add is processed. You can also add a backup waiver add in case your first choice is taken, in which case you make a waiver claim on multiple characters but dropping the same character from your team.
+
+        <div .panel .panel-primary>
+            <div #p8 .panel-heading>
+                <div .panel-title>
+                    That was confusing. Can I see an example of weekly play?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <p>Ok fine. I'll go through a week. My team is:
+                            <ul .list-unstyled .text-primary>
+                                <li>Daenerys Targaryen
+                                <li>Jorah Mormont
+                                <li>Samwell Tarly
+                                <li>The Mountain
+                                <li>Missandei
+                            <p>It's Week 3 and I decide to play Daenerys (as usual), Sam, and maybe The Mountain will have a fight or something so whatever.
+                            <p>Week 3 happens, I score 36 points. Whatever. The Mountain didn't appear - fail. I hate him and want to drop him to pick up somebody else. I see that Ellaria Sand is unowned, and she was in that episode! I make a claim to drop The Mountain and pick up Ellaria Sand. As a backup, I put in a waiver claim to drop The Mountain and pick up Rickon Stark because whatever.
+                            <p>I am currently in 4th place out of 8 houses, so my waiver priority is 5th (it goes 8th, 7th, 6th, 5th, 4th, etc.). Waivers process after 2 days (early Wednesday morning). Unfortunately the loser in last place also thought Ellaria was awesome and made a claim for her as his top priority. Since my top waiver claim was voided, I get Rickon Stark.
+                            <p>I realize that Rickon Stark is a useless baby and make another waiver claim to drop him for Nymeria Sand because she was in the episode too, it can't hurt. This claim goes through after one day (early Thursday Morning) and nobody else was claiming her that had better priority so I get her on my team. Success!
+
+        <div .panel .panel-primary>
+            <div #p9 .panel-heading>
+                <div .panel-title>
+                    Is there an example league that I can check out?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            Heck yeah there is! #
+                            <a href="http://www.fantasygameofthrones.com/leagues/18">
+                                Take a look here.
+
+    <div .col-md-6 .col-xs-12>
+        <div .page-header>
+            <h4>Other Questions
+
+        <div .panel .panel-primary>
+            <div #p10 .panel-heading>
+                <div .panel-title>What is a normal league size?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            We have found the game works well with 7-9 houses per league and recommend something around there, but we allow leagues to be between 4 and 12 houses (12 is a lot - that's untested water). In our experience there are generally about 35 +/- 5 "ownable" characters at a time, so you should shoot for (# houses) x (# characters/house) to hit somewhere around that number.
+
+        <div .panel .panel-primary>
+            <div #p11 .panel-heading>
+                <div .panel-title>How are the scores tallied?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            Each individual league was set up with different points assigned to different actions. The Fantasy Game of Thrones team watches each episode and tallies the amount of times these actions take place, then enters them into the site to generate scores for all leagues.
+
+        <div .panel .panel-primary>
+            <div #p12 .panel-heading>
+                <div .panel-title>Why isn't X character on the site?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            Either because we haven't added them yet or they are not important.
+
+        <div .panel .panel-primary>
+            <div #p13 .panel-heading>
+                <div .panel-title>
+                    Why does the site seem to be missing features/when
+                    will these features come?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>This website is still in development, and while it is ready for basic GOT leagues, we are working on more features all the time. Some of them may come in the middle of the season, or next year. Be patient, we're not getting paid for this (yet...?).
+
+        <div .panel .panel-primary>
+            <div #p14 .panel-heading>
+                <div .panel-title>I have more questions, can I ask you?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            Yes. Email us at: #
+                            <a href="mailto:grandmaester@fantasygameofthrones.com">
+                                grandmaester@fantasygameofthrones.com
+
+        <div .panel .panel-primary>
+            <div #p15 .panel-heading>
+                <div .panel-title>You guys are my sun and stars
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            Aw, thanks! But there are actually more stars in the sky than people working on this.
+
