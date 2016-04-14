@@ -40,8 +40,7 @@
                                         <a href="@{LeagueTeamR (playerLeagueId player) teamId}">
                                             #{teamAbbreviation team}
                                     $nothing
-                                        <a href="@{LeaguePlayersR (playerLeagueId player)}">
-                                            -
+                                        -
                             <td .hidden-xs>#{toPathPiece $ characterStatus character}
                             <td .hidden-sm .hidden-xs>
                                 $with seasonsSurvived <- 6 - seriesNumber rookieSeries
