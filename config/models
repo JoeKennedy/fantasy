@@ -156,6 +156,9 @@ Team
     UniqueTeamNameLeagueId name leagueId
     UniqueTeamAbbreviationLeagueId abbreviation leagueId
     UniqueTeamOwnerEmailLeagueId ownerEmail leagueId
+    UniqueTeamLeagueIdOwnerName leagueId ownerName
+    UniqueTeamLeagueIdDraftOrder leagueId draftOrder
+    UniqueTeamLeagueIdWaiverOrder leagueId waiverOrder
     deriving Eq Ord
 
 Player
