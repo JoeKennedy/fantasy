@@ -154,7 +154,6 @@ createLeague league = do
             , generalSettingsUpdatedAt = leagueUpdatedAt league
             }
         mapM_ (createScoringSettingsRow leagueEntity) allActions
-        -- createFirstTeam leagueEntity
         mapM_ (createTeam leagueEntity) $ zip teamNumbers draftOrder
         characters <- selectKeysList [] [Asc CharacterName]
         mapM_ (createPlayer leagueEntity) characters
