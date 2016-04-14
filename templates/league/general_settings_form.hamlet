@@ -14,6 +14,13 @@
                     <label for="#{fvId rosterSizeView}">
                         #{fvLabel rosterSizeView}
                     ^{fvInput rosterSizeView}
+            $if generalSettingsCreatedAt generalSettings == generalSettingsUpdatedAt generalSettings
+                <div .panel-footer .text-primary>
+                    <b>Important:
+                    \ The values chosen for number of starters and roster size are
+                    intended to keep between 35 and 40 players on rosters and a
+                    little over half as starters, based on the number of teams
+                    you selected.
 
     <div .col-md-4 .col-sm-6 .col-xs-12>
         <div .panel .panel-default>
