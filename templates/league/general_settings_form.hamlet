@@ -18,7 +18,7 @@
                 <div .panel-footer .text-primary>
                     <b>Important:
                     \ The values chosen for number of starters and roster size are
-                    intended to keep between 35 and 40 players on rosters and a
+                    intended to keep 36 +/- 4 players on rosters and a
                     little over half as starters, based on the number of teams
                     you selected.
 
@@ -35,6 +35,14 @@
                     <label for="#{fvId waiverPeriodView}">
                         #{fvLabel waiverPeriodView}
                     ^{fvInput waiverPeriodView}
+            $if generalSettingsCreatedAt generalSettings == generalSettingsUpdatedAt generalSettings
+                <div .panel-footer .text-primary>
+                    <b>Important:
+                    \ The value chosen for trade deadline week is the same as
+                    the value chosen for playoff length, on the right. The
+                    waiver period is the number of days after the episode airs
+                    until claims for new players or free agents will be
+                    processed.
 
     <div .col-md-4 .col-sm-6 .col-xs-12>
         <div .panel .panel-default>
@@ -53,4 +61,13 @@
                     <label for="#{fvId teamsInPlayoffsView}">
                         #{fvLabel teamsInPlayoffsView}
                     ^{fvInput teamsInPlayoffsView}
+            $if generalSettingsCreatedAt generalSettings == generalSettingsUpdatedAt generalSettings
+                <div .panel-footer .text-primary>
+                    <b>Important:
+                    \ The values chosen for regular season and playoff lengths
+                    and number of teams in the playoffs
+                    are based on the number of teams you selected. The larger
+                    the number of teams, the longer the playoffs and shorter the
+                    regular season. Half (rounded down) of the teams are in the
+                    playoffs.
 

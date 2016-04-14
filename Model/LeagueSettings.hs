@@ -10,7 +10,7 @@ teamsCountOption :: Int -> [(Text, Int)]
 teamsCountOption teamsCount = toOptions [teamsCount]
 
 possibleTeamCounts :: [Int]
-possibleTeamCounts = [4..10]
+possibleTeamCounts = [4..12]
 
 ---------------------
 -- Generic Helpers --
@@ -26,11 +26,11 @@ toOptions valuesList = map (\value -> (pack $ show value, value)) valuesList
 -- Possible Values --
 ---------------------
 
-possibleNumbersOfStarters :: [Int]
-possibleNumbersOfStarters = [1..6]
+possibleNumbersOfStarters :: Int -> [Int]
+possibleNumbersOfStarters teamsCount = [1..fst $ maxRosterSize teamsCount]
 
-possibleRosterSizes :: [Int]
-possibleRosterSizes = [2..12]
+possibleRosterSizes :: Int -> [Int]
+possibleRosterSizes teamsCount = [2..snd $ maxRosterSize teamsCount]
 
 possibleRegularSeasonLengths :: [Int]
 possibleRegularSeasonLengths = [7..10]
@@ -53,21 +53,24 @@ possibleWaiverPeriodsInDays = [0..3]
 -- takes in number of teams
 -- returns (max # of starters, total # on team)
 defaultRosterSize :: Int -> (Int, Int)
-defaultRosterSize 4 = (5, 9) -- 4 on bench, 36 total on teams
-defaultRosterSize 5 = (4, 7) -- 3 on bench, 35 total on teams
-defaultRosterSize 6 = (3, 6) -- 3 on bench, 36 total on teams
-defaultRosterSize 7 = (3, 5) -- 2 on bench, 35 total on teams
-defaultRosterSize 8 = (3, 5) -- 2 on bench, 40 total on teams
-defaultRosterSize 9 = (2, 4) -- 2 on bench, 36 total on teams
+defaultRosterSize  4 = (5, 9) -- 4 on bench, 36 total on teams
+defaultRosterSize  5 = (4, 7) -- 3 on bench, 35 total on teams
+defaultRosterSize  6 = (3, 6) -- 3 on bench, 36 total on teams
+defaultRosterSize  7 = (3, 5) -- 2 on bench, 35 total on teams
+defaultRosterSize  8 = (3, 5) -- 2 on bench, 40 total on teams
+defaultRosterSize  9 = (2, 4) -- 2 on bench, 36 total on teams
 defaultRosterSize 10 = (2, 4) -- 2 on bench, 40 total on teams
-defaultRosterSize _ = error "This roster size is not allowed"
+defaultRosterSize 11 = (2, 3) -- 1 on bench, 33 total on teams
+defaultRosterSize 12 = (2, 3) -- 1 on bench, 36 total on teams
+defaultRosterSize _  = error "This roster size is not allowed"
 
 -- takes in number of teams
 -- returns (regular season length, playoff length)
 defaultSeasonLength :: Int -> (Int, Int)
 defaultSeasonLength teamsCount
-    | teamsCount < 6 = (9, 1)
-    | otherwise      = (8, 2)
+    | teamsCount < 6  = (9, 1)
+    | teamsCount < 11 = (8, 2)
+    | otherwise       = (7, 3)
 
 -- takes in number of teams
 -- returns number of teams that make the playoffs
@@ -81,6 +84,23 @@ defaultTradeDeadlineWeek teamsCount = fst $ defaultSeasonLength teamsCount
 
 defaultWaiverPeriodInDays :: Int
 defaultWaiverPeriodInDays = 1
+
+-- Helpers --
+-------------
+
+-- takes in number of teams
+-- returns (max # of starters, max # on team)
+maxRosterSize :: Int -> (Int, Int)
+maxRosterSize  4 = (10, 16) -- 64 total players on rosters
+maxRosterSize  5 = ( 8, 13) -- 65 total players on rosters
+maxRosterSize  6 = ( 7, 11) -- 66 total players on rosters
+maxRosterSize  7 = ( 6,  9) -- 63 total players on rosters
+maxRosterSize  8 = ( 5,  8) -- 64 total players on rosters
+maxRosterSize  9 = ( 4,  7) -- 63 total players on rosters
+maxRosterSize 10 = ( 4,  6) -- 60 total players on rosters
+maxRosterSize 11 = ( 4,  6) -- 66 total players on rosters
+maxRosterSize 12 = ( 3,  5) -- 60 total players on rosters
+maxRosterSize _  = error "This roster size is not allowed"
 
 
 --------------------

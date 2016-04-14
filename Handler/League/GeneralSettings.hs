@@ -9,9 +9,9 @@ import Handler.League.Layout
 ----------
 generalSettingsForm :: Int -> UserId -> GeneralSettings -> Form GeneralSettings
 generalSettingsForm teamsCount currentUserId generalSettings extra = do
-    (startersRes, startersView) <- mreq (selectFieldList $ toOptions possibleNumbersOfStarters)
+    (startersRes, startersView) <- mreq (selectFieldList $ toOptions $ possibleNumbersOfStarters teamsCount)
         (fieldName "Maximum number of starters") (Just $ generalSettingsNumberOfStarters generalSettings)
-    (rosterSizeRes, rosterSizeView) <- mreq (selectFieldList $ toOptions possibleRosterSizes)
+    (rosterSizeRes, rosterSizeView) <- mreq (selectFieldList $ toOptions $ possibleRosterSizes teamsCount)
         (fieldName "Maximum roster size") (Just $ generalSettingsRosterSize generalSettings)
     (regSeasonLengthRes, regSeasonLengthView) <- mreq (selectFieldList $ toOptions possibleRegularSeasonLengths)
         (fieldName "Regular Season length (in weeks)") (Just $ generalSettingsRegularSeasonLength generalSettings)
