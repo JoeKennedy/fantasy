@@ -154,9 +154,9 @@ splitPlayersTable _ = Nothing
 
 playersTableColumnCount :: PlayersTableType -> Int
 playersTableColumnCount ptt
-    | hasRadioButton ptt = 6
-    | isMultipleTeams ptt || hasSlotColumn ptt = 5
-    | otherwise = 4
+    | hasRadioButton ptt = 7
+    | isMultipleTeams ptt || hasSlotColumn ptt = 6
+    | otherwise = 5
 
 packPlayersTableType :: PlayersTableType -> Text
 packPlayersTableType FreeAgents = "Free Agents"

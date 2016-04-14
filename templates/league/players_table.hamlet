@@ -14,6 +14,7 @@
                         <th>Name
                         $if isMultipleTeams playersTableType
                             <th>House
+                        <th .hidden-xs>Status
                         <th .hidden-sm .hidden-xs>Seasons Survived
                         <th .hidden-sm .hidden-xs>Season 5 Points
                         <th>
@@ -41,12 +42,24 @@
                                     $nothing
                                         <a href="@{LeaguePlayersR (playerLeagueId player)}">
                                             -
+                            <td .hidden-xs>#{toPathPiece $ characterStatus character}
                             <td .hidden-sm .hidden-xs>
-                                $case 6 - seriesNumber rookieSeries
-                                    $of 0
-                                        Rookie
-                                    $of _
-                                        #{6 - seriesNumber rookieSeries}
+                                $with seasonsSurvived <- 6 - seriesNumber rookieSeries
+                                    $case characterStatus character
+                                        $of Dead
+                                            -
+                                        $of Uncertain
+                                            $case seasonsSurvived
+                                                $of 0
+                                                    Rookie?
+                                                $of _
+                                                    #{seasonsSurvived}?
+                                        $of Alive
+                                            $case seasonsSurvived
+                                                $of 0
+                                                    Rookie
+                                                $of _
+                                                    #{seasonsSurvived}
                             <td .hidden-sm .hidden-xs>
                                 #{characterPointsLastSeason character}
                             <td .text-right .player-action>
