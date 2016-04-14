@@ -83,7 +83,7 @@ postLeagueDraftR leagueId _year = do
             runDB $ update leagueId [LeagueIsDraftComplete =. True, LeagueUpdatedBy =. userId,
                                      LeagueUpdatedAt =. now, LeagueDraftCompletedAt =. Just now]
             setMessage "Successfully completed your draft! Be sure to let the other members of your league know."
-            redirect $ LeagueDraftR leagueId 2016
+            redirect $ LeagueTransactionsR leagueId
         _ -> leagueLayout leagueId "Draft" $(widgetFile "league/draft")
 
 getLeagueTransactionsR :: LeagueId -> Handler Html
