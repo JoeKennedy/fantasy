@@ -14,10 +14,12 @@
                         <th>Name
                         $if isMultipleTeams playersTableType
                             <th>Team
+                        <th .hidden-sm .hidden-xs>Seasons Survived
+                        <th .hidden-sm .hidden-xs>Season 5 Points
                         <th>
 
                 <tbody>
-                    $forall (num, Entity playerId player, maybeTeam, Entity _ character, button) <- subTablePlayers
+                    $forall (num, Entity playerId player, maybeTeam, Entity _ character, Entity _ rookieSeries, button) <- subTablePlayers
                         <tr .vertical-align-middle>
                             $if hasRadioButton playersTableType
                                 $with pid <- toPathPiece playerId
@@ -39,6 +41,14 @@
                                     $nothing
                                         <a href="@{LeaguePlayersR (playerLeagueId player)}">
                                             FA
+                            <td .hidden-sm .hidden-xs>
+                                $case 6 - seriesNumber rookieSeries
+                                    $of 0
+                                        Rookie
+                                    $of _
+                                        #{6 - seriesNumber rookieSeries}
+                            <td .hidden-sm .hidden-xs>
+                                #{characterPointsLastSeason character}
                             <td .text-right .player-action>
                                 $if showActionButton playersTableType
                                     ^{button}

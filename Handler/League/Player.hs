@@ -1,7 +1,7 @@
 module Handler.League.Player where
 
 import Import
-import Handler.Common             (isAdmin, extractValue, groupByThirdOfFive)
+import Handler.Common             (isAdmin, extractValue, groupByThirdOfSix)
 import Handler.League.Layout
 import Handler.League.Transaction
 
@@ -9,6 +9,19 @@ import           Data.Maybe         (fromJust)
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
 import           Text.Blaze         (toMarkup)
+
+-----------
+-- Types --
+-----------
+type FullPlayer = (Entity Player, Maybe (Entity Team), Entity Character, Entity Series)
+type FullPlayerForTable = (Int, Entity Player, Maybe (Entity Team),
+                           Entity Character, Entity Series, Widget)
+type FullPlayerWithButton = (Entity Player, Maybe (Entity Team),
+                             Entity Character, Entity Series, Widget)
+type FullPlayerForTableSansTeam = (Int, Entity Player, Entity Character,
+                                   Entity Series, Widget)
+type FullPlayerForTableReqTeam = (Int, Entity Player, Entity Team,
+                                  Entity Character, Entity Series, Widget)
 
 ------------
 -- Routes --
@@ -23,8 +36,8 @@ getLeaguePlayersR leagueId = do
     allPlayers <- playersWithButtons leagueEntity leaguePlayers
     currentTeamPlayers <- getTeamPlayers maybeTeamId
     myPlayers <- playersWithButtons leagueEntity currentTeamPlayers
-    let (freeAgents, onRosters) = partition (\(_, _, maybeTeam, _, _) -> isNothing maybeTeam) allPlayers
-        teamsAndPlayers = groupByThirdOfFive $ sortByTeam onRosters
+    let (freeAgents, onRosters) = partition (\(_, _, maybeTeam, _, _, _) -> isNothing maybeTeam) allPlayers
+        teamsAndPlayers = groupByThirdOfSix $ sortByTeam onRosters
         numberOfStarters = generalSettingsNumberOfStarters generalSettings
         rosterSize = generalSettingsRosterSize generalSettings
     leagueLayout leagueId "Players" $(widgetFile "league/players")
@@ -130,8 +143,7 @@ postLeaguePlayerTradeR leagueId playerIdToTake playerIdToGive = do
 -------------
 -- Widgets --
 -------------
-playersTable :: [(Int, Entity Player, Maybe (Entity Team), Entity Character, Widget)] ->
-                PlayersTableType -> Widget
+playersTable :: [FullPlayerForTable] -> PlayersTableType -> Widget
 playersTable players playersTableType =
     let colspan = playersTableColumnCount playersTableType
         subTables = case splitPlayersTable playersTableType of
@@ -140,8 +152,7 @@ playersTable players playersTableType =
                 splitStartersAndBench players numberOfStarters rosterSize
     in  $(widgetFile "league/players_table")
 
-playersModal :: [(Int, Entity Player, Maybe (Entity Team), Entity Character, Widget)] ->
-                PlayersTableType -> TransactionType -> Widget
+playersModal :: [FullPlayerForTable] -> PlayersTableType -> TransactionType -> Widget
 playersModal players playersTableType modalType =
     let typeText = toPathPiece modalType
         typeLower = toLower typeText
@@ -156,50 +167,50 @@ blurbPanel maybeUser characterId (Entity blurbId blurb) = $(widgetFile "blurb_pa
 -------------
 -- Queries --
 -------------
-getPlayers :: LeagueId -> Handler [(Entity Player, Maybe (Entity Team), Entity Character)]
+getPlayers :: LeagueId -> Handler [FullPlayer]
 getPlayers leagueId = runDB
     $ E.select
-    $ E.from $ \(player `E.InnerJoin` character `E.LeftOuterJoin` team) -> do
+    $ E.from $ \(player `E.InnerJoin` character `E.LeftOuterJoin` team `E.InnerJoin` series) -> do
+        E.on $ character ^. CharacterRookieSeriesId E.==. series ^. SeriesId
         E.on $ E.just (player ^. PlayerTeamId) E.==. E.just (team ?. TeamId)
         E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
         E.where_ $ player ^. PlayerLeagueId E.==. E.val leagueId
         E.orderBy [E.asc (character ^. CharacterName)]
-        return (player, team, character)
+        return (player, team, character, series)
 
-getTeamPlayers :: Maybe TeamId -> Handler [(Entity Player, Maybe (Entity Team), Entity Character)]
+getTeamPlayers :: Maybe TeamId -> Handler [FullPlayer]
 getTeamPlayers Nothing = return []
 getTeamPlayers (Just teamId) = runDB
     $ E.select
-    $ E.from $ \(player `E.InnerJoin` character `E.LeftOuterJoin` team) -> do
+    $ E.from $ \(player `E.InnerJoin` character `E.LeftOuterJoin` team `E.InnerJoin` series) -> do
+        E.on $ character ^. CharacterRookieSeriesId E.==. series ^. SeriesId
         E.on $ E.just (player ^. PlayerTeamId) E.==. E.just (team ?. TeamId)
         E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
         E.where_ $ player ^. PlayerTeamId E.==. E.just (E.val teamId)
         E.orderBy [ E.desc (player ^. PlayerIsStarter)
                   , E.asc (character ^. CharacterName)
                   ]
-        return (player, team, character)
+        return (player, team, character, series)
 
 --------------------------
 -- Player Action Button --
 --------------------------
-playersWithButtons :: Entity League -> [(Entity Player, Maybe (Entity Team), Entity Character)] ->
-                      Handler [(Int, Entity Player, Maybe (Entity Team), Entity Character, Widget)]
+playersWithButtons :: Entity League -> [FullPlayer] -> Handler [FullPlayerForTable]
 playersWithButtons (Entity leagueId league) players = do
     maybeUserId <- maybeAuthId
     isUserLeagueMember <- isLeagueMember maybeUserId leagueId
     let isDraftComplete = leagueIsDraftComplete league
         playersAndButtons = if isUserLeagueMember && isDraftComplete
-            then map (\(p, mt, c) -> playerWithButton p mt c (fromJust maybeUserId)) players
-            else map (\(p, mt, c) -> (p, mt, c, [whamlet||])) players
-    return $ zipWith (\n (a,b,c,d) -> (n,a,b,c,d)) [1..] playersAndButtons
+            then map (\(fullPlayer) -> playerWithButton fullPlayer (fromJust maybeUserId)) players
+            else map (\(p, mt, c, s) -> (p, mt, c, s, [whamlet||])) players
+    return $ zipWith (\n (a,b,c,d,e) -> (n,a,b,c,d,e)) [1..] playersAndButtons
 
-playerWithButton :: Entity Player -> Maybe (Entity Team) -> Entity Character -> UserId ->
-                    (Entity Player, Maybe (Entity Team), Entity Character, Widget)
-playerWithButton (Entity playerId player) maybeTeam character userId =
+playerWithButton :: FullPlayer -> UserId -> FullPlayerWithButton
+playerWithButton ((Entity playerId player), maybeTeam, character, series) userId =
     let (text, dataToggle, dataTarget, icon) = playerButtonAttributes (Entity playerId player) maybeTeam userId
         buttonId = text ++ "-" ++ toPathPiece (playerLeagueId player) ++ "-" ++ toPathPiece playerId
         name = characterName $ extractValue character
-    in  (Entity playerId player, maybeTeam, character, $(widgetFile "league/player_action_button"))
+    in  (Entity playerId player, maybeTeam, character, series, $(widgetFile "league/player_action_button"))
 
 playerButtonAttributes :: Entity Player -> Maybe (Entity Team) -> UserId -> (Text, Text, Text, Text)
 playerButtonAttributes _ Nothing _ =
@@ -213,10 +224,9 @@ playerButtonAttributes (Entity _ player) (Just (Entity _ team)) userId =
 -------------
 -- Helpers --
 -------------
-recombineTeamToPlayers :: Entity Team -> [(Int, Entity Player, Entity Character, Widget)] ->
-                          [(Int, Entity Player, Maybe (Entity Team), Entity Character, Widget)]
+recombineTeamToPlayers :: Entity Team -> [FullPlayerForTableSansTeam] -> [FullPlayerForTable]
 recombineTeamToPlayers teamEntity players =
-    map (\(num, player, character, widget) -> (num, player, Just teamEntity, character, widget)) players
+    map (\(num, player, character, series, widget) -> (num, player, Just teamEntity, character, series, widget)) players
 
 isLeagueMember :: Maybe UserId -> LeagueId -> Handler Bool
 isLeagueMember Nothing _ = return False
@@ -224,11 +234,10 @@ isLeagueMember justUserId leagueId = do
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] []
     return $ isJust $ find (\(Entity _ t) -> teamOwnerId t == justUserId) teams
 
-splitStartersAndBench :: [(Int, Entity Player, Maybe (Entity Team), Entity Character, Widget)] -> Int -> Int ->
-                         [(Text, [(Int, Entity Player, Maybe (Entity Team), Entity Character, Widget)], [Int])]
+splitStartersAndBench :: [FullPlayerForTable] -> Int -> Int -> [(Text, [FullPlayerForTable], [Int])]
 splitStartersAndBench players numberOfStarters rosterSize =
-    let (starters, bench) = partition (\(_, Entity _ p, _, _, _) -> playerIsStarter p) players
-        benchWithNumbers = map (\(n, p, mt, c, w) -> (n - numberOfStarters, p, mt, c, w)) bench
+    let (starters, bench) = partition (\(_, Entity _ p, _, _, _, _) -> playerIsStarter p) players
+        benchWithNumbers = map (\(n, p, mt, c, s, w) -> (n - numberOfStarters, p, mt, c, s, w)) bench
         extraStarterSlots = [length starters + 1 .. numberOfStarters]
         extraBenchSlots   = [length bench + 1 .. rosterSize - numberOfStarters]
     in  [("Starters", starters, extraStarterSlots), ("Bench", benchWithNumbers, extraBenchSlots)]
@@ -241,9 +250,8 @@ maybeAuthTeamId leagueId = do
         (Just _, Just (Entity teamId _)) -> Just teamId
         (_, _) -> Nothing
 
-sortByTeam :: [(Int, Entity Player, Maybe (Entity Team), Entity Character, Widget)] ->
-              [(Int, Entity Player, Entity Team, Entity Character, Widget)]
+sortByTeam :: [FullPlayerForTable] -> [FullPlayerForTableReqTeam]
 sortByTeam players =
-    let withTeams = map (\(n, p, mt, c, w) -> (n, p, fromJust mt, c, w)) players
-    in  sortBy (\(_, _, Entity _ t1, _, _) (_, _, Entity _ t2, _, _) -> teamName t1 `compare` teamName t2) withTeams
+    let withTeams = map (\(n, p, mt, c, s, w) -> (n, p, fromJust mt, c, s, w)) players
+    in  sortBy (\(_, _, Entity _ t1, _, _, _) (_, _, Entity _ t2, _, _, _) -> teamName t1 `compare` teamName t2) withTeams
 

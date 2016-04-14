@@ -61,6 +61,9 @@ groupByThirdOfFive = groupByFirst . map quintupleToTuple3
 groupByFirstOfSix :: Eq a => [(a, b, c, d, e, f)] -> [(a, [(b, c, d, e, f)])]
 groupByFirstOfSix = groupByFirst . map sextupleToTuple
 
+groupByThirdOfSix :: Eq c => [(a, b, c, d, e, f)] -> [(c, [(a, b, d, e, f)])]
+groupByThirdOfSix = groupByFirst . map sextupleToTuple3
+
 ----------------------
 -- Grouping Helpers --
 ----------------------
@@ -78,6 +81,9 @@ quintupleToTuple3 quintuple = (thirdOf5 quintuple, allBut3Of5 quintuple)
 
 sextupleToTuple :: (a, b, c, d, e, f) -> (a, (b, c, d, e, f))
 sextupleToTuple sextuple = (firstOf6 sextuple, last5Of6 sextuple)
+
+sextupleToTuple3 :: (a, b, c, d, e, f) -> (c, (a, b, d, e, f))
+sextupleToTuple3 sextuple = (thirdOf6 sextuple, allBut3Of6 sextuple)
 
 firstOf4 :: (a, b, c, d) -> a
 firstOf4 (x, _, _, _) = x
@@ -102,6 +108,12 @@ firstOf6 (x, _, _, _, _, _) = x
 
 last5Of6 :: (a, b, c, d, e, f) -> (b, c, d, e, f)
 last5Of6 (_, v, w, x, y, z) = (v, w, x, y, z)
+
+thirdOf6 :: (a, b, c, d, e, f) -> c
+thirdOf6 (_, _, w, _, _, _) = w
+
+allBut3Of6 :: (a, b, c, d, e, f) -> (a, b, d, e, f)
+allBut3Of6 (u, v, _, x, y, z) = (u, v, x, y, z)
 
 -----------------
 -- Conversions --
