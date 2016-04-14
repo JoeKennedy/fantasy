@@ -420,6 +420,12 @@ movePlayerToNewTeam adminUserId (Entity _ transactionPlayer, Entity playerId _) 
                             , PlayerUpdatedAt =. now
                             , PlayerUpdatedBy =. adminUserId
                             ]
+    case transactionPlayerNewTeamId transactionPlayer of
+        Just newTeamId -> updateTeamStartersCount newTeamId now adminUserId
+        Nothing -> return ()
+    case transactionPlayerOldTeamId transactionPlayer of
+        Just oldTeamId -> updateTeamStartersCount oldTeamId now adminUserId
+        Nothing -> return ()
 
 isTransactionPlayerValid :: (Entity TransactionPlayer, Entity Player) -> Bool
 isTransactionPlayerValid (Entity _ transactionPlayer, Entity _ player) =
@@ -439,4 +445,12 @@ claimProcessableAt leagueId utcTime = do
         Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
         let daysToAdd = min 0 $ generalSettingsWaiverPeriodInDays generalSettings - dayOfWeek utcTime
         return $ if daysToAdd == 0 then utcTime else addXDays daysToAdd utcTime
+
+updateTeamStartersCount :: TeamId -> UTCTime -> UserId -> Handler ()
+updateTeamStartersCount teamId utcTime userId = runDB $ do
+    startersCount <- count [PlayerTeamId ==. Just teamId, PlayerIsStarter ==. True]
+    update teamId [ TeamStartersCount =. startersCount
+                  , TeamUpdatedAt =. utcTime
+                  , TeamUpdatedBy =. userId
+                  ]
 

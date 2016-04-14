@@ -78,8 +78,7 @@ postLeaguePlayerStartR leagueId playerId = do
                 userId <- requireAuthId
                 runDB $ update playerId [PlayerIsStarter =. True, PlayerUpdatedAt =. now,
                                          PlayerUpdatedBy =. userId]
-                runDB $ update teamId [TeamStartersCount +=. 1, TeamUpdatedAt =. now,
-                                       TeamUpdatedBy =. userId]
+                updateTeamStartersCount teamId now userId
                 succeedTransaction transactionId
                 let message = characterName character ++ " is now starting in your lineup."
                 setMessage $ toMarkup message
@@ -93,12 +92,12 @@ postLeaguePlayerBenchR leagueId playerId = do
         now <- liftIO getCurrentTime
         userId <- requireAuthId
         Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
-        team <- runDB $ get404 $ fromJust $ playerTeamId player
+        let teamId = fromJust $ playerTeamId player
         runDB $ update playerId [PlayerIsStarter =. False, PlayerUpdatedAt =. now,
                                  PlayerUpdatedBy =. userId]
-        runDB $ update (fromJust $ playerTeamId player) [TeamStartersCount -=. 1, TeamUpdatedAt =. now,
-                                                         TeamUpdatedBy =. userId]
+        updateTeamStartersCount teamId now userId
         character <- runDB $ get404 $ playerCharacterId player
+        team <- runDB $ get404 teamId
         let spotsLeft = generalSettingsNumberOfStarters generalSettings - teamStartersCount team + 1
             message = characterName character ++ " is now benched in your lineup and you have "
                       ++ pack (show spotsLeft) ++ " spots for starters."
