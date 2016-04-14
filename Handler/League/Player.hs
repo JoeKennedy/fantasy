@@ -40,7 +40,7 @@ getLeaguePlayersR leagueId = do
         teamsAndPlayers = groupByThirdOfSix $ sortByTeam onRosters
         numberOfStarters = generalSettingsNumberOfStarters generalSettings
         rosterSize = generalSettingsRosterSize generalSettings
-    leagueLayout leagueId "Players" $(widgetFile "league/players")
+    leagueLayout leagueId "Characters" $(widgetFile "league/players")
 
 getLeaguePlayerR :: LeagueId -> PlayerId -> Handler Html
 getLeaguePlayerR leagueId playerId = do
@@ -55,7 +55,7 @@ getLeaguePlayerR leagueId playerId = do
         Just teamId -> do
             team <- runDB $ get404 teamId
             return $ Just $ Entity teamId team
-    leagueLayout leagueId "Players" $(widgetFile "league/player")
+    leagueLayout leagueId "Characters" $(widgetFile "league/player")
 
 postLeaguePlayerStartR :: LeagueId -> PlayerId -> Handler ()
 postLeaguePlayerStartR leagueId playerId = do

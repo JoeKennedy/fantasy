@@ -110,7 +110,7 @@ getLeagueTeamsR leagueId = do
     isUserLeagueMember <- isLeagueMember maybeUserId leagueId
     league <- runDB $ get404 leagueId
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
-    leagueLayout leagueId "Teams" $ do
+    leagueLayout leagueId "Houses" $ do
         $(widgetFile "league/teams")
 
 getLeagueTeamR :: LeagueId -> TeamId -> Handler Html
@@ -129,7 +129,7 @@ getLeagueTeamR leagueId teamId = do
     waiverClaims <- getRequestedTransactions leagueId (Just teamId) Claim
     currentTeamPlayers <- getTeamPlayers maybeUserTeamId
     myPlayers <- playersWithButtons leagueEntity currentTeamPlayers
-    let tab = if isUserTeamOwner maybeUserId team then "My Team" else "Teams"
+    let tab = if isUserTeamOwner maybeUserId team then "My House" else "Houses"
         numberOfStarters = generalSettingsNumberOfStarters generalSettings
         rosterSize = generalSettingsRosterSize generalSettings
     leagueLayout leagueId tab $ do
@@ -138,16 +138,16 @@ getLeagueTeamR leagueId teamId = do
 -- For now, just use the same form as all teams, just with one team
 -- TODO - make a new form
 getLeagueTeamSettingsR :: LeagueId -> TeamId -> Handler Html
-getLeagueTeamSettingsR leagueId teamId = editTeamSettings leagueId (Just teamId) "My Team"
+getLeagueTeamSettingsR leagueId teamId = editTeamSettings leagueId (Just teamId) "My House"
 
 getLeagueTeamsSettingsR :: LeagueId -> Handler Html
-getLeagueTeamsSettingsR leagueId = editTeamSettings leagueId Nothing "Teams"
+getLeagueTeamsSettingsR leagueId = editTeamSettings leagueId Nothing "Houses"
 
 postLeagueTeamSettingsR :: LeagueId -> TeamId -> Handler Html
-postLeagueTeamSettingsR leagueId teamId = updateTeamSettings leagueId (Just teamId) "My Team"
+postLeagueTeamSettingsR leagueId teamId = updateTeamSettings leagueId (Just teamId) "My House"
 
 postLeagueTeamsSettingsR :: LeagueId -> Handler Html
-postLeagueTeamsSettingsR leagueId = updateTeamSettings leagueId Nothing "Teams"
+postLeagueTeamsSettingsR leagueId = updateTeamSettings leagueId Nothing "Houses"
 
 getLeagueTeamJoinR :: LeagueId -> TeamId -> Text -> Handler Html
 getLeagueTeamJoinR leagueId teamId verificationKey = do

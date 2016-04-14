@@ -1,13 +1,13 @@
 <div .page-header>
     <h4>
         #{leagueName league}
-        <small>Teams
+        <small>Houses
 
 <div .row>
     <div .col-xs-12>
         <div .panel .panel-default>
             <div .panel-heading>
-                <h5 .text-center>Teams
+                <h5 .text-center>Houses
             <table .table .table-hover .table-striped>
                 <thead>
                     <tr>

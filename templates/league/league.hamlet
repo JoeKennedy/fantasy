@@ -15,7 +15,7 @@
                 <h6 .list-group-item-heading>Scoring
                 <p .list-group-item-text>#{show $ leagueScoringType league}
             <li .list-group-item>
-                <h6 .list-group-item-heading>Teams
+                <h6 .list-group-item-heading>Houses
                 <p .list-group-item-text>#{leagueTeamsCount league}
             <li .list-group-item>
                 <h6 .list-group-item-heading>Visibility
@@ -28,7 +28,7 @@
     <div .col-md-8 .col-xs-12>
         <div .panel .panel-default>
             <div .panel-heading>
-                <h5 .text-center>Teams
+                <h5 .text-center>Houses
             <table .table>
                 $forall Entity teamId team <- teams
                     <tr>

@@ -14,9 +14,9 @@
           <a .tab-name href="@{LeagueR leagueId}">League
         <li>
           $maybe Entity teamId _ <- maybeTeam
-            <a .tab-name href="@{LeagueTeamR leagueId teamId}">My Team
+            <a .tab-name href="@{LeagueTeamR leagueId teamId}">My House
         <li>
-          <a .tab-name href="@{LeaguePlayersR leagueId}">Players
+          <a .tab-name href="@{LeaguePlayersR leagueId}">Characters
         <!-- <li> -->
         <!--   <a .tab-name href="#">Standings -->
         <!-- <li> -->
@@ -37,7 +37,7 @@
             <ul .dropdown-menu>
               $maybe Entity teamId _ <- maybeTeam
                 <li>
-                  <a href="@{LeagueTeamSettingsR leagueId teamId}">My Team
+                  <a href="@{LeagueTeamSettingsR leagueId teamId}">My House
                 <li .divider role="separator">
               <li>
                 <a href="@{LeagueSettingsR leagueId LeagueEditSettingsR}">League
@@ -48,11 +48,11 @@
               <li>
                 <a href="@{LeagueSettingsR leagueId LeagueDraftSettingsR}">Draft
               <li>
-                <a href="@{LeagueSettingsR leagueId LeagueTeamsSettingsR}">Teams
+                <a href="@{LeagueSettingsR leagueId LeagueTeamsSettingsR}">Houses
 
         <li .dropdown .dropdown-hover>
           <a .tab-name href="@{LeagueTeamsR leagueId}">
-            Teams
+            Houses
             <span .fa .fa-caret-down>
           <ul .dropdown-menu>
             $forall Entity teamId team <- teams

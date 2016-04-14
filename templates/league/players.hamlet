@@ -1,7 +1,7 @@
 <div .page-header>
     <h4>
         #{leagueName league}
-        <small>Players
+        <small>Characters
 
 <div .row>
     <div .col-lg-3 .col-sm-4 .col-xs-12>
@@ -24,7 +24,7 @@
             $if leagueIsDraftComplete league
                 <li role="presentation">
                     <a href="#all_players" aria-controls="all_players" role="tab" data-toggle="pill">
-                        All Players
+                        All Characters
                         <span .badge .pull-right>#{length allPlayers}
 
     <div .col-lg-9 .col-sm-8 .col-xs-12>

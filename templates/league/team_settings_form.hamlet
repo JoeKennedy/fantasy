@@ -5,9 +5,9 @@
             <div .panel-heading>
                 <h5 .text-center>
                     $if length teams > 1
-                        Teams
+                        Houses
                     $else
-                        My Team
+                        My House
 
             <table .table .table-hover .table-striped>
                 <thead>

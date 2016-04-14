@@ -13,7 +13,7 @@
                             <th>Slot
                         <th>Name
                         $if isMultipleTeams playersTableType
-                            <th>Team
+                            <th>House
                         <th .hidden-sm .hidden-xs>Seasons Survived
                         <th .hidden-sm .hidden-xs>Season 5 Points
                         <th>

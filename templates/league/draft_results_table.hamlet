@@ -3,8 +3,8 @@
         <thead>
               <tr>
                   <th>##
-                  <th>Team
-                  <th>Player
+                  <th>House
+                  <th>Character
 
         <tbody>
               $forall (number, Entity teamId team, Entity playerId _, Entity _ character) <- draftPicks

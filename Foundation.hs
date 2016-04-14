@@ -331,7 +331,7 @@ instance YesodBreadcrumbs App where
     breadcrumb (LeagueDeclineTradeR leagueId _) = return ("Decline Trade", Just $ LeagueTransactionsR leagueId)
 
     -- League players breadcrumbs
-    breadcrumb (LeaguePlayersR leagueId) = return ("Players", Just $ LeagueR leagueId)
+    breadcrumb (LeaguePlayersR leagueId) = return ("Characters", Just $ LeagueR leagueId)
     breadcrumb (LeaguePlayerR leagueId playerId) = do
         player <- runDB $ get404 playerId
         character <- runDB $ get404 $ playerCharacterId player
@@ -342,7 +342,7 @@ instance YesodBreadcrumbs App where
     breadcrumb (LeaguePlayerTradeR leagueId playerId _) = return ("Trade", Just $ LeaguePlayerR leagueId playerId)
 
     -- League teams breadcrumbs
-    breadcrumb (LeagueTeamsR leagueId) = return ("Teams", Just $ LeagueR leagueId)
+    breadcrumb (LeagueTeamsR leagueId) = return ("Houses", Just $ LeagueR leagueId)
     breadcrumb (LeagueTeamR leagueId teamId) = do
         team <- runDB $ get404 teamId
         return ("House " ++ teamName team, Just $ LeagueTeamsR leagueId)

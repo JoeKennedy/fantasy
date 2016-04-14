@@ -6,7 +6,7 @@
 <ul #league_settings_nav .nav .nav-pills>
     <li role="presentation">
         $maybe Entity teamId _ <- maybeTeam
-            <a href="@{LeagueTeamSettingsR leagueId teamId}">My Team
+            <a href="@{LeagueTeamSettingsR leagueId teamId}">My House
     <li role="presentation">
         <a href="@{LeagueSettingsR leagueId LeagueEditSettingsR}">League
     <li role="presentation">
@@ -16,7 +16,7 @@
     <li role="presentation">
         <a href="@{LeagueSettingsR leagueId LeagueDraftSettingsR}">Draft
     <li role="presentation">
-        <a href="@{LeagueSettingsR leagueId LeagueTeamsSettingsR}">Teams
+        <a href="@{LeagueSettingsR leagueId LeagueTeamsSettingsR}">Houses
 
 <form method="post" action=@{action} enctype=#{enctype}>
     ^{widget}

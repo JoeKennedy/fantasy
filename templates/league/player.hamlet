@@ -8,7 +8,7 @@
     <div .col-sm-6>
         <ul .list-group>
             <li .list-group-item>
-                <h6 .list-group-item-heading>Team
+                <h6 .list-group-item-heading>House
                 <p .list-group-item-text>
                     $maybe Entity teamId team <- maybeTeam
                         <a href=@{LeagueTeamR leagueId teamId}>
