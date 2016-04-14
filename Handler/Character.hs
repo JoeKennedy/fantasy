@@ -23,7 +23,7 @@ characterForm userId character = renderBootstrap3 defaultBootstrapForm $ Charact
     <*> areq (selectField optionsEnum) (fieldName "Status") (characterStatus <$> character)
     <*> areq intField (fieldName "Season 5 Score") (characterPointsLastSeason <$> character)
     <*> areq intField (fieldName "Episode Count") (characterEpisodesAppearedIn <$> character)
-    <*> aopt (selectField seriesList) (fieldName "Rookie Season") (characterRookieSeriesId <$> character)
+    <*> areq (selectField seriesList) (fieldName "Rookie Season") (characterRookieSeriesId <$> character)
     <*> createdByField userId (characterCreatedBy <$> character)
     <*> createdAtField (characterCreatedAt <$> character)
     <*> updatedByField userId
@@ -52,23 +52,23 @@ getCharactersR :: Handler Html
 getCharactersR = do
     characters <- runDB
         $ E.select
-        $ E.from $ \(character `E.InnerJoin` species `E.LeftOuterJoin` house) -> do
+        $ E.from $ \(character `E.InnerJoin` species `E.LeftOuterJoin` house `E.InnerJoin` series) -> do
+            E.on $ character ^. CharacterRookieSeriesId E.==. series ^. SeriesId
             E.on $ E.just (character ^. CharacterHouseId) E.==. E.just (house ?. HouseId)
             E.on $ character ^. CharacterSpeciesId E.==. species ^. SpeciesId
             E.orderBy [E.asc (character ^. CharacterName)]
-            return (character, species, house)
+            return (character, species, house, series)
     defaultLayout $ do
       setTitle "Character list"
       $(widgetFile "characters")
 
 getCharacterR :: CharacterId -> Handler Html
 getCharacterR characterId = do
-    -- later try to make this get by character name if possible
     maybeUser  <- maybeAuth
     character  <- runDB $ get404 characterId
     species    <- runDB $ get404 $ characterSpeciesId character
     maybeHouse <- runDB $ mapM get $ characterHouseId character
-    maybeRookieSeries <- runDB $ mapM get $ characterRookieSeriesId character
+    rookieSeries <- runDB $ get404 $ characterRookieSeriesId character
     events     <- runDB
         $ E.select
         $ E.from $ \(event `E.InnerJoin` episode `E.InnerJoin` series `E.InnerJoin` actingCharacter `E.LeftOuterJoin` receivingCharacter) -> do
@@ -195,7 +195,7 @@ postCharacterBlurbR characterId blurbId = do
 -------------
 -- Widgets --
 -------------
-type FullCharacter = (Entity Character, Entity Species, Maybe (Entity House))
+type FullCharacter = (Entity Character, Entity Species, Maybe (Entity House), Entity Series)
 
 charactersTable :: [FullCharacter] -> Widget
 charactersTable fullCharacters = $(widgetFile "characters_table")

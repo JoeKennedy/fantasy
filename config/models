@@ -30,9 +30,9 @@ Character
     speciesId SpeciesId
     houseId HouseId Maybe
     status CharacterStatus
-    pointsLastSeason Int default=0
-    episodesAppearedIn Int default=0
-    rookieSeriesId SeriesId Maybe
+    pointsLastSeason Int
+    episodesAppearedIn Int
+    rookieSeriesId SeriesId default=1
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId

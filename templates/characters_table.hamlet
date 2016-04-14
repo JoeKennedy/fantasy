@@ -3,19 +3,24 @@
         <thead>
             <th>Character
             <th>Status
-            <th .hidden-sm .hidden-xs>Bio
             <th .hidden-xs>Species
+            <th .hidden-sm .hidden-xs>Season 5 Points
+            <th .hidden-sm .hidden-xs>Rookie Season
+            <th .hidden-sm .hidden-xs>Episode Count
             <th>House
 
         <tbody>
-            $forall (Entity characterId character, Entity speciesId species, maybeHouse) <- fullCharacters
+            $forall (Entity characterId character, Entity speciesId species, maybeHouse, Entity _ series) <- fullCharacters
                 <tr>
                     <td>
                         <a href=@{CharacterR characterId}>#{characterName character}
                     <td>#{toPathPiece $ characterStatus character}
-                    <td .hidden-sm .hidden-xs>#{characterBio character}
                     <td .hidden-xs>
                         <a href=@{SpeciesR speciesId}>#{speciesName species}
+                    <td .hidden-sm .hidden-xs>#{characterPointsLastSeason character}
+                    <td .hidden-sm .hidden-xs>
+                        <a href=@{SeriesR (seriesNumber series)}>#{seriesNumber series}
+                    <td .hidden-sm .hidden-xs>#{characterEpisodesAppearedIn character}
                     <td>
                         $maybe Entity houseId house <- maybeHouse
                             <a href=@{HouseR houseId}>#{houseName house}

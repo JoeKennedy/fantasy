@@ -49,11 +49,12 @@ getSpeciesR speciesId = do
     (widget, enctype) <- generateFormPost $ speciesForm $ Just s
     characters        <- runDB
         $ E.select
-        $ E.from $ \(character `E.InnerJoin` species `E.LeftOuterJoin` house) -> do
+        $ E.from $ \(character `E.InnerJoin` species `E.LeftOuterJoin` house `E.InnerJoin` series) -> do
+            E.on $ character ^. CharacterRookieSeriesId E.==. series ^. SeriesId
             E.on $ E.just (character ^. CharacterHouseId) E.==. E.just (house ?. HouseId)
             E.on $ character ^. CharacterSpeciesId E.==. species ^. SpeciesId
             E.where_ $ character ^. CharacterSpeciesId E.==. E.val speciesId
-            return (character, species, house)
+            return (character, species, house, series)
     defaultLayout $ do
         setTitle $ toMarkup $ speciesName s
         let action = SpeciesR speciesId
