@@ -16,7 +16,9 @@
                         <th .col-xs-1 .visible-xs>Abbrev.
                         <th .col-sm-3 .hidden-xs>Owner Name
                         <th .col-xs-3 .visible-xs>Owner
-                        <th .col-xs-4>Email
+                        <th .col-xs-4>
+                            $if isUserLeagueMember
+                                Email
                         <th .col-sm-1 .hidden-xs>Status
 
                 <tbody>
@@ -29,7 +31,9 @@
                                 <a href="@{LeagueTeamR leagueId teamId}">
                                     H#{teamAbbreviation team}
                             <td>#{teamOwnerName team}
-                            <td>#{teamOwnerEmail team}
+                            <td>
+                                $if isUserLeagueMember
+                                    #{teamOwnerEmail team}
                             <td .hidden-xs>
                                 $if teamIsConfirmed team
                                     Joined

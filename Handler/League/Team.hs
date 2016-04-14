@@ -4,8 +4,8 @@ import Import
 
 import Handler.Common             (extractValue)
 import Handler.League.Layout
-import Handler.League.Player      (getTeamPlayers, maybeAuthTeamId,
-                                   playersModal,
+import Handler.League.Player      (getTeamPlayers, isLeagueMember,
+                                   maybeAuthTeamId, playersModal,
                                    playersTable, playersWithButtons)
 import Handler.League.Transaction (getRequestedTransactions, getSuccessfulTransactions,
                                    transactionRequestsPanel, transactionsTable)
@@ -44,7 +44,9 @@ teamSettingsForm currentUserId league draftSettings teams extra = do
         return $ zip4 teams textFields draftOrderFields [1..leagueTeamsCount league]
 
     now <- liftIO getCurrentTime
-    let teamSettingsResult = for forms (\(team, textFields, draftOrderField, _) -> Team
+    let showEmail = case teams of []    -> False
+                                  (t:_) -> Just currentUserId == teamOwnerId t
+        teamSettingsResult = for forms (\(team, textFields, draftOrderField, _) -> Team
             <$> pure (teamLeagueId team)
             <*> fst (textFields !! 0) -- teamNameRec
             <*> fst (textFields !! 1) -- teamAbbreviationRec
@@ -104,6 +106,8 @@ postSetupTeamsSettingsR = do
 
 getLeagueTeamsR :: LeagueId -> Handler Html
 getLeagueTeamsR leagueId = do
+    maybeUserId <- maybeAuthId
+    isUserLeagueMember <- isLeagueMember maybeUserId leagueId
     league <- runDB $ get404 leagueId
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
     leagueLayout leagueId "Teams" $ do
@@ -112,6 +116,7 @@ getLeagueTeamsR leagueId = do
 getLeagueTeamR :: LeagueId -> TeamId -> Handler Html
 getLeagueTeamR leagueId teamId = do
     maybeUserId <- maybeAuthId
+    isUserLeagueMember <- isLeagueMember maybeUserId leagueId
     maybeUserTeamId <- maybeAuthTeamId leagueId
     league <- runDB $ get404 leagueId
     let leagueEntity = Entity leagueId league

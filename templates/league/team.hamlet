@@ -13,9 +13,10 @@
                     <li .list-group-item>
                         <h6 .list-group-item-heading>Owner
                         <p .list-group-item-text>#{teamOwnerName team}
-                    <li .list-group-item>
-                        <h6 .list-group-item-heading>Email
-                        <p .list-group-item-text>#{teamOwnerEmail team}
+                    $if isUserLeagueMember
+                        <li .list-group-item>
+                            <h6 .list-group-item-heading>Email
+                            <p .list-group-item-text>#{teamOwnerEmail team}
                     <li .list-group-item>
                         <h6 .list-group-item-heading>Status
                         <p .list-group-item-text>

@@ -19,11 +19,14 @@
                         <th .col-xs-1 .visible-xs>Abbrev.
                         <th .col-sm-3 .hidden-xs>Owner Name
                         <th .col-xs-3 .visible-xs>Owner
-                        $if isDraftOrderEditable
-                            <th .col-xs-3>Email
-                            <th .col-xs-1>Draft Order
+                        $if showEmail
+                            $if isDraftOrderEditable
+                                <th .col-xs-3>Email
+                                <th .col-xs-1>Draft Order
+                            $else
+                                <th .col-xs-4>Email
                         $else
-                            <th .col-xs-4>Email
+                            <th .col-xs-4>
                         <th .col-sm-1 .hidden-xs>Status
 
                 <tbody>
@@ -40,9 +43,12 @@
                                     <div .input-group-addon .input-sm .hidden-xs>H
                                     ^{fvInput $ snd $ textFields !! 1}
                             <td>^{fvInput $ snd $ textFields !! 2}
-                            <td>^{fvInput $ snd $ textFields !! 3}
-                            $if isDraftOrderEditable
-                                <td>^{fvInput $ snd draftOrderField}
+                            $if showEmail
+                                <td>^{fvInput $ snd $ textFields !! 3}
+                                $if isDraftOrderEditable
+                                    <td>^{fvInput $ snd draftOrderField}
+                            $else
+                                <td>
                             <td .hidden-xs>
                                 $if teamIsConfirmed team
                                     Joined
