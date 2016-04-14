@@ -16,7 +16,7 @@
                                   House #{teamName team}
                           <td .col-xs-3 .hidden-lg .hidden-md>
                               <a href="@{LeagueTeamR leagueId teamId}">
-                                  H#{teamAbbreviation team}
+                                  #{teamAbbreviation team}
                           <td .col-md-6 .col-xs-8>
                               <a href=@{LeaguePlayerR leagueId playerId}>
                                   #{characterName character}

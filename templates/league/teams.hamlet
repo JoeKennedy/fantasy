@@ -29,7 +29,7 @@
                                     House #{teamName team}
                             <td>
                                 <a href="@{LeagueTeamR leagueId teamId}">
-                                    H#{teamAbbreviation team}
+                                    #{teamAbbreviation team}
                             <td>#{teamOwnerName team}
                             <td>
                                 $if isUserLeagueMember

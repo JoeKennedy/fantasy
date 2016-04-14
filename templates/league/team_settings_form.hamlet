@@ -38,10 +38,7 @@
                                 <div .input-group>
                                     <div .input-group-addon .input-sm .hidden-xs>House
                                     ^{fvInput $ snd $ textFields !! 0}
-                            <td>
-                                <div .input-group>
-                                    <div .input-group-addon .input-sm .hidden-xs>H
-                                    ^{fvInput $ snd $ textFields !! 1}
+                            <td>^{fvInput $ snd $ textFields !! 1}
                             <td>^{fvInput $ snd $ textFields !! 2}
                             $if showEmail
                                 <td>^{fvInput $ snd $ textFields !! 3}

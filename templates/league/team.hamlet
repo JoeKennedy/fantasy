@@ -3,7 +3,7 @@
         #{leagueName league}
         <small>
             House #{teamName team}
-            <small>(H#{teamAbbreviation team})
+            <small>(#{teamAbbreviation team})
 
 <div .row>
     <div .col-md-9 .col-sm-12>

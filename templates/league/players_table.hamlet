@@ -37,10 +37,10 @@
                                 <td>
                                     $maybe Entity teamId team <- maybeTeam
                                         <a href="@{LeagueTeamR (playerLeagueId player) teamId}">
-                                            H#{teamAbbreviation team}
+                                            #{teamAbbreviation team}
                                     $nothing
                                         <a href="@{LeaguePlayersR (playerLeagueId player)}">
-                                            FA
+                                            -
                             <td .hidden-sm .hidden-xs>
                                 $case 6 - seriesNumber rookieSeries
                                     $of 0
