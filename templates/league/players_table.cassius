@@ -1,0 +1,9 @@
+/* This code is needed to remove all borders from bootstrap-table tables */
+.table
+    border-bottom: 0px !important
+
+.table th, .table td
+    border: 1px !important
+
+.fixed-table-container
+    border: 0px !important

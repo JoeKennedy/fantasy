@@ -1,83 +1,88 @@
 <div .panel .panel-default>
-    <div .table-responsive>
-        <table .table .table-striped>
-            $forall (subTableHeader, subTablePlayers, extraSlots) <- subTables
-                <thead>
-                    <tr .active>
-                        <th colspan="#{show colspan}">
-                            #{subTableHeader}
-                    <tr>
+    $forall (subTableHeader, subTablePlayers, extraSlots) <- subTables
+        <div .panel-heading>
+            <div .panel-title>#{subTableHeader}
+
+        <table data-toggle="table" data-classes="table table-hover table-no-bordered" data-striped="true">
+            <thead>
+                <tr>
+                    $if hasRadioButton playersTableType
+                        <th data-field="player-radio-button">
+                    $if hasSlotColumn playersTableType
+                        <th data-field="player-slot">
+                            Slot
+                    <th data-field="player-name" data-sortable="true" data-sorter="linkSorter">
+                        Name
+                    $if isMultipleTeams playersTableType
+                        <th data-field="player-team" data-sortable="true" data-sorter="linkSorter">
+                            House
+                    <th .hidden-xs data-field="player-status" data-sortable="true">
+                        Status
+                    <th .hidden-sm .hidden-xs data-field="player-survived" data-sortable="true">
+                        Seasons Survived
+                    <th .hidden-sm .hidden-xs data-field="player-points" data-sortable="true">
+                        Season 5 Points
+                    <th data-field="player-action">
+
+            <tbody>
+                $forall (num, Entity playerId player, maybeTeam, Entity _ character, Entity _ rookieSeries, button) <- subTablePlayers
+                    <tr .vertical-align-middle>
                         $if hasRadioButton playersTableType
-                            <th>
-                        $if hasSlotColumn playersTableType
-                            <th>Slot
-                        <th>Name
+                            $with pid <- toPathPiece playerId
+                                <td>
+                                    <input .player-radio type="radio" name="players" id="player-#{pid}" value="#{pid}" aria-label="player-#{pid}">
+                        $if subTableHeader == "Starters"
+                            <td>#{num}
+                        $if subTableHeader == "Bench"
+                            <td>Bench
+                        <td>
+                            $with leagueId <- playerLeagueId player
+                                <a href=@{LeaguePlayerR leagueId playerId}>
+                                    #{characterName character}
                         $if isMultipleTeams playersTableType
-                            <th>House
-                        <th .hidden-xs>Status
-                        <th .hidden-sm .hidden-xs>Seasons Survived
-                        <th .hidden-sm .hidden-xs>Season 5 Points
-                        <th>
-
-                <tbody>
-                    $forall (num, Entity playerId player, maybeTeam, Entity _ character, Entity _ rookieSeries, button) <- subTablePlayers
-                        <tr .vertical-align-middle>
-                            $if hasRadioButton playersTableType
-                                $with pid <- toPathPiece playerId
-                                    <td>
-                                        <input .player-radio type="radio" name="players" id="player-#{pid}" value="#{pid}" aria-label="player-#{pid}">
-                            $if subTableHeader == "Starters"
-                                <td>#{num}
-                            $if subTableHeader == "Bench"
-                                <td>Bench
                             <td>
-                                $with leagueId <- playerLeagueId player
-                                    <a href=@{LeaguePlayerR leagueId playerId}>
-                                        #{characterName character}
-                            $if isMultipleTeams playersTableType
-                                <td>
-                                    $maybe Entity teamId team <- maybeTeam
-                                        <a href="@{LeagueTeamR (playerLeagueId player) teamId}">
-                                            #{teamAbbreviation team}
-                                    $nothing
+                                $maybe Entity teamId team <- maybeTeam
+                                    <a href="@{LeagueTeamR (playerLeagueId player) teamId}">
+                                        #{teamAbbreviation team}
+                                $nothing
+                                    -
+                        <td .hidden-xs>#{toPathPiece $ characterStatus character}
+                        <td .hidden-sm .hidden-xs>
+                            $with seasonsSurvived <- 6 - seriesNumber rookieSeries
+                                $case characterStatus character
+                                    $of Dead
                                         -
-                            <td .hidden-xs>#{toPathPiece $ characterStatus character}
-                            <td .hidden-sm .hidden-xs>
-                                $with seasonsSurvived <- 6 - seriesNumber rookieSeries
-                                    $case characterStatus character
-                                        $of Dead
-                                            -
-                                        $of Uncertain
-                                            $case seasonsSurvived
-                                                $of 0
-                                                    Rookie?
-                                                $of _
-                                                    #{seasonsSurvived}?
-                                        $of Alive
-                                            $case seasonsSurvived
-                                                $of 0
-                                                    Rookie
-                                                $of _
-                                                    #{seasonsSurvived}
-                            <td .hidden-sm .hidden-xs>
-                                #{characterPointsLastSeason character}
-                            <td .text-right .player-action>
-                                $if showActionButton playersTableType
-                                    ^{button}
+                                    $of Uncertain
+                                        $case seasonsSurvived
+                                            $of 0
+                                                Rookie?
+                                            $of _
+                                                #{seasonsSurvived}?
+                                    $of Alive
+                                        $case seasonsSurvived
+                                            $of 0
+                                                Rookie
+                                            $of _
+                                                #{seasonsSurvived}
+                        <td .hidden-sm .hidden-xs>
+                            #{characterPointsLastSeason character}
+                        <td .text-right .player-action>
+                            $if showActionButton playersTableType
+                                ^{button}
 
-                    $forall slot <- extraSlots
-                        <tr .vertical-align-middle>
-                            $if hasRadioButton playersTableType
-                                <td>
-                                <td colspan="#{colspan - 1}">
-                                    $if subTableHeader == "Starters"
-                                        #{slot}
-                                    $if subTableHeader == "Bench"
-                                        Bench
-                            $else
-                                <td colspan="#{colspan}">
-                                    $if subTableHeader == "Starters"
-                                        #{slot}
-                                    $if subTableHeader == "Bench"
-                                        Bench
+                $forall slot <- extraSlots
+                    <tr .vertical-align-middle>
+                        $if hasRadioButton playersTableType
+                            <td>
+                            <td colspan="#{colspan - 1}">
+                                $if subTableHeader == "Starters"
+                                    #{slot}
+                                $if subTableHeader == "Bench"
+                                    Bench
+                        $else
+                            <td colspan="#{colspan}">
+                                $if subTableHeader == "Starters"
+                                    #{slot}
+                                $if subTableHeader == "Bench"
+                                    Bench
 
