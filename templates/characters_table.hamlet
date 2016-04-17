@@ -1,13 +1,20 @@
 <div .panel .panel-default>
-    <table .table .table-striped .table-hover>
+    <table data-toggle="table" data-classes="table table-hover table-no-bordered" data-striped="true">
         <thead>
-            <th>Character
-            <th>Status
-            <th .hidden-xs>Species
-            <th .hidden-sm .hidden-xs>Season 5 Points
-            <th .hidden-sm .hidden-xs>Rookie Season
-            <th .hidden-sm .hidden-xs>Episode Count
-            <th>House
+            <th data-field="character-name" data-sortable="true" data-sorter="linkSorter">
+                Character
+            <th data-field="character-status" data-sortable="true">
+                Status
+            <th .hidden-xs data-field="character-species" data-sortable="true" data-sorter="linkSorter">
+                Species
+            <th .hidden-sm .hidden-xs data-field="character-points" data-sortable="true">
+                Season 5 Points
+            <th .hidden-sm .hidden-xs data-field="character-season" data-sortable="true" data-sorter="linkSorter">
+                Rookie Season
+            <th .hidden-sm .hidden-xs data-field="character-episodes" data-sortable="true">
+                Episode Count
+            <th data-field="character-house" data-sortable="true" data-sorter="linkSorter">
+                House
 
         <tbody>
             $forall (Entity characterId character, Entity speciesId species, maybeHouse, Entity _ series) <- fullCharacters
