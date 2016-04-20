@@ -6,9 +6,12 @@
 
             <ul .list-group>
                 <li .list-group-item>
-                    <span .text-primary>#{teamOwnerName leagueManagerTeam}
-                    has invited you to join a Game
-                    Of Thrones fantasy league, #
+                    $maybe Entity _ leagueManagerTeam <- maybeLeagueManagerTeam
+                        <span .text-primary>#{teamOwnerName leagueManagerTeam}
+                        has invited you #
+                    $nothing
+                        You have been invited #
+                    \ to join a Game Of Thrones fantasy league, #
                     <span .text-primary>#{leagueName league}</span>!
                     Your house name is
                     <span .text-primary>House #{teamName team}</span>.*

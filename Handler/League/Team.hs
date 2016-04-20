@@ -12,7 +12,6 @@ import Handler.League.Transaction (getRequestedTransactions, getSuccessfulTransa
 import Handler.League.Setup
 
 import Data.List  ((!!))
-import Data.Maybe (fromJust)
 import Text.Blaze (toMarkup)
 
 ----------
@@ -154,10 +153,7 @@ getLeagueTeamJoinR leagueId teamId verificationKey = do
     maybeUserId <- maybeAuthId
     league <- runDB $ get404 leagueId
     team <- runDB $ get404 teamId
-    maybeLeagueManagerTeam <- runDB $ selectFirst [ TeamLeagueId ==. leagueId
-                                                  , TeamOwnerId ==. Just (leagueCreatedBy league)
-                                                  ] []
-    let (Entity _ leagueManagerTeam) = fromJust maybeLeagueManagerTeam
+    maybeLeagueManagerTeam <- runDB $ selectFirst [TeamLeagueId ==. leagueId] [Asc TeamId]
     defaultLayout $ do
         setTitle $ toMarkup $ "Join League " ++ leagueName league
         $(widgetFile "league/join")
