@@ -197,8 +197,12 @@ getSuccessfulTransactions leagueId maybeTeamId maybeTransactionType = runDB
                 Nothing     -> case maybeTransactionType of
                                    Just transType -> transaction ^. TransactionType E.==. E.val transType
                                    Nothing        -> transaction ^. TransactionType E.!=. E.val Draft
-        E.orderBy [E.desc (transaction ^. TransactionCompletedAt), E.desc (transaction ^. TransactionId),
-                   E.asc (transactionPlayer ^. TransactionPlayerPlayerId)]
+        E.orderBy $ if maybeTransactionType == Just Draft
+            then [ E.asc  (transaction ^. TransactionId) ]
+            else [ E.desc (transaction ^. TransactionCompletedAt)
+                 , E.desc (transaction ^. TransactionId)
+                 , E.asc  (transactionPlayer ^. TransactionPlayerPlayerId)
+                 ]
         return (transaction, team, transactionPlayer, player, character, newTeam)
 
 getPlayersAndCharacters :: LeagueId -> Handler [(Entity Player, Entity Character)]
