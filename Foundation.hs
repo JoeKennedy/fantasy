@@ -86,7 +86,7 @@ instance Yesod App where
             addStylesheet $ StaticR css_font_awesome_css
             addStylesheet $ StaticR css_bootstrap_social_css
             addStylesheet $ StaticR css_bootstrap_table_css
-            addScriptRemote "http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"
+            addScriptRemote "https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"
             addScript $ StaticR js_bootstrap_js
             addScript $ StaticR js_bootstrap_table_js
             $(widgetFile "layouts/default-layout")
