@@ -80,6 +80,7 @@ makeFoundation appSettings = do
     appStatic <-
         (if appMutableStatic appSettings then staticDevel else static)
         (appStaticDir appSettings)
+    (appAcmeChallenge, appLetsEncrypt) <- getLetsEncrypt
     appFacebookOAuth2Keys <- getOAuth2Keys "FACEBOOK_OAUTH2_APP_ID" "FACEBOOK_OAUTH2_APP_SECRET"
     appGoogleOAuth2Keys <- getOAuth2Keys "GOOGLE_OAUTH2_CLIENT_ID" "GOOGLE_OAUTH2_CLIENT_SECRET"
     (appAmazonAccessKey, appAmazonSecretKey) <- getAmazonKeys
@@ -130,6 +131,12 @@ makeFoundation appSettings = do
             accessKey <- getEnv ("AWS_ACCESS_KEY")
             secretKey <- getEnv ("AWS_SECRET_KEY")
             return (accessKey, secretKey)
+
+        getLetsEncrypt :: IO (Text, Text)
+        getLetsEncrypt = do
+            acmeChallenge <- getEnv "LETS_ENCRYPT_ACME_CHALLENGE"
+            letsEncrypt   <- getEnv "LETS_ENCRYPT_SECRET"
+            return (pack acmeChallenge, pack letsEncrypt)
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.

@@ -16,6 +16,13 @@ getRobotsR :: Handler TypedContent
 getRobotsR = return $ TypedContent typePlain
                     $ toContent $(embedFile "config/robots.txt")
 
+getLetsEncryptR :: Text -> Handler Text
+getLetsEncryptR text = do
+    master <- getYesod
+    if text == appAcmeChallenge master
+        then return $ appLetsEncrypt master
+        else redirect $ HomeR
+
 ----------
 -- USER --
 ----------

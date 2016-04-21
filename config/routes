@@ -3,6 +3,7 @@
 
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
+/.well-known/acme-challenge/#Text LetsEncryptR GET
 
 /faq FAQR GET
 

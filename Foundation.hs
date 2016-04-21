@@ -32,6 +32,8 @@ data App = App
     , appFacebookOAuth2Keys :: OAuth2Keys
     , appGoogleOAuth2Keys   :: OAuth2Keys
     , appSesCreds           :: Text -> SES
+    , appAcmeChallenge      :: Text
+    , appLetsEncrypt        :: Text
     }
 
 instance HasHttpManager App where
@@ -100,6 +102,7 @@ instance Yesod App where
     isAuthorized (StaticR _) _ = return Authorized
     isAuthorized HomeR       _ = return Authorized
     isAuthorized FAQR        _ = return Authorized
+    isAuthorized LetsEncryptR{} _ = return Authorized
 
     isAuthorized CharactersR                 _      = return Authorized
     isAuthorized (CharacterR _)              _      = return Authorized
@@ -374,6 +377,7 @@ instance YesodBreadcrumbs App where
     breadcrumb FaviconR               = return ("", Nothing)
     breadcrumb RobotsR                = return ("", Nothing)
     breadcrumb SeriesEpisodeEventsR{} = return ("", Nothing)
+    breadcrumb LetsEncryptR{}         = return ("", Nothing)
 
 -- How to run database actions.
 instance YesodPersist App where
