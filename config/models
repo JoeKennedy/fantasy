@@ -59,6 +59,8 @@ Episode
     overallNumber Int
     airTime UTCTime
     seriesId SeriesId
+    status EpisodeStatus default='Aired'
+    areEventsComplete Bool default=false
     UniqueEpisodeOverallNumber overallNumber
     UniqueEpisodeNumberSeries number seriesId
     UniqueEpisodeAirTime airTime
@@ -147,6 +149,7 @@ Team
     draftOrder Int default=0
     waiverOrder Int default=0
     verificationKey Text
+    pointsThisSeason Rational default=0
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId
@@ -158,7 +161,6 @@ Team
     UniqueTeamOwnerEmailLeagueId ownerEmail leagueId
     UniqueTeamLeagueIdOwnerName leagueId ownerName
     UniqueTeamLeagueIdDraftOrder leagueId draftOrder
-    UniqueTeamLeagueIdWaiverOrder leagueId waiverOrder
     deriving Eq Ord
 
 Player
@@ -166,11 +168,12 @@ Player
     characterId CharacterId
     teamId TeamId Maybe
     isStarter Bool default=false
+    pointsThisSeason Rational default=0
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId
     updatedAt UTCTime
-    UniquePlayerCharacterLeague characterId leagueId
+    UniquePlayerLeagueIdCharacterId leagueId characterId
 
 Transaction
     leagueId LeagueId
@@ -199,5 +202,54 @@ TransactionPlayer
     updatedAt UTCTime
     UniqueTransactionPlayerTransactionIdPlayerId transactionId playerId
 
+Week
+    leagueId LeagueId
+    episodeId EpisodeId
+    number Int
+    isScored Bool default=false
+    createdAt UTCTime
+    updatedAt UTCTime
+    UniqueWeekLeagueIdEpisodeId leagueId episodeId
+    UniqueWeekLeagueIdWeekNumber leagueId number
+
+Game
+    leagueId LeagueId
+    weekId WeekId
+    teamId TeamId
+    points Rational
+    createdAt UTCTime
+    updatedAt UTCTime
+    UniqueGameWeekIdTeamId weekId teamId
+    UniqueGameLeagueIdWeekIdTeamId leagueId weekId teamId
+
+Performance
+    leagueId LeagueId
+    weekId WeekId
+    playerId PlayerId
+    teamId TeamId Maybe
+    isStarter Bool default=false
+    points Rational
+    createdAt UTCTime
+    updatedAt UTCTime
+    UniquePerformanceWeekIdPlayerId weekId playerId
+    UniquePerformanceLeagueIdWeekIdPlayerId leagueId weekId playerId
+
+Play
+    leagueId LeagueId
+    weekId WeekId
+    eventId EventId
+    playerId PlayerId
+    teamId TeamId Maybe
+    points Rational
+    action Action
+    receivingPlayerId PlayerId Maybe
+    receivingTeamId TeamId Maybe
+    receivingPoints Rational
+    note Text Maybe
+    createdAt UTCTime
+    updatedAt UTCTime
+    UniquePlayLeagueIdEventId leagueId eventId
+    UniquePlayWeekIdEventId weekId eventId
+    UniquePlayLeagueIdWeekIdEventId leagueId weekId eventId
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

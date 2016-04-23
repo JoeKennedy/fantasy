@@ -24,6 +24,10 @@
                                 Joined
                             $else
                                 Unjoined
+                    <li .list-group-item>
+                        <h6 .list-group-item-heading>Points
+                        <p .list-group-item-text>
+                            #{displayRational $ teamPointsThisSeason team}
 
             <div .col-sm-6 .col-xs-12>
                 <div #transaction_request_accordion .panel-group role="tablist" aria-multiselectable="true">

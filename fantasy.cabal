@@ -21,6 +21,7 @@ library
                      Model.Action
                      Model.Bootstrap
                      Model.LeagueSettings
+                     Model.Numeric
                      Model.Time
                      Model.Types
                      Settings
@@ -35,10 +36,11 @@ library
                      Handler.League.GeneralSettings
                      Handler.League.Layout
                      Handler.League.Player
-                     Handler.League.ScoringSettings
+                     Handler.League.Scoring
                      Handler.League.Setup
                      Handler.League.Team
                      Handler.League.Transaction
+                     Handler.League.Week
                      Handler.Series
                      Handler.Species
 
@@ -121,6 +123,7 @@ library
                  , mime-mail-ses
                  , utf8-string
                  , random
+                 , numbers
 
 executable         fantasy
     if flag(library-only)

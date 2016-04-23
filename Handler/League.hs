@@ -183,24 +183,25 @@ createTeam (Entity leagueId league) (teamNumber, draftOrder) = do
     let (name, abbrev, owner, email) = teamTextAttributes teamNumber
         (maybeTeamOwnerId, maybeConfirmedAt) = teamNonTextAttributes league teamNumber
         verificationKey = pack $ fst $ randomString 24 stdgen
-    insert_ $ Team { teamLeagueId        = leagueId
-                   , teamName            = name
-                   , teamAbbreviation    = abbrev
-                   , teamOwnerId         = maybeTeamOwnerId
-                   , teamOwnerName       = owner
-                   , teamOwnerEmail      = email
-                   , teamIsConfirmed     = isJust maybeConfirmedAt
-                   , teamPlayersCount    = 0
-                   , teamStartersCount   = 0
-                   , teamDraftOrder      = draftOrder
-                   , teamWaiverOrder     = teamNumber
-                   , teamVerificationKey = verificationKey
-                   , teamCreatedBy       = leagueCreatedBy league
-                   , teamCreatedAt       = leagueCreatedAt league
-                   , teamUpdatedBy       = leagueUpdatedBy league
-                   , teamUpdatedAt       = leagueUpdatedAt league
-                   , teamConfirmedBy     = maybeTeamOwnerId
-                   , teamConfirmedAt     = maybeConfirmedAt
+    insert_ $ Team { teamLeagueId         = leagueId
+                   , teamName             = name
+                   , teamAbbreviation     = abbrev
+                   , teamOwnerId          = maybeTeamOwnerId
+                   , teamOwnerName        = owner
+                   , teamOwnerEmail       = email
+                   , teamIsConfirmed      = isJust maybeConfirmedAt
+                   , teamPlayersCount     = 0
+                   , teamStartersCount    = 0
+                   , teamDraftOrder       = draftOrder
+                   , teamWaiverOrder      = teamNumber
+                   , teamVerificationKey  = verificationKey
+                   , teamPointsThisSeason = 0
+                   , teamCreatedBy        = leagueCreatedBy league
+                   , teamCreatedAt        = leagueCreatedAt league
+                   , teamUpdatedBy        = leagueUpdatedBy league
+                   , teamUpdatedAt        = leagueUpdatedAt league
+                   , teamConfirmedBy      = maybeTeamOwnerId
+                   , teamConfirmedAt      = maybeConfirmedAt
                    }
 
 teamTextAttributes :: Int -> (Text, Text, Text, Text)
@@ -216,14 +217,15 @@ teamNonTextAttributes _ _ = (Nothing, Nothing)
 
 createPlayer :: Entity League -> CharacterId -> ReaderT SqlBackend Handler ()
 createPlayer (Entity leagueId league) characterId =
-    insert_ $ Player { playerLeagueId    = leagueId
-                     , playerCharacterId = characterId
-                     , playerTeamId      = Nothing
-                     , playerIsStarter   = False
-                     , playerCreatedBy   = leagueCreatedBy league
-                     , playerCreatedAt   = leagueCreatedAt league
-                     , playerUpdatedBy   = leagueUpdatedBy league
-                     , playerUpdatedAt   = leagueUpdatedAt league
+    insert_ $ Player { playerLeagueId         = leagueId
+                     , playerCharacterId      = characterId
+                     , playerTeamId           = Nothing
+                     , playerIsStarter        = False
+                     , playerPointsThisSeason = 0
+                     , playerCreatedBy        = leagueCreatedBy league
+                     , playerCreatedAt        = leagueCreatedAt league
+                     , playerUpdatedBy        = leagueUpdatedBy league
+                     , playerUpdatedAt        = leagueUpdatedAt league
                      }
 
 -------------

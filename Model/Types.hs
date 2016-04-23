@@ -18,6 +18,16 @@ isDead :: CharacterStatus -> Bool
 isDead Dead = True
 isDead    _ = False
 
+-------------------
+-- EpisodeStatus --
+-------------------
+data EpisodeStatus = Aired | Airing | YetToAir
+    deriving (Show, Read, Eq, Ord, Enum, Bounded)
+derivePersistField "EpisodeStatus"
+
+instance PathPiece EpisodeStatus where
+    fromPathPiece = readFromPathPiece
+    toPathPiece = showToPathPiece
 
 -----------------
 -- ScoringType --
@@ -154,9 +164,9 @@ splitPlayersTable _ = Nothing
 
 playersTableColumnCount :: PlayersTableType -> Int
 playersTableColumnCount ptt
-    | hasRadioButton ptt = 7
-    | isMultipleTeams ptt || hasSlotColumn ptt = 6
-    | otherwise = 5
+    | hasRadioButton ptt = 8
+    | isMultipleTeams ptt || hasSlotColumn ptt = 7
+    | otherwise = 6
 
 packPlayersTableType :: PlayersTableType -> Text
 packPlayersTableType FreeAgents = "Free Agents"

@@ -120,9 +120,14 @@ instance Yesod App where
     isAuthorized (SeriesEpisodeR _ _)        isPost = requireAdminIfPost isPost
     isAuthorized (SeriesEpisodeEventsR _ _)  _      = requireAdmin
     isAuthorized (SeriesEpisodeEventR _ _ _) _      = requireAdmin
+    isAuthorized (SeriesEpisodeScoreR _ _)   _      = requireAdmin
 
     -- TODO - For team and player routes, make sure that each
     -- entity is in the correct league
+    -- Another option would be to use teamNumber (need to be added first)
+    -- instead of teamId and characterId instead of playerId
+    -- I like this solution better, but it might be an issue with the join
+    -- links, so it might make sense to add later in or after the season
     isAuthorized LeaguesR                          _ = return Authorized
     isAuthorized (LeagueR leagueId)                _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueCancelR leagueId)          _ = requireLeagueManager leagueId
@@ -377,6 +382,7 @@ instance YesodBreadcrumbs App where
     breadcrumb FaviconR               = return ("", Nothing)
     breadcrumb RobotsR                = return ("", Nothing)
     breadcrumb SeriesEpisodeEventsR{} = return ("", Nothing)
+    breadcrumb SeriesEpisodeScoreR{}  = return ("", Nothing)
     breadcrumb LetsEncryptR{}         = return ("", Nothing)
 
 -- How to run database actions.

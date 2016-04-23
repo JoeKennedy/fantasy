@@ -2,6 +2,8 @@ module Handler.Series where
 
 import Import
 import Handler.Common (isAdmin, embeddedForm, groupByFirst)
+import Handler.League.Scoring (calculateScores)
+import Handler.League.Week    (createWeekData)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -23,6 +25,8 @@ episodeForm seriesId episode = renderBootstrap3 defaultBootstrapForm $ Episode
     <*> areq intField  (fieldName "Number overall") (episodeOverallNumber <$> episode)
     <*> areq utcDateField (fieldName "Original air time (UTC)") (episodeAirTime <$> episode)
     <*> pure seriesId
+    <*> existingElseDefault YetToAir (episodeStatus <$> episode)
+    <*> existingElseDefault False (episodeAreEventsComplete <$> episode)
 
 eventForm :: EpisodeId -> Maybe Event -> Form Event
 eventForm episodeId event = renderBootstrap3 defaultBootstrapForm $ Event
@@ -127,6 +131,9 @@ getSeriesEpisodeR seriesNo episodeNo = do
         setTitle $ toMarkup $ "Game Of Thrones Season " ++ show seriesNo ++ " Episode " ++ show episodeNo ++ ": " ++ show (episodeName episode)
         let episodeAction = SeriesEpisodeR seriesNo episodeNo
             eventHtmlAction = SeriesEpisodeEventsR seriesNo episodeNo
+            areEventsCompletable = isAdmin maybeUser && seriesNo == 6
+                                && (not $ episodeAreEventsComplete episode)
+                                && episodeStatus episode /= YetToAir
         $(widgetFile "episode")
 
 postSeriesEpisodeR :: Int -> Int -> Handler Html
@@ -143,6 +150,28 @@ postSeriesEpisodeR seriesNo episodeNo = do
             setTitle "Edit of episode failed"
             let action = SeriesEpisodeR seriesNo episodeNo
             $(widgetFile "embedded_form")
+
+postSeriesEpisodeScoreR :: Int -> Int -> Handler ()
+postSeriesEpisodeScoreR seriesNo episodeNo = do
+    userId <- requireAuthId
+    Entity seriesId  _ <- runDB $ getBy404 $ UniqueSeriesNumber seriesNo
+    Entity episodeId episode <- runDB $ getBy404 $ UniqueEpisodeNumberSeries episodeNo seriesId
+    if episodeAreEventsComplete episode then return () else do
+        runDB $ update episodeId [EpisodeAreEventsComplete =. True]
+        -- create appear events if they don't exist already
+        events <- runDB $ selectList [EventEpisodeId ==. episodeId] [Asc EventTimeInEpisode]
+        mapM_ upsertAppearanceEvents events
+        -- for kill and die events, change character status to Dead
+        -- for raise events, change character status to Alive
+        mapM_ (updateCharacterStatus userId) events
+        -- for appearance events, increment episodes appeared in for character
+        appearEvents <- runDB $ selectList [ EventEpisodeId ==. episodeId
+                                           , EventAction ==. Appear
+                                           ] [Asc EventTimeInEpisode]
+        mapM_ (incrementCharacterEpisodeCount userId) appearEvents
+        -- calculate scores for the events
+        calculateScores episodeId
+    redirect $ SeriesEpisodeR seriesNo episodeNo
 
 postSeriesEpisodeEventsR :: Int -> Int -> Handler Html
 postSeriesEpisodeEventsR seriesNo episodeNo = do
@@ -210,4 +239,84 @@ utcDateField = Field
 
 parseUTCDate :: String -> Either FormMessage UTCTime
 parseUTCDate = maybe (Left MsgInvalidDay) Right . readMaybe
+
+----------
+-- Jobs --
+----------
+finishAiringEpisode :: Handler ()
+finishAiringEpisode = do
+    maybeEpisode <- runDB $ selectFirst [EpisodeStatus ==. Airing] [Asc EpisodeId]
+    case maybeEpisode of
+        Nothing -> return ()
+        Just (Entity episodeId _) -> runDB $ update episodeId [EpisodeStatus =. Aired]
+
+airEpisode :: Handler ()
+airEpisode = do
+    -- For now, grab the most recent episode yet to air
+    -- TODO - come up with a way to do this using the air time
+    maybeEpisode <- runDB $ selectFirst [EpisodeStatus ==. YetToAir] [Asc EpisodeId]
+    case maybeEpisode of
+        Nothing -> return ()
+        Just (Entity episodeId episode) -> do
+            runDB $ update episodeId [EpisodeStatus =. Airing]
+            leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
+            mapM_ (createWeekData $ Entity episodeId episode) leagueIds
+
+
+-------------
+-- Helpers --
+-------------
+upsertAppearanceEvents :: Entity Event -> Handler ()
+upsertAppearanceEvents (Entity _ event) = do
+    upsertAppearanceEvent event $ eventCharacterId event
+    mapM_ (upsertAppearanceEvent event) $ eventReceivingCharacterId event
+
+upsertAppearanceEvent :: Event -> CharacterId -> Handler ()
+upsertAppearanceEvent event characterId = do
+    maybeAppear <- runDB $ selectFirst [ EventAction ==. Appear
+                                       , EventCharacterId ==. characterId
+                                       , EventEpisodeId ==. eventEpisodeId event
+                                       ] [Asc EventTimeInEpisode]
+    case maybeAppear of
+        Just (Entity appearEventId appearEvent) ->
+            if eventTimeInEpisode event >= eventTimeInEpisode appearEvent then return () else
+                runDB $ update appearEventId [EventTimeInEpisode =. eventTimeInEpisode event]
+        Nothing -> runDB $ insert_ Event { eventCharacterId = characterId
+                                         , eventAction = Appear
+                                         , eventReceivingCharacterId = Nothing
+                                         , eventEpisodeId = eventEpisodeId event
+                                         , eventNote = Nothing
+                                         , eventTimeInEpisode = eventTimeInEpisode event
+                                         }
+
+updateCharacterStatus :: UserId -> Entity Event -> Handler ()
+updateCharacterStatus userId (Entity _ event) = do
+    now <- liftIO getCurrentTime
+    runDB $ case (eventAction event, eventReceivingCharacterId event) of
+        (Kill, Just recCharacterId) ->
+            update recCharacterId [ CharacterStatus    =. Dead
+                                  , CharacterUpdatedBy =. userId
+                                  , CharacterUpdatedAt =. now
+                                  ]
+        (Raise, Just recCharacterId) ->
+            update recCharacterId [ CharacterStatus    =. Alive
+                                  , CharacterUpdatedBy =. userId
+                                  , CharacterUpdatedAt =. now
+                                  ]
+        (Death, _) ->
+            update (eventCharacterId event) [ CharacterStatus    =. Dead
+                                            , CharacterUpdatedBy =. userId
+                                            , CharacterUpdatedAt =. now
+                                            ]
+        (_, _) -> return ()
+
+incrementCharacterEpisodeCount :: UserId -> Entity Event -> Handler ()
+incrementCharacterEpisodeCount userId (Entity _ event) =
+    if eventAction event == Appear then do
+        now <- liftIO getCurrentTime
+        runDB $ update (eventCharacterId event) [ CharacterEpisodesAppearedIn +=. 1
+                                                , CharacterUpdatedBy =. userId
+                                                , CharacterUpdatedAt =. now
+                                                ]
+    else return ()
 

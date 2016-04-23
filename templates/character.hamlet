@@ -23,6 +23,9 @@
                         $nothing
                             -
                 <li .list-group-item>
+                    <h6 .list-group-item-heading>Status
+                    <p .list-group-item-text>#{toPathPiece $ characterStatus character}
+                <li .list-group-item>
                     <h6 .list-group-item-heading>Points Last Season
                     <p .list-group-item-text>#{characterPointsLastSeason character}
                 <li .list-group-item>

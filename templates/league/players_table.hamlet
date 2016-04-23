@@ -20,8 +20,10 @@
                         Status
                     <th .hidden-sm .hidden-xs data-field="player-survived" data-sortable="true">
                         Seasons Survived
-                    <th .hidden-sm .hidden-xs data-field="player-points" data-sortable="true">
+                    <th .hidden-sm .hidden-xs data-field="player-points-5" data-sortable="true">
                         Season 5 Points
+                    <th data-field="player-points-6" data-sortable="true">
+                        Season 6 Points
                     <th data-field="player-action">
 
             <tbody>
@@ -66,6 +68,8 @@
                                                 #{seasonsSurvived}
                         <td .hidden-sm .hidden-xs>
                             #{characterPointsLastSeason character}
+                        <td>
+                            #{displayRational $ playerPointsThisSeason player}
                         <td .text-right .player-action>
                             $if showActionButton playersTableType
                                 ^{button}

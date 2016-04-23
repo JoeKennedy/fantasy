@@ -49,9 +49,10 @@ import Handler.League.ConfirmSettings
 import Handler.League.DraftSettings
 import Handler.League.GeneralSettings
 import Handler.League.Player
-import Handler.League.ScoringSettings
--- The below currently has no routes in it
+import Handler.League.Scoring
+-- The below currently have no routes in them
 -- import Handler.League.Setup
+-- import Handler.League.Week
 import Handler.League.Team
 import Handler.League.Transaction
 import Handler.Series
@@ -104,6 +105,7 @@ makeFoundation appSettings = do
         logFunc = messageLoggerSource tempFoundation appLogger
 
     -- Create the database connection pool
+    -- TODO make the DB connect to DATABASE_URL if not in development
     pool <- flip runLoggingT logFunc $ createPostgresqlPool
         (pgConnStr  $ appDatabaseConf appSettings)
         (pgPoolSize $ appDatabaseConf appSettings)
@@ -114,7 +116,9 @@ makeFoundation appSettings = do
     let foundation = mkFoundation pool
 
     threadIds <- execSchedule $ do
-        addJob (unsafeHandler foundation processClaimRequests) "0 9 * * *"
+        addJob (unsafeHandler foundation processClaimRequests) "0 9 * * *" -- 9am UTC daily
+        addJob (unsafeHandler foundation airEpisode)           "0 1 * * 1" -- 1am UTC Monday
+        addJob (unsafeHandler foundation finishAiringEpisode)  "0 2 * * 1" -- 2am UTC Monday
     print threadIds
 
     -- Return the foundation

@@ -60,6 +60,7 @@ teamSettingsForm currentUserId league draftSettings teams extra = do
                     else pure (teamDraftOrder team))
             <*> pure (teamWaiverOrder team)
             <*> pure (teamVerificationKey team)
+            <*> pure (teamPointsThisSeason team)
             <*> pure (teamCreatedBy team)
             <*> pure (teamCreatedAt team)
             <*> updatedByField currentUserId
@@ -105,10 +106,8 @@ postSetupTeamsSettingsR = do
 
 getLeagueTeamsR :: LeagueId -> Handler Html
 getLeagueTeamsR leagueId = do
-    maybeUserId <- maybeAuthId
-    isUserLeagueMember <- isLeagueMember maybeUserId leagueId
     league <- runDB $ get404 leagueId
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamPointsThisSeason]
     leagueLayout leagueId "Houses" $ do
         $(widgetFile "league/teams")
 
