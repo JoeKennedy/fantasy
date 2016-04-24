@@ -212,8 +212,7 @@ playerWithButton ((Entity playerId player), maybeTeam, character, series) userId
     in  (Entity playerId player, maybeTeam, character, series, $(widgetFile "league/player_action_button"))
 
 playerButtonAttributes :: Entity Player -> Maybe (Entity Team) -> UserId -> (Text, Text, Text, Text)
-playerButtonAttributes _ Nothing _ =
-    ("claim", "modal", "#claim_modal", "plus")
+playerButtonAttributes _ Nothing _ = ("claim", "modal", "#claim_modal", "plus")
 playerButtonAttributes (Entity _ player) (Just (Entity _ team)) userId =
     if isTeamOwner (Just userId) (Just team) then (if playerIsStarter player
         then ("bench", "", "", "level-down")

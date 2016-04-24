@@ -44,9 +44,10 @@ scoringSettingsForm currentUserId league scoringSettingsList extra = do
                     <*> updatedByField currentUserId
                     <*> pure now)
 
-    let widget = case leagueScoringType league of Weighted -> $(widgetFile "league/weighted_scoring_settings_form")
-                                                  Vanilla  -> $(widgetFile "league/vanilla_scoring_settings_form")
-                                                  _        -> error "This scoring type does not use this form"
+    let widget = case leagueScoringType league of
+                     Weighted -> $(widgetFile "league/weighted_scoring_settings_form")
+                     Vanilla  -> $(widgetFile "league/vanilla_scoring_settings_form")
+                     _        -> error "This scoring type does not use this form"
     return (scoringSettingsResults, widget)
 
 
