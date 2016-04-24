@@ -24,7 +24,8 @@
     $if isAdmin maybeUser
         <div .col-md-9 .col-xs-12>
             ^{embeddedForm episodeAction episodeEnctype episodeWidget}
-            ^{eventFormWidget eventHtmlAction eventEnctype eventWidget}
+            $if not (episodeAreEventsComplete episode)
+                ^{eventFormWidget eventHtmlAction eventEnctype eventWidget}
 
 $if not (null events)
     <div .panel .panel-default>
@@ -51,7 +52,11 @@ $if not (null events)
                         <td .hidden-sm .hidden-xs>#{show (eventAction event)}
                         <td .hidden-sm .hidden-xs>
                             $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
-                                <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
+                                $if characterIsPlayable receivingCharacter
+                                    <a href=@{CharacterR receivingCharacterId}>
+                                        #{characterName receivingCharacter}
+                                $else
+                                    #{characterName receivingCharacter}
                             $nothing
                                 -
                         <td>
@@ -59,7 +64,11 @@ $if not (null events)
                                 <a href=@{CharacterR (eventCharacterId event)}>#{characterName character}
                                 #{actionBefore}
                                 $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
-                                    <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
+                                    $if characterIsPlayable receivingCharacter
+                                        <a href=@{CharacterR receivingCharacterId}>
+                                            #{characterName receivingCharacter}
+                                    $else
+                                        #{characterName receivingCharacter}
                                     #{actionAfter}
                                 $maybe note <- eventNote event
                                     \ #{note}

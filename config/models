@@ -33,6 +33,7 @@ Character
     pointsLastSeason Int
     episodesAppearedIn Int
     rookieSeriesId SeriesId default=1
+    isPlayable Bool default=true
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId
@@ -168,6 +169,7 @@ Player
     characterId CharacterId
     teamId TeamId Maybe
     isStarter Bool default=false
+    isPlayable Bool default=true
     pointsThisSeason Rational default=0
     createdBy UserId
     createdAt UTCTime

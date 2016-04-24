@@ -155,7 +155,7 @@ createLeague league = do
             }
         mapM_ (createScoringSettingsRow leagueEntity) allActions
         mapM_ (createTeam leagueEntity) $ zip teamNumbers draftOrder
-        characters <- selectKeysList [] [Asc CharacterName]
+        characters <- selectList [] [Asc CharacterName]
         mapM_ (createPlayer leagueEntity) characters
         return ()
 
@@ -215,13 +215,14 @@ teamNonTextAttributes league 1 =
     (Just $ leagueCreatedBy league, Just $ leagueCreatedAt league)
 teamNonTextAttributes _ _ = (Nothing, Nothing)
 
-createPlayer :: Entity League -> CharacterId -> ReaderT SqlBackend Handler ()
-createPlayer (Entity leagueId league) characterId =
+createPlayer :: Entity League -> Entity Character -> ReaderT SqlBackend Handler ()
+createPlayer (Entity leagueId league) (Entity characterId character) =
     insert_ $ Player { playerLeagueId         = leagueId
                      , playerCharacterId      = characterId
                      , playerTeamId           = Nothing
                      , playerIsStarter        = False
                      , playerPointsThisSeason = 0
+                     , playerIsPlayable       = characterIsPlayable character
                      , playerCreatedBy        = leagueCreatedBy league
                      , playerCreatedAt        = leagueCreatedAt league
                      , playerUpdatedBy        = leagueUpdatedBy league

@@ -1,4 +1,10 @@
+$if isAdmin maybeUser
+    <div .page-header>
+        <h4>Unplayable Characters
+
+    ^{charactersTable unplayable}
+
 <div .page-header>
-    <h4>Characters
+    <h4>Playable Characters
 
 ^{charactersTable characters}

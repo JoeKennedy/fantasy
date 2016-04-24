@@ -186,17 +186,19 @@ calculateWeekPoints play = do
 
 addPointsToPerformanceAndGame :: WeekId -> PlayerId -> Maybe TeamId -> Rational -> Handler ()
 addPointsToPerformanceAndGame weekId playerId maybeTeamId points = do
+    player <- runDB $ get404 playerId
+    let pointsToAdd = if playerIsPlayable player then points else 0
     Entity performanceId performance <- runDB $ getBy404 $ UniquePerformanceWeekIdPlayerId weekId playerId
     now <- liftIO getCurrentTime
     -- add points to the player's peformance for this week
-    runDB $ update performanceId [ PerformancePoints    +=. points
+    runDB $ update performanceId [ PerformancePoints    +=. pointsToAdd
                                  , PerformanceUpdatedAt  =. now
                                  ]
     case (maybeTeamId, performanceIsStarter performance) of
         -- if the player is a starter on a team, add points to this team's game for this week
         (Just teamId, True) -> runDB $ do
             Entity gameId _ <- getBy404 $ UniqueGameWeekIdTeamId weekId teamId
-            update gameId [GamePoints +=. points, GameUpdatedAt =. now]
+            update gameId [GamePoints +=. pointsToAdd, GameUpdatedAt =. now]
         (_, _) -> return ()
 
 addToTeamPoints :: Entity Game -> Handler (Entity Team)

@@ -142,7 +142,7 @@ instance Yesod App where
     isAuthorized (LeagueTeamSettingsR _ teamId)    _ = requireTeamOwner teamId
 
     isAuthorized (LeaguePlayersR leagueId)         _ = requirePublicOrLeagueMember leagueId
-    isAuthorized (LeaguePlayerR leagueId _)        _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeaguePlayerR leagueId playerId) _ = requirePlayable leagueId playerId
     isAuthorized (LeaguePlayerStartR _ playerId)   _ = requirePlayerOwner playerId
     isAuthorized (LeaguePlayerBenchR _ playerId)   _ = requirePlayerOwner playerId
     isAuthorized (LeaguePlayerClaimR _ _ playerId) _ = requirePlayerOwner playerId
@@ -217,6 +217,13 @@ requirePublicOrLeagueMember leagueId = do
     if leagueIsPrivate league
         then requireLeagueMember leagueId
         else return Authorized
+
+requirePlayable :: LeagueId -> PlayerId -> Handler AuthResult
+requirePlayable leagueId playerId = do
+    player <- runDB $ get404 playerId
+    if playerIsPlayable player
+        then requirePublicOrLeagueMember leagueId
+        else return $ Unauthorized "Player is not playable"
 
 requireTradeAcceptable :: TransactionId -> Handler AuthResult
 requireTradeAcceptable transactionId = do

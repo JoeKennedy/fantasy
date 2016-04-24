@@ -12,6 +12,12 @@ import           Text.Blaze (toMarkup)
 import           Yesod.Form.Bootstrap3 (renderBootstrap3)
 
 -----------
+-- Types --
+-----------
+type FullCharacter = (Entity Character, Entity Species, Maybe (Entity House), Entity Series)
+
+
+-----------
 -- Forms --
 -----------
 characterForm :: UserId -> Maybe Character -> Form Character
@@ -24,6 +30,7 @@ characterForm userId character = renderBootstrap3 defaultBootstrapForm $ Charact
     <*> areq intField (fieldName "Season 5 Score") (characterPointsLastSeason <$> character)
     <*> areq intField (fieldName "Episode Count") (characterEpisodesAppearedIn <$> character)
     <*> areq (selectField seriesList) (fieldName "Rookie Season") (characterRookieSeriesId <$> character)
+    <*> areq checkBoxField (fieldName "Is Playable") (Just $ fromMaybe True $ characterIsPlayable <$> character)
     <*> createdByField userId (characterCreatedBy <$> character)
     <*> createdAtField (characterCreatedAt <$> character)
     <*> updatedByField userId
@@ -50,14 +57,9 @@ blurbForm characterId userId blurb = renderBootstrapPanelForm $ Blurb
 ------------
 getCharactersR :: Handler Html
 getCharactersR = do
-    characters <- runDB
-        $ E.select
-        $ E.from $ \(character `E.InnerJoin` species `E.LeftOuterJoin` house `E.InnerJoin` series) -> do
-            E.on $ character ^. CharacterRookieSeriesId E.==. series ^. SeriesId
-            E.on $ E.just (character ^. CharacterHouseId) E.==. E.just (house ?. HouseId)
-            E.on $ character ^. CharacterSpeciesId E.==. species ^. SpeciesId
-            E.orderBy [E.asc (character ^. CharacterName)]
-            return (character, species, house, series)
+    maybeUser  <- maybeAuth
+    characters <- getCharacters True
+    unplayable <- getCharacters False
     defaultLayout $ do
       setTitle "Character list"
       $(widgetFile "characters")
@@ -101,7 +103,7 @@ postNewCharacterR = do
         FormSuccess character -> do
             characterId <- runDB $ insert character
             leagues <- runDB $ selectList [] [Asc LeagueId]
-            mapM_ (\l -> runDB $ createPlayer l characterId) leagues
+            mapM_ (\l -> runDB $ createPlayer l $ Entity characterId character) leagues
             redirect $ CharacterR characterId
         _ -> defaultLayout $ do
             let title = "Create a new character" :: Html
@@ -128,6 +130,9 @@ postEditCharacterR characterId = do
     case result of
         FormSuccess character' -> do
             runDB $ replace characterId character'
+            -- TODO set PlayerIsPlayable only if characterIsPlayable has changed
+            runDB $ updateWhere [PlayerCharacterId ==. characterId]
+                                [PlayerIsPlayable =. characterIsPlayable character]
             redirect $ CharacterR characterId
         _ -> defaultLayout $ do
             let title = toMarkup $ "Edit " ++ characterName character
@@ -193,9 +198,22 @@ postCharacterBlurbR characterId blurbId = do
 
 
 -------------
+-- Queries --
+-------------
+getCharacters :: Bool -> Handler [FullCharacter]
+getCharacters isPlayable = runDB
+    $ E.select
+    $ E.from $ \(character `E.InnerJoin` species `E.LeftOuterJoin` house `E.InnerJoin` series) -> do
+        E.on $ character ^. CharacterRookieSeriesId E.==. series ^. SeriesId
+        E.on $ E.just (character ^. CharacterHouseId) E.==. E.just (house ?. HouseId)
+        E.on $ character ^. CharacterSpeciesId E.==. species ^. SpeciesId
+        E.where_ $ character ^. CharacterIsPlayable E.==. E.val isPlayable
+        E.orderBy [E.asc (character ^. CharacterName)]
+        return (character, species, house, series)
+
+
+-------------
 -- Widgets --
 -------------
-type FullCharacter = (Entity Character, Entity Species, Maybe (Entity House), Entity Series)
-
 charactersTable :: [FullCharacter] -> Widget
 charactersTable fullCharacters = $(widgetFile "characters_table")

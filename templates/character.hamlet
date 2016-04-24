@@ -67,14 +67,23 @@
                                             <a href=@{CharacterR (eventCharacterId event)}>#{characterName actingCharacter}
                                             #{actionBefore}
                                             $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
-                                                <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
+                                                $if isAdmin maybeUser
+                                                    <a href=@{CharacterR receivingCharacterId}>
+                                                        #{characterName receivingCharacter}
+                                                $else
+                                                    #{characterName receivingCharacter}
                                                 #{actionAfter}
                                             $maybe note <- eventNote event
                                                 \ #{note}
+
                                     $else
                                         $with actionString <- reverseActionString (eventAction event)
                                             $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
-                                                <a href=@{CharacterR receivingCharacterId}>#{characterName receivingCharacter}
+                                                $if characterIsPlayable receivingCharacter
+                                                    <a href=@{CharacterR receivingCharacterId}>
+                                                        #{characterName receivingCharacter}
+                                                $else
+                                                    #{characterName receivingCharacter}
                                                 #{actionString}
                                                 <a href=@{CharacterR (eventCharacterId event)}>#{characterName actingCharacter}
 

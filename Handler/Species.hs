@@ -54,6 +54,8 @@ getSpeciesR speciesId = do
             E.on $ E.just (character ^. CharacterHouseId) E.==. E.just (house ?. HouseId)
             E.on $ character ^. CharacterSpeciesId E.==. species ^. SpeciesId
             E.where_ $ character ^. CharacterSpeciesId E.==. E.val speciesId
+                 E.&&. character ^. CharacterIsPlayable E.==. E.val True
+            E.orderBy [E.asc (character ^. CharacterName)]
             return (character, species, house, series)
     defaultLayout $ do
         setTitle $ toMarkup $ speciesName s

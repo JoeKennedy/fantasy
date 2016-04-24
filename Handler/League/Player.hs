@@ -174,6 +174,7 @@ getPlayers leagueId = runDB
         E.on $ E.just (player ^. PlayerTeamId) E.==. E.just (team ?. TeamId)
         E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
         E.where_ $ player ^. PlayerLeagueId E.==. E.val leagueId
+             E.&&. player ^. PlayerIsPlayable E.==. E.val True
         E.orderBy [E.asc (character ^. CharacterName)]
         return (player, team, character, series)
 

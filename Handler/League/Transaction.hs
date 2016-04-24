@@ -211,6 +211,7 @@ getPlayersAndCharacters leagueId = runDB
     $ E.from $ \(player `E.InnerJoin` character) -> do
         E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
         E.where_ $ player ^. PlayerLeagueId E.==. E.val leagueId
+             E.&&. player ^. PlayerIsPlayable E.==. E.val True
         E.orderBy [E.asc (character ^. CharacterName)]
         return (player, character)
 
@@ -385,6 +386,7 @@ autoFailSinglePlayerTransaction :: LeagueId -> TransactionId -> Player -> Handle
 autoFailSinglePlayerTransaction leagueId transactionId player
     | leagueId /= playerLeagueId player =
         failTransaction transactionId "Player must be in this league"
+    | not $ playerIsPlayable player = failTransaction transactionId "Player must be playable"
     | otherwise = return False
 
 autoFailMultiPlayerTransaction :: LeagueId -> TransactionId -> Player -> Player -> Handler Bool
@@ -395,6 +397,8 @@ autoFailMultiPlayerTransaction leagueId transactionId player1 player2
         failTransaction transactionId "Desired player must be in this league"
     | playerTeamId player1 == playerTeamId player2 =
         failTransaction transactionId "Players must not be on the same team"
+    | not $ playerIsPlayable player1 = failTransaction transactionId "Your player must be playable"
+    | not $ playerIsPlayable player2 = failTransaction transactionId "Desired player must be playable"
     | otherwise = autoFailSinglePlayerTransaction leagueId transactionId player2
 
 
