@@ -117,8 +117,8 @@ makeFoundation appSettings = do
 
     threadIds <- execSchedule $ do
         addJob (unsafeHandler foundation processClaimRequests) "0 9 * * *" -- 9am UTC daily
-        addJob (unsafeHandler foundation airEpisode)           "25 * * * 1" -- 1am UTC Monday
-        addJob (unsafeHandler foundation finishAiringEpisode)  "35 * * * 1" -- 2am UTC Monday
+        addJob (unsafeHandler foundation airEpisode)           "0 1 * * 1" -- 1am UTC Monday
+        addJob (unsafeHandler foundation finishAiringEpisode)  "0 2 * * 1" -- 2am UTC Monday
     print threadIds
 
     -- Return the foundation
