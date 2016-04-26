@@ -73,7 +73,6 @@ Event
     episodeId EpisodeId
     note Text Maybe
     timeInEpisode Int
-    UniqueEvent characterId action episodeId timeInEpisode
 
 League
     name Text
