@@ -30,15 +30,13 @@ episodeForm seriesId episode = renderBootstrap3 defaultBootstrapForm $ Episode
 
 eventForm :: EpisodeId -> Maybe Event -> Form Event
 eventForm episodeId event = renderBootstrap3 defaultBootstrapForm $ Event
-    <$> areq (selectField playable)    (fieldName "Character") (eventCharacterId <$> event)
+    <$> areq (selectField characters)  (fieldName "Character") (eventCharacterId <$> event)
     <*> areq (selectField optionsEnum) (fieldName "Action") (eventAction <$> event)
     <*> aopt (selectField characters)  (fieldName "Receiving Character") (eventReceivingCharacterId <$> event)
     <*> pure episodeId
     <*> aopt textField (fieldName "Further description") (eventNote <$> event)
     <*> areq intField  (fieldName "Time in episode") (eventTimeInEpisode <$> event)
     where characters = optionsPersistKey [] [Asc CharacterName] characterName
-          playable   = optionsPersistKey [CharacterIsPlayable ==. True]
-                                         [Asc CharacterName] characterName
 
 ------------
 -- Routes --
@@ -294,25 +292,27 @@ upsertAppearanceEvent event characterId = do
 updateCharacterStatus :: UserId -> Entity Event -> Handler ()
 updateCharacterStatus userId (Entity _ event) = do
     now <- liftIO getCurrentTime
+    character <- runDB $ get404 $ eventCharacterId event
     mRecCharacter <- runDB $ mapM get404 $ eventReceivingCharacterId event
+    let characterPlayable = characterIsPlayable character
     let recCharacterPlayable = fromMaybe False $ map characterIsPlayable mRecCharacter
-    runDB $ case (eventAction event, eventReceivingCharacterId event, recCharacterPlayable) of
-        (Kill, Just recCharacterId, True) ->
+    runDB $ case (eventAction event, characterPlayable, eventReceivingCharacterId event, recCharacterPlayable) of
+        (Kill, _, Just recCharacterId, True) ->
             update recCharacterId [ CharacterStatus    =. Dead
                                   , CharacterUpdatedBy =. userId
                                   , CharacterUpdatedAt =. now
                                   ]
-        (Raise, Just recCharacterId, True) ->
+        (Raise, _, Just recCharacterId, True) ->
             update recCharacterId [ CharacterStatus    =. Alive
                                   , CharacterUpdatedBy =. userId
                                   , CharacterUpdatedAt =. now
                                   ]
-        (Death, _, _) ->
+        (Death, True, _, _) ->
             update (eventCharacterId event) [ CharacterStatus    =. Dead
                                             , CharacterUpdatedBy =. userId
                                             , CharacterUpdatedAt =. now
                                             ]
-        (_, _, _) -> return ()
+        (_, _, _, _) -> return ()
 
 incrementCharacterEpisodeCount :: UserId -> Entity Event -> Handler ()
 incrementCharacterEpisodeCount userId (Entity _ event) =

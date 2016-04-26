@@ -48,7 +48,11 @@ $if not (null events)
                                     <span .fa .fa-pencil>
                         <td>#{displayTime (eventTimeInEpisode event)}
                         <td .hidden-sm .hidden-xs>
-                            <a href=@{CharacterR (eventCharacterId event)}>#{characterName character}
+                            $if characterIsPlayable character
+                                <a href=@{CharacterR (eventCharacterId event)}>
+                                    #{characterName character}
+                            $else
+                                #{characterName character}
                         <td .hidden-sm .hidden-xs>#{show (eventAction event)}
                         <td .hidden-sm .hidden-xs>
                             $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
@@ -61,7 +65,11 @@ $if not (null events)
                                 -
                         <td>
                             $with (actionBefore, actionAfter) <- actionToSplitString (eventAction event)
-                                <a href=@{CharacterR (eventCharacterId event)}>#{characterName character}
+                                $if characterIsPlayable character
+                                    <a href=@{CharacterR (eventCharacterId event)}>
+                                        #{characterName character}
+                                $else
+                                    #{characterName character}
                                 #{actionBefore}
                                 $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
                                     $if characterIsPlayable receivingCharacter

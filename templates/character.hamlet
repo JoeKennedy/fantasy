@@ -64,7 +64,11 @@
                                 <td>
                                     $if (eventCharacterId event) == characterId
                                         $with (actionBefore, actionAfter) <- actionToSplitString (eventAction event)
-                                            <a href=@{CharacterR (eventCharacterId event)}>#{characterName actingCharacter}
+                                            $if characterIsPlayable actingCharacter
+                                                <a href=@{CharacterR (eventCharacterId event)}>
+                                                    #{characterName actingCharacter}
+                                            $else
+                                                #{characterName actingCharacter}
                                             #{actionBefore}
                                             $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
                                                 $if isAdmin maybeUser
@@ -85,5 +89,9 @@
                                                 $else
                                                     #{characterName receivingCharacter}
                                                 #{actionString}
-                                                <a href=@{CharacterR (eventCharacterId event)}>#{characterName actingCharacter}
+                                                $if characterIsPlayable actingCharacter
+                                                    <a href=@{CharacterR (eventCharacterId event)}>
+                                                        #{characterName actingCharacter}
+                                                $else
+                                                    #{characterName actingCharacter}
 
