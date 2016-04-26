@@ -226,7 +226,7 @@ charactersTable fullCharacters = $(widgetFile "characters_table")
 -------------
 createCharacterPerformancesIfNecessary :: CharacterId -> Handler ()
 createCharacterPerformancesIfNecessary characterId = do
-    playerIds <- runDB $ selectKeysList [] [Asc PlayerId]
+    playerIds <- runDB $ selectKeysList [PlayerCharacterId ==. characterId] [Asc PlayerId]
     performances <- runDB $ count [PerformancePlayerId <-. playerIds]
     case performances of 0 -> createCharacterPerformances characterId
                          _ -> return ()
