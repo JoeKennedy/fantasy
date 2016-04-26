@@ -5,6 +5,7 @@ import Import
 import Handler.Common        (isAdmin)
 import Handler.League        (createPlayer)
 import Handler.League.Player (blurbPanel)
+import Handler.League.Week   (createPerformance)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -104,6 +105,7 @@ postNewCharacterR = do
             characterId <- runDB $ insert character
             leagues <- runDB $ selectList [] [Asc LeagueId]
             mapM_ (\l -> runDB $ createPlayer l $ Entity characterId character) leagues
+            createCharacterPerformances characterId
             redirect $ CharacterR characterId
         _ -> defaultLayout $ do
             let title = "Create a new character" :: Html
@@ -133,6 +135,7 @@ postEditCharacterR characterId = do
             -- TODO set PlayerIsPlayable only if characterIsPlayable has changed
             runDB $ updateWhere [PlayerCharacterId ==. characterId]
                                 [PlayerIsPlayable =. characterIsPlayable character]
+            createCharacterPerformancesIfNecessary characterId
             redirect $ CharacterR characterId
         _ -> defaultLayout $ do
             let title = toMarkup $ "Edit " ++ characterName character
@@ -217,3 +220,24 @@ getCharacters isPlayable = runDB
 -------------
 charactersTable :: [FullCharacter] -> Widget
 charactersTable fullCharacters = $(widgetFile "characters_table")
+
+-------------
+-- Helpers --
+-------------
+createCharacterPerformancesIfNecessary :: CharacterId -> Handler ()
+createCharacterPerformancesIfNecessary characterId = do
+    playerIds <- runDB $ selectKeysList [] [Asc PlayerId]
+    performances <- runDB $ count [PerformancePlayerId <-. playerIds]
+    case performances of 0 -> createCharacterPerformances characterId
+                         _ -> return ()
+
+createCharacterPerformances :: CharacterId -> Handler ()
+createCharacterPerformances characterId = do
+    weeks <- runDB $ selectList [] [Asc WeekId]
+    mapM_ (createCharacterPerformanceForWeek characterId) weeks
+
+createCharacterPerformanceForWeek :: CharacterId -> Entity Week -> Handler ()
+createCharacterPerformanceForWeek characterId (Entity weekId week) = do
+    let leagueId = weekLeagueId week
+    playerEntity <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
+    createPerformance leagueId weekId playerEntity

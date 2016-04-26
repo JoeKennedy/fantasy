@@ -55,5 +55,3 @@ createPerformance leagueId weekId (Entity playerId player) = do
                                   , performanceCreatedAt = now
                                   , performanceUpdatedAt = now
                                   }
-
-

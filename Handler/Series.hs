@@ -2,7 +2,7 @@ module Handler.Series where
 
 import Import
 import Handler.Common (isAdmin, embeddedForm, groupByFirst)
-import Handler.League.Scoring (calculateScores)
+import Handler.League         (calculateScores)
 import Handler.League.Week    (createWeekData)
 
 import qualified Database.Esqueleto as E

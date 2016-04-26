@@ -1,9 +1,10 @@
 module Handler.League where
 
 import Import
-import Handler.Common        (extractKeyMaybe, extractValueMaybe)
+import Handler.Common        (extractKeyMaybe, extractValue, extractValueMaybe)
 import Handler.League.Setup
 import Handler.League.Layout
+import Handler.League.Week   (createWeekData)
 
 import Data.Random.List
 import Data.Random.RVar
@@ -135,8 +136,8 @@ createLeague :: League -> Handler ()
 createLeague league = do
     let teamNumbers = [1..(leagueTeamsCount league)]
     draftOrder <- liftIO (runRVar (shuffle teamNumbers) DevRandom :: IO [Int])
+    leagueId <- runDB $ insert league
     runDB $ do
-        leagueId <- insert league
         let teamsCount = leagueTeamsCount league
             leagueEntity = Entity leagueId league
         insert_ $ GeneralSettings
@@ -157,7 +158,17 @@ createLeague league = do
         mapM_ (createTeam leagueEntity) $ zip teamNumbers draftOrder
         characters <- selectList [] [Asc CharacterName]
         mapM_ (createPlayer leagueEntity) characters
-        return ()
+
+    -- create week and related data for any already aired episodes this season
+    maybeSeries <- runDB $ selectFirst [] [Asc SeriesNumber]
+    case maybeSeries of
+        Nothing -> return ()
+        Just (Entity seriesId _) -> do
+            episodes <- runDB $ selectList [ EpisodeSeriesId ==. seriesId
+                                           , EpisodeStatus !=. YetToAir
+                                           ] [Asc EpisodeId]
+            mapM_ (\e -> createWeekData e leagueId) episodes
+            mapM_ (\(Entity eid _) -> calculateLeagueScores eid leagueId) episodes
 
 createScoringSettingsRow :: Entity League -> Action -> ReaderT SqlBackend Handler ()
 createScoringSettingsRow (Entity leagueId league) action =
@@ -244,4 +255,162 @@ leagueListGroupItem Nothing scoringType
     | isDisabledScoringType scoringType =
         [whamlet|<div .list-group-item .disabled>^{scoringTypeWidget scoringType}|]
     | otherwise = [whamlet|<a .list-group-item href="#">^{scoringTypeWidget scoringType}|]
+
+
+---------------------------------------------------------
+-- Calculate Scores -- THIS IS WHERE THE MAGIC HAPPENS --
+---------------------------------------------------------
+
+calculateScores :: EpisodeId -> Handler ()
+calculateScores episodeId = do
+    leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
+    mapM_ (calculateLeagueScores episodeId) leagueIds
+    setMessage "Calculating (or calculated) scores for all leagues for this episode"
+
+calculateLeagueScores :: EpisodeId -> LeagueId -> Handler ()
+calculateLeagueScores episodeId leagueId = do
+    -- check if any plays have already been created for this week
+    Entity weekId _ <- runDB $ getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
+    playsCount <- runDB $ count [PlayWeekId ==. weekId]
+    -- if no plays exist for the week, create all the plays
+    if playsCount > 0 then return () else do
+        events <- runDB $ selectList [EventEpisodeId ==. episodeId] []
+        plays <- mapM (createPlay leagueId weekId) events
+        -- for each play, update points on the relevant performance and game
+        mapM_ calculateWeekPoints plays
+
+        -- for each team, update total points on the season
+        games <- runDB $ selectList [GameWeekId ==. weekId] []
+        teams <- mapM addToTeamPoints games
+        -- then compare totals to determine waiver order
+        determineWaiverOrder teams
+        -- for each player update total points on the season
+        performances <- runDB $ selectList [PerformanceWeekId ==. weekId] []
+        mapM_ addToPlayerPoints performances
+        -- mark the week scored
+        now <- liftIO getCurrentTime
+        runDB $ update weekId [WeekIsScored =. True, WeekUpdatedAt =. now]
+
+calculateWeekPoints :: Play -> Handler ()
+calculateWeekPoints play = do
+    let weekId = playWeekId play
+    -- add points to performance and game for player
+    addPointsToPerformanceAndGame weekId (playPlayerId play) (playTeamId play) (playPoints play)
+    case playReceivingPlayerId play of
+        Nothing       -> return ()
+        -- add points to performance and game for receiving player if relevant
+        Just receivingPlayerId ->
+            addPointsToPerformanceAndGame weekId receivingPlayerId
+                    (playReceivingTeamId play) (playReceivingPoints play)
+
+addPointsToPerformanceAndGame :: WeekId -> PlayerId -> Maybe TeamId -> Rational -> Handler ()
+addPointsToPerformanceAndGame weekId playerId maybeTeamId points = do
+    player <- runDB $ get404 playerId
+    let pointsToAdd = if playerIsPlayable player then points else 0
+    Entity performanceId performance <- runDB $ getBy404 $ UniquePerformanceWeekIdPlayerId weekId playerId
+    now <- liftIO getCurrentTime
+    -- add points to the player's peformance for this week
+    runDB $ update performanceId [ PerformancePoints    +=. pointsToAdd
+                                 , PerformanceUpdatedAt  =. now
+                                 ]
+    case (maybeTeamId, performanceIsStarter performance) of
+        -- if the player is a starter on a team, add points to this team's game for this week
+        (Just teamId, True) -> runDB $ do
+            Entity gameId _ <- getBy404 $ UniqueGameWeekIdTeamId weekId teamId
+            update gameId [GamePoints +=. pointsToAdd, GameUpdatedAt =. now]
+        (_, _) -> return ()
+
+addToTeamPoints :: Entity Game -> Handler (Entity Team)
+addToTeamPoints (Entity _gameId game) = do
+    let teamId = gameTeamId game
+    now <- liftIO getCurrentTime
+    runDB $ update teamId [TeamPointsThisSeason +=. gamePoints game, TeamUpdatedAt =. now]
+    team <- runDB $ get404 teamId
+    return $ Entity teamId team
+
+determineWaiverOrder :: [Entity Team] -> Handler ()
+determineWaiverOrder teams = do
+    -- sort teams by points this season ascending and make that the waiver order
+    let sortedTeams = sortOn (teamPointsThisSeason . extractValue) teams
+        withWaiverOrder = zip [1..] sortedTeams
+    mapM_ updateWaiverOrder withWaiverOrder
+
+updateWaiverOrder :: (Int, Entity Team) -> Handler ()
+updateWaiverOrder (waiverOrder, Entity teamId _) = do
+    now <- liftIO getCurrentTime
+    runDB $ update teamId [TeamWaiverOrder =. waiverOrder, TeamUpdatedAt =. now]
+
+addToPlayerPoints :: Entity Performance -> Handler ()
+addToPlayerPoints (Entity _performanceId performance) = do
+    let (playerId, points) = (performancePlayerId performance, performancePoints performance)
+    now <- liftIO getCurrentTime
+    runDB $ update playerId [PlayerPointsThisSeason +=. points, PlayerUpdatedAt =. now]
+
+
+--------------
+-- Creators --
+--------------
+createPlay :: LeagueId -> WeekId -> Entity Event -> Handler Play
+createPlay leagueId weekId (Entity eventId event) = do
+    (points, pointsRec, Entity playerId player, mRecPlayer) <- calculatePointsAndPlayers leagueId event
+    now <- liftIO getCurrentTime
+    let play = Play { playLeagueId = leagueId
+                    , playWeekId   = weekId
+                    , playEventId  = eventId
+                    , playPlayerId = playerId
+                    , playTeamId   = playerTeamId player
+                    , playPoints   = points
+                    , playAction   = eventAction event
+                    , playReceivingPlayerId = extractKeyMaybe mRecPlayer
+                    , playReceivingTeamId   = join $ mapM playerTeamId $ extractValueMaybe mRecPlayer
+                    , playReceivingPoints   = pointsRec
+                    , playNote = eventNote event
+                    , playCreatedAt = now
+                    , playUpdatedAt = now
+                    }
+    _playId <- runDB $ insert play
+    return play
+
+calculatePointsAndPlayers :: LeagueId -> Event -> Handler (Rational, Rational, Entity Player, Maybe (Entity Player))
+calculatePointsAndPlayers leagueId event = do
+    let characterId = eventCharacterId event
+        receivingCharacterId = eventReceivingCharacterId event
+
+    character <- runDB $ get404 characterId
+    maybeReceivingCharacter <- runDB $ mapM get404 receivingCharacterId
+
+    Entity playerId player <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
+    maybeReceivingPlayer <- runDB $ mapM (getBy404 . UniquePlayerLeagueIdCharacterId leagueId) receivingCharacterId
+
+    Entity _ scoringSettings <- runDB $ getBy404 $ UniqueScoringSettingsLeagueIdAction leagueId $ eventAction event
+
+    let existingPoints = playerPointsThisSeason player + (toRational $ characterPointsLastSeason character)
+        lastSeasonReceiving = toRational $ fromMaybe 0 $ map characterPointsLastSeason maybeReceivingCharacter
+        thisSeasonReceiving = fromMaybe 0 $ map playerPointsThisSeason $ extractValueMaybe maybeReceivingPlayer
+        existingPointsReceiving = lastSeasonReceiving + thisSeasonReceiving
+        (points, pointsRec) = calculateWeightedPoints scoringSettings existingPoints existingPointsReceiving
+
+    return (points, pointsRec, (Entity playerId player), maybeReceivingPlayer)
+
+calculateWeightedPoints :: ScoringSettings -> Rational -> Rational -> (Rational, Rational)
+calculateWeightedPoints scoringSettings existingPoints existingPointsReceiving =
+    if scoringSettingsIsUsed scoringSettings then
+        let points    = toRational $ scoringSettingsPoints scoringSettings
+            weight    = (toRational $ scoringSettingsWeight scoringSettings) / 100
+            pointsRec = toRational $ scoringSettingsPointsReceiving scoringSettings
+            weightRec = (toRational $ scoringSettingsWeightReceiving scoringSettings) / 100
+            -- If existing points are negative, round up to zero. Don't kick any
+            -- characters while they're down.
+            exist     = max existingPoints 0
+            existRec  = max existingPointsReceiving 0
+        in  if isMultiCharacter $ scoringSettingsAction scoringSettings
+                -- multi-character actions
+                then if weightRec >= 0
+                    -- if receiving weight is positive, weight the existing points of the opposite player
+                    then (weight * existRec + points, weightRec * exist + pointsRec)
+                    -- if receiving weight is negative, weight the existing points of the receiving player only
+                    else (weight * existRec + points, weightRec * existRec + pointsRec)
+                -- single character actions weight the existing points of that player
+                else (weight * exist + points, 0)
+    else (0, 0)
 
