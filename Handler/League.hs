@@ -4,7 +4,7 @@ import Import
 import Handler.Common        (extractKeyMaybe, extractValue, extractValueMaybe)
 import Handler.League.Setup
 import Handler.League.Layout
-import Handler.League.Week   (createWeekData)
+import Handler.League.Week   (createWeekData_, createWeekData)
 
 import Data.Random.List
 import Data.Random.RVar
@@ -167,7 +167,7 @@ createLeague league = do
             episodes <- runDB $ selectList [ EpisodeSeriesId ==. seriesId
                                            , EpisodeStatus !=. YetToAir
                                            ] [Asc EpisodeId]
-            mapM_ (\e -> createWeekData e leagueId) episodes
+            mapM_ (\e -> createWeekData_ e leagueId) episodes
             mapM_ (\(Entity eid _) -> calculateLeagueScores eid leagueId) episodes
 
 createScoringSettingsRow :: Entity League -> Action -> ReaderT SqlBackend Handler ()
@@ -270,7 +270,8 @@ calculateScores episodeId = do
 calculateLeagueScores :: EpisodeId -> LeagueId -> Handler ()
 calculateLeagueScores episodeId leagueId = do
     -- check if any plays have already been created for this week
-    Entity weekId _ <- runDB $ getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
+    episode <- runDB $ get404 episodeId
+    weekId <- createWeekData (Entity episodeId episode) leagueId
     playsCount <- runDB $ count [PlayWeekId ==. weekId]
     -- if no plays exist for the week, create all the plays
     if playsCount > 0 then return () else do

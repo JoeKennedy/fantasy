@@ -5,12 +5,12 @@ import Import
 --------------
 -- Creators --
 --------------
-createWeekData :: Entity Episode -> LeagueId -> Handler ()
+createWeekData :: Entity Episode -> LeagueId -> Handler WeekId
 createWeekData (Entity episodeId episode) leagueId = do
     -- create week if week not already created for episode
     alreadyCreatedWeek <- runDB $ getBy $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
     case alreadyCreatedWeek of
-        Just _ -> return ()
+        Just (Entity weekId _) -> return weekId
         Nothing -> do
             weekId <- createWeek leagueId episodeId $ episodeNumber episode
             -- then, for the week:
@@ -20,6 +20,12 @@ createWeekData (Entity episodeId episode) leagueId = do
             -- create performance for each player in league
             players <- runDB $ selectList [PlayerLeagueId ==. leagueId] []
             mapM_ (createPerformance leagueId weekId) players
+            return weekId
+
+createWeekData_ :: Entity Episode -> LeagueId -> Handler ()
+createWeekData_ episodeEntity leagueId = do
+    _ <- createWeekData episodeEntity leagueId
+    return ()
 
 createWeek :: LeagueId -> EpisodeId -> Int -> Handler WeekId
 createWeek leagueId episodeId episodeNo = do
@@ -46,12 +52,17 @@ createGame leagueId weekId teamId = do
 createPerformance :: LeagueId -> WeekId -> Entity Player -> Handler ()
 createPerformance leagueId weekId (Entity playerId player) = do
     now <- liftIO getCurrentTime
-    runDB $ insert_ $ Performance { performanceLeagueId  = leagueId
-                                  , performanceWeekId    = weekId
-                                  , performancePlayerId  = playerId
-                                  , performanceTeamId    = playerTeamId player
-                                  , performanceIsStarter = playerIsStarter player
-                                  , performancePoints    = 0
-                                  , performanceCreatedAt = now
-                                  , performanceUpdatedAt = now
-                                  }
+    maybePerformance <- runDB $ getBy $ UniquePerformanceWeekIdPlayerId weekId playerId
+    case maybePerformance of
+        Just _ -> return ()
+        Nothing -> runDB $ insert_ $ Performance
+            { performanceLeagueId  = leagueId
+            , performanceWeekId    = weekId
+            , performancePlayerId  = playerId
+            , performanceTeamId    = playerTeamId player
+            , performanceIsStarter = playerIsStarter player
+            , performancePoints    = 0
+            , performanceCreatedAt = now
+            , performanceUpdatedAt = now
+            }
+

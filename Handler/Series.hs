@@ -3,7 +3,7 @@ module Handler.Series where
 import Import
 import Handler.Common (isAdmin, embeddedForm, groupByFirst)
 import Handler.League         (calculateScores)
-import Handler.League.Week    (createWeekData)
+import Handler.League.Week    (createWeekData_)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -260,7 +260,7 @@ airEpisode = do
         Just (Entity episodeId episode) -> do
             runDB $ update episodeId [EpisodeStatus =. Airing]
             leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
-            mapM_ (createWeekData $ Entity episodeId episode) leagueIds
+            mapM_ (createWeekData_ $ Entity episodeId episode) leagueIds
 
 
 -------------
