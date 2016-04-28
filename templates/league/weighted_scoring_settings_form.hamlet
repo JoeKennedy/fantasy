@@ -1,7 +1,7 @@
 #{extra}
 <div .row>
     <div .col-md-5>
-        <div #weighted_panel .panel-group role="tablist" arai-multiselectable="true">
+        <div #weighted_panel .panel-group role="tablist" aria-multiselectable="true">
             <div .panel .panel-primary>
                 <div #what_is_weighted .panel-heading role="tab">
                     <h1 .panel-title>
