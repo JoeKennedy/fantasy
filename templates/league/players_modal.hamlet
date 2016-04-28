@@ -1,4 +1,4 @@
-<div .modal .fade id="#{modalId}" tabindex="-1" role="dialog" aria-labelledby="##{modalLabelId}">
+<div .modal .players-modal .fade id="#{modalId}" tabindex="-1" role="dialog" aria-labelledby="##{modalLabelId}">
     <div .modal-dialog .modal-lg role="document">
         <div .modal-content>
             <div .modal-header>

@@ -3,7 +3,7 @@
         <div .panel-heading>
             <div .panel-title>#{subTableHeader}
 
-        <table data-toggle="table" data-classes="table table-hover table-no-bordered" data-striped="true">
+        <table data-toggle="table" data-classes="table table-hover table-no-bordered players-table" data-striped="true">
             <thead>
                 <tr>
                     $if hasRadioButton playersTableType

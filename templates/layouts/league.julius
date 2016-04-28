@@ -32,9 +32,9 @@ function playersModal(transactionType, url, characterName) {
 
     // unselect player radio buttons by default
     // enable submit transaction button and set full url when player is chosen
-    $(modal).find('input.player-radio').off('change').prop('checked', false).change(function() {
+    $(modal).find('input.player-radio').prop('checked', false).off('change').change(function() {
         var full_url = url + '/' + $(this).val();
-        $(button).removeClass('disabled').click(function() {
+        $(button).removeClass('disabled').off('click').click(function() {
             $(this).addClass('disabled'); // prevent duplicate clicks
             submitTransaction(full_url);
         });
@@ -58,10 +58,15 @@ function leagueLayoutReady(jQuery) {
     }
 
     if (!$('.trade-actions').hasClass('hidden')) {
-      $('.trade-actions button').click(performTradeAction);
+        $('.trade-actions button').click(performTradeAction);
     }
 
-    $('.player-action button').click(performPlayerAction);
+    // Need to re-add click event for player action button when table body rendered
+    $('.player-action-button').click(performPlayerAction);
+    $('.players-table').on('post-body.bs.table', function(event, data) {
+        $('.players-modal').find('input.player-radio').prop('checked', false);
+        $(this).find('.player-action-button').click(performPlayerAction);
+    });
 }
 
 $(document).ready(leagueLayoutReady)
