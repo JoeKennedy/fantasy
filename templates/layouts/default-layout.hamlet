@@ -47,9 +47,11 @@
       <div .nav .navbar-nav .navbar-right>
         <a .btn .btn-primary .navbar-btn href="@{SetupLeagueR SetupNewLeagueR}">Create A League!
 
-      <ul .nav .navbar-nav .navbar-right>
+      <ul .nav .navbar-nav .navbar-right .visible-lg>
         <li>
           <a href=@{FAQR}>How To Play
+        <li>
+          <a href="https://smigoversensays.com/game-of-thrones-fantasy/">Blog
 
 <div .container>
   $maybe msg <- mmsg
@@ -74,3 +76,14 @@
               #{title'}
 
   ^{widget}
+
+<nav #footer_nav .navbar .navbar-inverse .navbar-static-bottom>
+  <div .container>
+    <div .nav .navbar-nav .navbar-left>
+      <p .navbar-text>
+        #{appCopyright $ appSettings master}
+    <ul .nav .navbar-nav .navbar-right>
+      <li>
+        <a href=@{FAQR}>How To Play
+      <li>
+        <a href="https://smigoversensays.com/game-of-thrones-fantasy/">Blog
