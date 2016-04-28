@@ -8,7 +8,7 @@ function performPlayerAction(event) {
             break;
         case 'claim':
         case 'trade':
-            playersModal(pieces[0], url, $(this).attr('character-name'));
+            playersModal(pieces[0], url, $(this).attr('data-character-name'));
             break;
     }
 }
