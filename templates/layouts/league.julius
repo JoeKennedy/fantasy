@@ -35,6 +35,7 @@ function playersModal(transactionType, url, characterName) {
     $(modal).find('input.player-radio').off('change').prop('checked', false).change(function() {
         var full_url = url + '/' + $(this).val();
         $(button).removeClass('disabled').click(function() {
+            $(this).addClass('disabled'); // prevent duplicate clicks
             submitTransaction(full_url);
         });
     });
