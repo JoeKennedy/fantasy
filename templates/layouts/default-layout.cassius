@@ -5,19 +5,6 @@ html
 body
   margin-bottom: 51px
 
-.navbar-static-bottom
-    position: absolute
-    bottom: 0
-    /* height: 50px */
-    border-radius: 0
-    z-index: 1000
-    border-width: 1px 0 0
-    width: 100%
-    margin: 20px 0 0
-
-.navbar-static-bottom > .container > .navbar-text
-    margin-left: 0px
-
 @media (min-width: 979px)
     ul.nav li.dropdown.dropdown-hover:hover > ul.dropdown-menu
         display: block
@@ -48,3 +35,31 @@ table.table > tbody > tr.vertical-align-middle > td
 
 .fixed-table-container
     border: 0px !important
+
+.navbar-static-bottom
+    position: absolute
+    bottom: 0
+    /* height: 50px */
+    border-radius: 0
+    z-index: 1000
+    border-width: 1px 0 0
+    width: 100%
+    margin: 20px 0 0
+
+.navbar-static-bottom > .container > .navbar-left > .navbar-text
+    margin-left: 0px
+
+.navbar-static-bottom .navbar-nav > li, .navbar-static-bottom .navbar-nav
+  float: left !important
+
+.navbar-static-bottom .navbar-nav
+  margin: 0px
+
+.navbar-static-bottom .navbar-nav.navbar-right:last-child
+  margin-right: -15px !important
+
+.navbar-static-bottom .navbar-nav > li > a
+  padding: 15px
+
+.navbar-static-bottom .navbar-right
+  float: right!important
