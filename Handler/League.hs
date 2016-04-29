@@ -59,7 +59,7 @@ getLeagueR leagueId = do
     league <- runDB $ get404 leagueId
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
     leagueLayout leagueId "League" $ do
-        let maybeCreatorTeam = listToMaybe teams
+        let maybeCreatorTeam = find (\(Entity _ t) -> teamOwnerId t == Just (leagueCreatedBy league)) teams
         $(widgetFile "league/league")
 
 postLeagueCancelR :: LeagueId -> Handler ()
