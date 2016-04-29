@@ -160,7 +160,7 @@ createLeague league = do
         mapM_ (createPlayer leagueEntity) characters
 
     -- create week and related data for any already aired episodes this season
-    maybeSeries <- runDB $ selectFirst [] [Asc SeriesNumber]
+    maybeSeries <- runDB $ selectFirst [] [Desc SeriesNumber]
     case maybeSeries of
         Nothing -> return ()
         Just (Entity seriesId _) -> do
