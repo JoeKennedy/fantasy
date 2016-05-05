@@ -36,7 +36,22 @@
                         ^{transactionRequestsPanel waiverClaims Claim teamId}
 
             <div .col-xs-12>
-                ^{playersTable players (Players numberOfStarters rosterSize)}
+                <ul .nav .nav-pills .league-nav-pills role="tablist">
+                    <li .active role="presentation">
+                        <a href="#season" aria-controls="season" role="tab" data-toggle="pill">
+                            Season
+                    $forall Entity _ week <- weeks
+                        <li role="presentation">
+                            $with weekNo <- weekNumber week
+                                <a href="#week-#{weekNo}" aria-controls="week-#{weekNo}" role="tab" data-toggle="pill">
+                                    Week #{weekNumber week}
+
+                <div .tab-content>
+                    <div .tab-pane .active role="tabpanel" id="season">
+                        ^{playersTable players (Players numberOfStarters rosterSize)}
+                    $forall ((Entity _ game, Entity _ week), performances) <- gamesAndPerformances
+                        <div .tab-pane role="tabpanel" id="week-#{weekNumber week}">
+                            ^{teamPerformancesTable performances (gamePoints game) numberOfStarters rosterSize}
 
     <div .col-md-3 .col-sm-12>
         <div .panel .panel-default>

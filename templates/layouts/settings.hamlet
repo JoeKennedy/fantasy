@@ -3,7 +3,7 @@
         #{leagueName league}
         <small>Settings
 
-<ul #league_settings_nav .nav .nav-pills>
+<ul #league_settings_nav .nav .nav-pills .league-nav-pills>
     <li role="presentation">
         $maybe Entity teamId _ <- maybeTeam
             <a href="@{LeagueTeamSettingsR leagueId teamId}">My House

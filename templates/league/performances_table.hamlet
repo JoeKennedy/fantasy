@@ -1,0 +1,30 @@
+<div .panel .panel-default>
+    $forall (header, fullPerformances, extraSlots, maybeTotal) <- splitPerformances
+        <div .panel-heading>
+            <div .panel-title>#{header}
+
+        <table .table .table-hover .table-striped>
+            <thead>
+                <tr>
+                    <th>Slot
+                    <th>Name
+                    <th .text-right>Points
+
+            <tbody>
+                $forall (slot, Entity _ pe, _, Entity plid _, _, Entity _ c) <- fullPerformances
+                    <tr>
+                        <td .col-xs-1>#{slot}
+                        <td .col-xs-10>
+                            <a href="@{LeaguePlayerR (performanceLeagueId pe) plid}">
+                                #{characterName c}
+                        <td .col-xs-1 .text-right>
+                            #{displayRational $ performancePoints pe}
+                $forall slot <- extraSlots
+                    <tr>
+                        <td colspan="#{colspan}">#{slot}
+
+            $maybe total <- maybeTotal
+                <tfoot>
+                    <tr>
+                        <td .lead .text-right colspan="#{colspan}">
+                            Total: #{displayRational total}

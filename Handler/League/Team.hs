@@ -7,9 +7,10 @@ import Handler.League.Layout
 import Handler.League.Player      (getTeamPlayers, isLeagueMember,
                                    maybeAuthTeamId, playersModal,
                                    playersTable, playersWithButtons)
+import Handler.League.Setup
 import Handler.League.Transaction (getRequestedTransactions, getSuccessfulTransactions,
                                    transactionRequestsPanel, transactionsTable)
-import Handler.League.Setup
+import Handler.League.Week        (FullPerformance, getGamesForTeam, getPerformancesForGame)
 
 import Data.List  ((!!))
 import Text.Blaze (toMarkup)
@@ -127,7 +128,11 @@ getLeagueTeamR leagueId teamId = do
     waiverClaims <- getRequestedTransactions leagueId (Just teamId) Claim
     currentTeamPlayers <- getTeamPlayers maybeUserTeamId
     myPlayers <- playersWithButtons leagueEntity currentTeamPlayers
-    let tab = if isUserTeamOwner maybeUserId team then "My House" else "Houses"
+    weeks <- runDB $ selectList [WeekLeagueId ==. leagueId] [Asc WeekNumber]
+    games <- getGamesForTeam teamId
+    performances <- mapM (getPerformancesForGame . fst) games
+    let gamesAndPerformances = zip games performances
+        tab = if isUserTeamOwner maybeUserId team then "My House" else "Houses"
         numberOfStarters = generalSettingsNumberOfStarters generalSettings
         rosterSize = generalSettingsRosterSize generalSettings
     leagueLayout leagueId tab $ do
@@ -173,6 +178,22 @@ postLeagueTeamJoinR leagueId teamId _verificationKey = do
     redirect $ LeagueTeamR leagueId teamId
 
 -------------
+-- Widgets --
+-------------
+teamPerformancesTable :: [FullPerformance] -> Rational -> Int -> Int -> Widget
+teamPerformancesTable performances totalPoints numberOfStarters rosterSize =
+    let colspan = 3 :: Int
+        (starters, bench) = partition (\(Entity _ p, _, _, _, _) -> performanceIsStarter p) performances
+        fullStarters = zipWith (\n (a,b,c,d,e) -> (show n ,a,b,c,d,e)) ([1..] :: [Int]) starters
+        fullBench    = zipWith (\_ (a,b,c,d,e) -> ("Bench",a,b,c,d,e)) ([1..] :: [Int]) bench
+        extraStarterSlots = map show            [length fullStarters + 1 .. numberOfStarters]
+        extraBenchSlots   = map (\_ -> "Bench") [length fullBench + 1 .. rosterSize - numberOfStarters]
+        splitPerformances = [ (("Starters" :: Text), fullStarters, extraStarterSlots, Just totalPoints)
+                            , ("Bench", fullBench, extraBenchSlots, Nothing)
+                            ]
+    in  $(widgetFile "league/performances_table")
+
+-------------
 -- Helpers --
 -------------
 isUserTeamOwner :: Maybe UserId -> Team -> Bool
@@ -213,4 +234,3 @@ getTeamsForSettings _ (Just teamId) = do
 teamSettingsAction :: LeagueId -> Maybe TeamId -> Route App
 teamSettingsAction leagueId (Just teamId) = LeagueTeamSettingsR leagueId teamId
 teamSettingsAction leagueId Nothing = LeagueSettingsR leagueId LeagueTeamsSettingsR
-

@@ -1,0 +1,25 @@
+<div .row>
+    <div .col-xs-12>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5 .text-center>Standings
+            <table .table .table-hover .table-striped>
+                <thead>
+                    <tr>
+                        <th>Season Rank
+                        <th>Name
+                        <th .hidden-xs>Abbreviation
+                        <th .hidden-sm .hidden-xs>Owner
+                        <th .text-right>Points
+                <tbody>
+                    $forall (rank, Entity teamId team) <- teamsWithRank
+                        <tr>
+                            <td>#{rank}
+                            <td>
+                                <a href="@{LeagueTeamR leagueId teamId}">
+                                    House #{teamName team}
+                            <td .hidden-xs>
+                                <a href="@{LeagueTeamR leagueId teamId}">
+                                    #{teamAbbreviation team}
+                            <td .hidden-sm .hidden-xs>#{teamOwnerName team}
+                            <td .text-right>#{displayRational $ teamPointsThisSeason team}

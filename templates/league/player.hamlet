@@ -5,7 +5,7 @@
             #{characterName character}
 
 <div .row>
-    <div .col-sm-6>
+    <div .col-sm-4>
         <ul .list-group>
             <li .list-group-item>
                 <h6 .list-group-item-heading>House
@@ -21,9 +21,6 @@
                 <p .list-group-item-text>
                     #{toPathPiece $ characterStatus character}
             <li .list-group-item>
-                <h6 .list-group-item-heading>Bio
-                <p .list-group-item-text>#{characterBio character}
-            <li .list-group-item>
                 <h6 .list-group-item-heading>Season 6 Points
                 <p .list-group-item-text>
                     #{displayRational $ playerPointsThisSeason player}
@@ -31,9 +28,10 @@
                 <h6 .list-group-item-heading>Season 5 Points
                 <p .list-group-item-text>
                     #{characterPointsLastSeason character}
+            <li .list-group-item>
+                <h6 .list-group-item-heading>Bio
+                <p .list-group-item-text>#{characterBio character}
 
-
-    <div .col-sm-6>
         <div .panel .panel-primary>
             <div .panel-heading>
                 <h1 .panel-title>
@@ -44,3 +42,67 @@
                         \ for #{characterName character}
         $forall blurb <- blurbs
             ^{blurbPanel maybeUser characterId blurb}
+
+    <div .col-sm-8>
+        $forall ((Entity _ performance, Entity _ week, maybeTeam), plays) <- performancesAndPlays
+            <div .panel .panel-default>
+                <div .panel-heading>
+                    <h5>
+                        <a href="@{LeagueResultsWeekR leagueId $ weekNumber week}">
+                            Week #{weekNumber week}
+                        <span .pull-right>
+                            $maybe Entity teamId team <- maybeTeam
+                                <a href="@{LeagueTeamR leagueId teamId}">
+                                    House #{teamName team}
+                            $nothing
+                                <a href="@{LeaguePlayersR leagueId}">
+                                    Free Agent
+
+                <table .table .table-hover .table-striped .table-condensed>
+                    $if not (null plays)
+                        <thead>
+                            <tr>
+                                <th>Event
+                                <th .hidden-xs .hidden-sm>Details
+                                <th .visible-xs .visible-sm>
+                                <th .text-right .col-xs-1>Points
+
+                        <tbody>
+                            $forall (Entity _ p, _, Entity _ e, Entity prid pr, Entity _ c, _, mrp, mrc, _) <- plays
+                                <tr>
+                                    <td>
+                                        $if playPlayerId p == playerId
+                                            $with (actionBefore, actionAfter) <- actionToSplitCaps (playAction p)
+                                                #{actionBefore} #
+                                                $maybe Entity rpid rp <- mrp
+                                                    $maybe Entity _ rc <- mrc
+                                                        $if playerIsPlayable rp
+                                                            <a href="@{LeaguePlayerR leagueId rpid}">
+                                                                #{characterName rc}
+                                                        $else
+                                                            #{characterName rc}
+                                                \ #{actionAfter}
+
+                                        $else
+                                            #{reverseActionCaps $ playAction p} #
+                                            $if playerIsPlayable pr
+                                                <a href="@{LeaguePlayerR leagueId prid}">
+                                                    #{characterName c}
+                                            $else
+                                                #{characterName c}
+
+                                    <td>
+                                        $maybe note <- eventNote e
+                                            <div .hidden-xs .hidden-sm>#{note}
+                                            <div .visible-xs .visible-sm .text-right>
+                                                <a tabindex="0" role="button" data-container="body" data-toggle="popover" data-trigger="focus" data-placement="left" data-content="#{note}">
+                                                    <i .fa .fa-lg .fa-info-circle>
+
+                                    <td .text-right .col-xs-1>
+                                        #{displayRational $ playPoints p}
+
+                    <tfoot>
+                        <tr>
+                            <td .text-right .lead colspan="3">
+                                Total:
+                                #{displayRational $ performancePoints performance}

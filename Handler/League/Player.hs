@@ -4,6 +4,7 @@ import Import
 import Handler.Common             (isAdmin, extractValue, groupByThirdOfSix)
 import Handler.League.Layout
 import Handler.League.Transaction
+import Handler.League.Week        (getPerformancesForPlayer, getPlaysForPerformance)
 
 import           Data.Maybe         (fromJust)
 import qualified Database.Esqueleto as E
@@ -50,6 +51,9 @@ getLeaguePlayerR leagueId playerId = do
     let characterId = playerCharacterId player
     character <- runDB $ get404 characterId
     blurbs <- runDB $ selectList [BlurbCharacterId ==. characterId] [Desc BlurbId]
+    performances <- getPerformancesForPlayer playerId
+    playsByWeek <- mapM (\(p, _, _) -> getPlaysForPerformance p) performances
+    let performancesAndPlays = zip performances playsByWeek
     maybeTeam <- case playerTeamId player of
         Nothing     -> return Nothing
         Just teamId -> do

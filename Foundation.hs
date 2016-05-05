@@ -141,6 +141,8 @@ instance Yesod App where
     isAuthorized (LeagueTeamJoinR _ tid vkey)  False = requireCorrectVerificationKey tid vkey
     isAuthorized (LeagueTeamSettingsR _ teamId)    _ = requireTeamOwner teamId
 
+    isAuthorized (LeagueResultsR leagueId)         _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeagueResultsWeekR lid weekNo)   _ = requireWeekExists lid weekNo
     isAuthorized (LeaguePlayersR leagueId)         _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeaguePlayerR leagueId playerId) _ = requirePlayable leagueId playerId
     isAuthorized (LeaguePlayerStartR _ playerId)   _ = requirePlayerOwner playerId
@@ -224,6 +226,12 @@ requirePlayable leagueId playerId = do
     if playerIsPlayable player
         then requirePublicOrLeagueMember leagueId
         else return $ Unauthorized "Player is not playable"
+
+requireWeekExists :: LeagueId -> Int -> Handler AuthResult
+requireWeekExists leagueId weekNo = do
+    maybeWeek <- runDB $ getBy $ UniqueWeekLeagueIdWeekNumber leagueId weekNo
+    case maybeWeek of Just _  -> requirePublicOrLeagueMember leagueId
+                      Nothing -> return $ Unauthorized "Week does not exist"
 
 requireTradeAcceptable :: TransactionId -> Handler AuthResult
 requireTradeAcceptable transactionId = do
@@ -367,6 +375,10 @@ instance YesodBreadcrumbs App where
         return ("House " ++ teamName team, Just $ LeagueTeamsR leagueId)
     breadcrumb (LeagueTeamSettingsR leagueId teamId) = return ("Settings", Just $ LeagueTeamR leagueId teamId)
     breadcrumb (LeagueTeamJoinR leagueId teamId _)   = return ("Join", Just $ LeagueTeamR leagueId teamId)
+
+    -- League week breadcrumbs
+    breadcrumb (LeagueResultsR leagueId) = return ("Results", Just $ LeagueR leagueId)
+    breadcrumb (LeagueResultsWeekR leagueId weekNo) = return ("Week " ++ pack (show weekNo), Just $ LeagueResultsR leagueId)
 
     -- League settings breadcrumbs
     breadcrumb (LeagueSettingsR leagueId LeagueEditSettingsR)    = return ("League Settings", Just $ LeagueR leagueId)

@@ -52,11 +52,11 @@ import Handler.League.Player
 import Handler.League.Scoring
 -- The below currently have no routes in them
 -- import Handler.League.Setup
--- import Handler.League.Week
 import Handler.League.Team
 import Handler.League.Transaction
 import Handler.Series
 import Handler.Species
+import Handler.League.Week
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the

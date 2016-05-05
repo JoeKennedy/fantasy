@@ -36,6 +36,9 @@ table.table > tbody > tr.vertical-align-middle > td
 .fixed-table-container
     border: 0px !important
 
+.league-nav-pills
+    margin-bottom: 20px
+
 .navbar-static-bottom
     position: absolute
     bottom: 0

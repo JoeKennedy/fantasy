@@ -44,6 +44,9 @@
 /leagues/#LeagueId/players/#PlayerId/claim/#PlayerId LeaguePlayerClaimR POST
 /leagues/#LeagueId/players/#PlayerId/trade/#PlayerId LeaguePlayerTradeR POST
 
+/leagues/#LeagueId/results      LeagueResultsR     GET
+/leagues/#LeagueId/results/#Int LeagueResultsWeekR GET
+
 /leagues/#LeagueId/draft/#Int             LeagueDraftR        GET POST
 /leagues/#LeagueId/transactions           LeagueTransactionsR GET
 /leagues/#LeagueId/accept/#TransactionId  LeagueAcceptTradeR  POST

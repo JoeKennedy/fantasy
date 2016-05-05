@@ -1,0 +1,6 @@
+function leagueResultsLayoutReady(jQuery) {
+    var pills = $('#league_results_nav').find('li a')
+    pills.filter(function() { return $(this).text().trim() === #{toJSON activePill} }).parent().addClass('active')
+}
+
+$(document).ready(leagueResultsLayoutReady)

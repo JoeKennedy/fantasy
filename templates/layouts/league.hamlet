@@ -17,8 +17,8 @@
             <a .tab-name href="@{LeagueTeamR leagueId teamId}">My House
         <li>
           <a .tab-name href="@{LeaguePlayersR leagueId}">Characters
-        <!-- <li> -->
-        <!--   <a .tab-name href="#">Standings -->
+        <li>
+          <a .tab-name href="@{LeagueResultsR leagueId}">Results
         <!-- <li> -->
         <!--   <a .tab-name href="#">Scoreboard -->
         <li>
