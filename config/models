@@ -230,6 +230,7 @@ Performance
     teamId TeamId Maybe
     isStarter Bool default=false
     points Rational
+    cumulativePoints Rational default=0
     createdAt UTCTime
     updatedAt UTCTime
     UniquePerformanceWeekIdPlayerId weekId playerId
@@ -242,10 +243,14 @@ Play
     playerId PlayerId
     teamId TeamId Maybe
     points Rational
+    actionPoints Rational default=0
+    weightPoints Rational default=0
     action Action
     receivingPlayerId PlayerId Maybe
     receivingTeamId TeamId Maybe
     receivingPoints Rational
+    receivingActionPoints Rational default=0
+    receivingWeightPoints Rational default=0
     note Text Maybe
     createdAt UTCTime
     updatedAt UTCTime

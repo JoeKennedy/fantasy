@@ -201,6 +201,9 @@ createPerformance :: LeagueId -> WeekId -> Entity Player -> Handler ()
 createPerformance leagueId weekId (Entity playerId player) = do
     now <- liftIO getCurrentTime
     maybePerformance <- runDB $ getBy $ UniquePerformanceWeekIdPlayerId weekId playerId
+    character <- runDB $ get404 $ playerCharacterId player
+    let pointsThisSeason = playerPointsThisSeason player
+        pointsLastSeason = toRational $ characterPointsLastSeason character
     case maybePerformance of
         Just _ -> return ()
         Nothing -> runDB $ insert_ $ Performance
@@ -210,6 +213,7 @@ createPerformance leagueId weekId (Entity playerId player) = do
             , performanceTeamId    = playerTeamId player
             , performanceIsStarter = playerIsStarter player
             , performancePoints    = 0
+            , performanceCumulativePoints = pointsThisSeason + pointsLastSeason
             , performanceCreatedAt = now
             , performanceUpdatedAt = now
             }
