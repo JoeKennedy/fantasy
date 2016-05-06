@@ -11,7 +11,6 @@ import Data.Random.RVar
 import Data.Random.Source.DevRandom
 import Network.Mail.Mime
 import System.Random                (newStdGen)
-import Yesod.Core.Types             (loggerPutStr)
 
 ----------
 -- Form --
@@ -422,71 +421,4 @@ calculatePoints scoringSettings cumulativePoints cumulativePointsReceiving =
                 -- single character actions weight the cumulative points of that player
                 else (points, weight * cumul, 0, 0)
     else (0, 0, 0, 0)
-
--------------------------
--- Temporary Functions --
--------------------------
--- TODO: Remove these! --
--------------------------
-calculateNewPointsColumnsForExistingLeagues :: Handler ()
-calculateNewPointsColumnsForExistingLeagues = do
-    leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
-    mapM_ calculateNewPointsColumnsForLeague leagueIds
-
-calculateNewPointsColumnsForLeague :: LeagueId -> Handler ()
-calculateNewPointsColumnsForLeague leagueId = do
-    alreadyCalculated <- runDB $ count [ PerformanceLeagueId ==. leagueId
-                                       , PerformanceCumulativePoints !=. 0
-                                       ]
-    if alreadyCalculated > 0 then return () else do
-        weeks <- runDB $ selectList [WeekLeagueId ==. leagueId] [Asc WeekNumber]
-        mapM_ (calculateNewPointsColumnsForWeek leagueId) weeks
-
-calculateNewPointsColumnsForWeek :: LeagueId -> Entity Week -> Handler ()
-calculateNewPointsColumnsForWeek leagueId (Entity weekId week) = do
-    -- Update the new column in performance table
-    performances <- runDB $ selectList [PerformanceWeekId ==. weekId] [Asc PerformanceId]
-    mapM_ (calculatePerformanceCumulativePoints leagueId week) performances
-    -- Update the new columns in the play table
-    plays <- runDB $ selectList [PlayWeekId ==. weekId] [Asc PlayId]
-    mapM_ (calculateNewPlayPointsColumns leagueId weekId) plays
-
-calculatePerformanceCumulativePoints :: LeagueId -> Week -> Entity Performance -> Handler ()
-calculatePerformanceCumulativePoints leagueId week (Entity performanceId performance) = do
-    let playerId = performancePlayerId performance
-    cumulativePoints <- runDB $ if weekNumber week == 1 
-        then do
-            player    <- get404 playerId 
-            character <- get404 $ playerCharacterId player
-            -- If 1st week, cumulative points will be equal to points last season
-            return $ toRational $ characterPointsLastSeason character
-        else do
-            Entity lastWeekId _ <- getBy404 $ UniqueWeekLeagueIdWeekNumber leagueId $ weekNumber week - 1
-            Entity _ lastPerformance <- getBy404 $ UniquePerformanceWeekIdPlayerId lastWeekId playerId
-            -- Add points last week to the cumulative points for cumulative
-            -- points this week
-            return $ performancePoints lastPerformance + performanceCumulativePoints lastPerformance
-    now <- liftIO getCurrentTime
-    runDB $ update performanceId [PerformanceCumulativePoints =. cumulativePoints, PerformanceUpdatedAt =. now]
-
-calculateNewPlayPointsColumns :: LeagueId -> WeekId -> Entity Play -> Handler ()
-calculateNewPlayPointsColumns leagueId weekId (Entity playId play) = do
-    Entity _ scoringSettings <- runDB $ getBy404 $ UniqueScoringSettingsLeagueIdAction leagueId $ playAction play
-    Entity _ performance <- runDB $ getBy404 $ UniquePerformanceWeekIdPlayerId weekId $ playPlayerId play
-    maybeReceivingPerformance <- runDB $ mapM (getBy404 . UniquePerformanceWeekIdPlayerId weekId) $ playReceivingPlayerId play
-    let actionPoints    = toRational $ scoringSettingsPoints scoringSettings
-        actionPointsRec = toRational $ scoringSettingsPointsReceiving scoringSettings
-        weightPoints    = playPoints play - actionPoints
-        weightPointsRec = playReceivingPoints play - actionPointsRec
-        weight    = performanceCumulativePoints performance * toRational (scoringSettingsWeight scoringSettings) / 100 
-        cumulRec  = fromMaybe 0 $ map (performanceCumulativePoints . extractValue) maybeReceivingPerformance
-        weightRec = cumulRec * toRational (scoringSettingsWeightReceiving scoringSettings) / 100
-    master <- getYesod
-    logger <- liftIO $ makeLogger master
-    if weightPoints    /= weight    then return () else liftIO $ loggerPutStr logger "Weight points are different!"
-    if weightPointsRec /= weightRec then return () else liftIO $ loggerPutStr logger "Receiving weight points are different!"
-    now <- liftIO getCurrentTime
-    runDB $ update playId [ PlayActionPoints =. actionPoints, PlayWeightPoints =. weightPoints, PlayUpdatedAt =. now
-                          , PlayReceivingActionPoints =. actionPointsRec, PlayReceivingWeightPoints =. weightPointsRec
-                          ]
 
