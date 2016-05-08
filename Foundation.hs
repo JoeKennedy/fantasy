@@ -135,6 +135,7 @@ instance Yesod App where
     isAuthorized (LeagueTransactionsR leagueId)    _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueAcceptTradeR _ tid)        _ = requireTradeAcceptable tid
     isAuthorized (LeagueDeclineTradeR _ tid)       _ = requireTradeDeclinable tid
+    isAuthorized (LeagueCancelTradeR _ tid)        _ = requireTradeCancelable tid
     isAuthorized (LeagueTeamsR leagueId)           _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueTeamR leagueId _)          _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueTeamJoinR _ tid verKey) True = requireCorrectVerKeyAndLoggedIn tid verKey
@@ -247,6 +248,13 @@ requireTradeAcceptable transactionId = do
 
 requireTradeDeclinable :: TransactionId -> Handler AuthResult
 requireTradeDeclinable = requireTradeAcceptable
+
+requireTradeCancelable :: TransactionId -> Handler AuthResult
+requireTradeCancelable transactionId = do
+    transaction <- runDB $ get404 transactionId
+    if transactionStatus transaction == Requested && transactionType transaction == Trade
+        then requireTeamOwner $ transactionTeamId transaction
+        else return $ Unauthorized "Must be a trade transaction with status of requested"
 
 requireCorrectVerificationKey :: TeamId -> Text -> Handler AuthResult
 requireCorrectVerificationKey teamId verificationKey = do
@@ -403,6 +411,7 @@ instance YesodBreadcrumbs App where
     breadcrumb SeriesEpisodeEventsR{} = return ("", Nothing)
     breadcrumb SeriesEpisodeScoreR{}  = return ("", Nothing)
     breadcrumb LetsEncryptR{}         = return ("", Nothing)
+    breadcrumb LeagueCancelTradeR{}   = return ("", Nothing)
 
 -- How to run database actions.
 instance YesodPersist App where

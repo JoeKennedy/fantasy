@@ -51,6 +51,7 @@
 /leagues/#LeagueId/transactions           LeagueTransactionsR GET
 /leagues/#LeagueId/accept/#TransactionId  LeagueAcceptTradeR  POST
 /leagues/#LeagueId/decline/#TransactionId LeagueDeclineTradeR POST
+/leagues/#LeagueId/cancel/#TransactionId  LeagueCancelTradeR  POST
 
 /leagues/#LeagueId/settings LeagueSettingsR:
     /league  LeagueEditSettingsR    GET POST

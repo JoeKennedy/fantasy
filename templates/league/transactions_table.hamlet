@@ -35,11 +35,15 @@ $else
                                         $with teamId <- fromMaybe tid maybeCurrentTeamId
                                             <li>^{transactionPlayerWidget transaction fullTP teamId usePastTense}
 
-                            $if transactionOtherTeamId transaction == maybeCurrentTeamId
-                                $if isJust maybeCurrentTeamId && not usePastTense
-                                    $if transactionType transaction == Trade
-                                        $with leagueId <- transactionLeagueId transaction
+                            $if isJust maybeCurrentTeamId && not usePastTense
+                                $if transactionType transaction == Trade
+                                    $with leagueId <- transactionLeagueId transaction
+                                        $if transactionOtherTeamId transaction == maybeCurrentTeamId
                                             <div .trade-actions .hidden>
                                                 ^{tradeButton "accept" leagueId transactionId}
                                                 ^{tradeButton "decline" leagueId transactionId}
+
+                                        $elseif maybeCurrentTeamId == Just (transactionTeamId transaction)
+                                            <div .trade-actions .hidden>
+                                                ^{tradeButton "cancel" leagueId transactionId}
 

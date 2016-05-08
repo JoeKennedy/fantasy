@@ -105,6 +105,11 @@ postLeagueDeclineTradeR _ transactionId = do
     failTransaction_ transactionId "Receiving team owner declined trade"
     setMessage $ toMarkup ("Trade declined!" :: Text)
 
+postLeagueCancelTradeR :: LeagueId -> TransactionId -> Handler ()
+postLeagueCancelTradeR _ transactionId = do
+    failTransaction_ transactionId "Proposing team owner canceled trade"
+    setMessage $ toMarkup ("Trade canceled!" :: Text)
+
 -------------
 -- Widgets --
 -------------
