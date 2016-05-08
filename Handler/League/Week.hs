@@ -204,6 +204,10 @@ createPerformance leagueId weekId (Entity playerId player) = do
     character <- runDB $ get404 $ playerCharacterId player
     let pointsThisSeason = playerPointsThisSeason player
         pointsLastSeason = toRational $ characterPointsLastSeason character
+        cumulativePoints = pointsThisSeason + pointsLastSeason
+        -- TODO - don't hard code the number 500
+        cappedLastSeason = min 500 pointsLastSeason
+        cappedCumulative = max 0 $ pointsThisSeason + cappedLastSeason
     case maybePerformance of
         Just _ -> return ()
         Nothing -> runDB $ insert_ $ Performance
@@ -213,7 +217,8 @@ createPerformance leagueId weekId (Entity playerId player) = do
             , performanceTeamId    = playerTeamId player
             , performanceIsStarter = playerIsStarter player
             , performancePoints    = 0
-            , performanceCumulativePoints = pointsThisSeason + pointsLastSeason
+            , performanceCumulativePoints = cumulativePoints
+            , performanceCappedCumulativePoints = cappedCumulative
             , performanceCreatedAt = now
             , performanceUpdatedAt = now
             }

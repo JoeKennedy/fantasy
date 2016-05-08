@@ -394,8 +394,8 @@ calculatePointsAndPlayers leagueId weekId event = runDB $ do
 
     Entity _ scoringSettings <- getBy404 $ UniqueScoringSettingsLeagueIdAction leagueId $ eventAction event
 
-    let cumulative = performanceCumulativePoints performance
-        cumulativeRec = fromMaybe 0 $ map performanceCumulativePoints $ extractValueMaybe maybeReceivingPerformance
+    let cumulative = performanceCappedCumulativePoints performance
+        cumulativeRec = fromMaybe 0 $ map performanceCappedCumulativePoints $ extractValueMaybe maybeReceivingPerformance
         (actionPoints, weightPoints, aPointsRec, wPointsRec) = calculatePoints scoringSettings cumulative cumulativeRec
 
     return (actionPoints, weightPoints, aPointsRec, wPointsRec, (Entity playerId player), maybeReceivingPlayer)
@@ -407,10 +407,9 @@ calculatePoints scoringSettings cumulativePoints cumulativePointsReceiving =
             weight    = (toRational $ scoringSettingsWeight scoringSettings) / 100
             pointsRec = toRational $ scoringSettingsPointsReceiving scoringSettings
             weightRec = (toRational $ scoringSettingsWeightReceiving scoringSettings) / 100
-            -- If existing points are negative, round up to zero. Don't kick any
-            -- characters while they're down.
-            cumul     = max cumulativePoints 0
-            cumulRec  = max cumulativePointsReceiving 0
+            -- Shorten the names so the next few lines aren't super long
+            cumul     = cumulativePoints
+            cumulRec  = cumulativePointsReceiving
         in  if isMultiCharacter $ scoringSettingsAction scoringSettings
                 -- multi-character actions
                 then if weightRec >= 0

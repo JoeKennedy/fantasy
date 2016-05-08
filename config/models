@@ -231,6 +231,7 @@ Performance
     isStarter Bool default=false
     points Rational
     cumulativePoints Rational default=0
+    cappedCumulativePoints Rational default=0
     createdAt UTCTime
     updatedAt UTCTime
     UniquePerformanceWeekIdPlayerId weekId playerId
