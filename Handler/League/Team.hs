@@ -108,7 +108,8 @@ postSetupTeamsSettingsR = do
 getLeagueTeamsR :: LeagueId -> Handler Html
 getLeagueTeamsR leagueId = do
     league <- runDB $ get404 leagueId
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamPointsThisSeason]
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisSeason]
+    let rankedTeams = zip ([1..] :: [Int]) teams
     leagueLayout leagueId "Houses" $ do
         $(widgetFile "league/teams")
 

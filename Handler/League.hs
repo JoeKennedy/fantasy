@@ -57,7 +57,8 @@ getLeaguesR = do
 getLeagueR :: LeagueId -> Handler Html
 getLeagueR leagueId = do
     league <- runDB $ get404 leagueId
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisSeason]
+    let rankedTeams = zip ([1..] :: [Int]) teams
     leagueLayout leagueId "League" $ do
         let maybeCreatorTeam = find (\(Entity _ t) -> teamOwnerId t == Just (leagueCreatedBy league)) teams
         $(widgetFile "league/league")

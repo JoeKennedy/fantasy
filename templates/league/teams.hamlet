@@ -11,22 +11,23 @@
             <table .table .table-hover .table-striped>
                 <thead>
                     <tr>
+                        <th .col-xs-1>Rank
                         <th .col-xs-3>Name
                         <th .col-sm-1 .hidden-xs>Abbreviation
                         <th .col-xs-1 .visible-xs>Abbrev.
-                        <th .col-sm-3 .hidden-xs>Owner Name
-                        <th .col-xs-3 .visible-xs>Owner
+                        <th .col-xs-3>Owner
                         <th .col-sm-1 .hidden-xs>
                             $if leagueIsDraftComplete league
                                 Waiver
                             $else
                                 Draft
-                        <th .col-sm-3 .col-xs-4>Points
+                        <th .col-xs-1>Points
                         <th .col-sm-1 .hidden-xs>Status
 
                 <tbody>
-                    $forall Entity teamId team <- teams
+                    $forall (rank, Entity teamId team) <- rankedTeams
                         <tr>
+                            <td>#{rank}
                             <td>
                                 <a href="@{LeagueTeamR leagueId teamId}">
                                     House #{teamName team}
