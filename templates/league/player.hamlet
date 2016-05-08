@@ -99,7 +99,10 @@
                                                     <i .fa .fa-lg .fa-info-circle>
 
                                     <td .text-right .col-xs-1>
-                                        #{displayRational $ playPoints p}
+                                        $if playPlayerId p == playerId
+                                            #{displayRational $ playPoints p}
+                                        $else
+                                            #{displayRational $ playReceivingPoints p}
 
                     <tfoot>
                         <tr>
