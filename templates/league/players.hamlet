@@ -15,10 +15,10 @@
                     <a href="#on_rosters" aria-controls="on_rosters" role="tab" data-toggle="pill">
                         On Rosters
                         <span .badge .pull-right>#{length onRosters}
-            $forall (Entity _ team, _) <- teamsAndPlayers
+            $forall (Entity teamId team, _) <- teamsAndPlayers
                 <li role="presentation">
-                    $with abbrev <- teamAbbreviation team
-                        <a href="#team_#{abbrev}" aria-controls="team_#{abbrev}" role="tab" data-toggle="pill">
+                    $with tid <- toPathPiece teamId
+                        <a href="#team_#{tid}" aria-controls="team_#{tid}" role="tab" data-toggle="pill">
                             House #{teamName team}
                             <span .badge .pull-right>#{teamPlayersCount team}
             $if leagueIsDraftComplete league
@@ -34,7 +34,7 @@
             <div #on_rosters .tab-pane role="tabpanel">
                 ^{playersTable onRosters OnRosters}
             $forall (Entity teamId team, players) <- teamsAndPlayers
-                <div id="team_#{teamAbbreviation team}" .tab-pane role="tabpanel">
+                <div id="team_#{toPathPiece teamId}" .tab-pane role="tabpanel">
                     $with onRosterPlayers <- recombineTeamToPlayers (Entity teamId team) players
                         ^{playersTable onRosterPlayers (SingleTeam (teamName team))}
             <div #all_players .tab-pane role="tabpanel">
