@@ -28,7 +28,7 @@ getLeagueResultsR leagueId = do
 
 getLeagueResultsWeekR :: LeagueId -> Int -> Handler Html
 getLeagueResultsWeekR leagueId weekNo = do
-    Entity weekId _ <- runDB $ getBy404 $ UniqueWeekLeagueIdWeekNumber leagueId weekNo
+    Entity weekId week <- runDB $ getBy404 $ UniqueWeekLeagueIdWeekNumber leagueId weekNo
     games <- getGamesForWeek weekId
     performances <- getPerformancesForWeek weekId
     plays <- getPlaysForWeek weekId

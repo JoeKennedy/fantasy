@@ -24,80 +24,83 @@
                             <td .hidden-sm .hidden-xs>#{teamOwnerName team}
                             <td .text-right>#{displayRational $ gamePoints game}
 
-<div .row>
-    <div .col-md-4>
-        <div .panel .panel-default>
-            <div .panel-heading>
-                <h5 .text-center>Characters
+$if weekIsScored week
+    <div .row>
+        <div .col-md-4>
+            <div .panel .panel-default>
+                <div .panel-heading>
+                    <h5 .text-center>Characters
 
-            <table .table .table-hover .table-striped .table-condensed>
-                <thead>
-                    <tr>
-                        <th>Name
-                        <th>House
-                        <th .text-right>Points
-
-                <tbody>
-                    $forall (Entity _ pe, _, Entity plid _, mt, Entity _ c) <- performances
+                <table .table .table-hover .table-striped .table-condensed>
+                    <thead>
                         <tr>
-                            <td>
-                                <a href="@{LeaguePlayerR leagueId plid}">
-                                    #{characterName c}
-                            <td>
-                                $maybe Entity teamId team <- mt
-                                    <a href="@{LeagueTeamR leagueId teamId}">
-                                        #{teamAbbreviation team}
-                                $nothing
-                                    -
-                            <td .text-right>#{displayRational $ performancePoints pe}
-            <div .panel-footer .text-primary>
-                All characters that appeared in the episode are listed
+                            <th>Name
+                            <th>House
+                            <th .text-right>Points
 
-    <div .col-md-8>
-        <div .panel .panel-default>
-            <div .panel-heading>
-                <h5 .text-center>Event Log
-
-            <table .table .table-hover .table-striped .table-condensed>
-                <thead>
-                    <tr>
-                        <th>Event
-                        <th .hidden-xs .hidden-sm>Details
-                        <th .visible-xs .visible-sm>
-                        <th .text-right .col-xs-1>#1 Points
-                        <th .text-right .col-xs-1>#2 Points
-                <tbody>
-                    $forall (Entity _ p, _, Entity _ e, Entity prid pr, Entity _ c, _, mrp, mrc, _) <- plays
-                        <tr>
-                            <td>
-                                $with (before, after) <- actionToSplitString (playAction p)
-                                    $if playerIsPlayable pr
-                                        <a href="@{LeaguePlayerR leagueId prid}">
-                                            #{characterName c}
-                                    $else
+                    <tbody>
+                        $forall (Entity _ pe, _, Entity plid _, mt, Entity _ c) <- performances
+                            <tr>
+                                <td>
+                                    <a href="@{LeaguePlayerR leagueId plid}">
                                         #{characterName c}
-                                    \ #{before} #
-                                    $maybe Entity rpid rp <- mrp
-                                        $maybe Entity _ rc <- mrc
-                                            $if playerIsPlayable rp
-                                                <a href="@{LeaguePlayerR leagueId rpid}">
+                                <td>
+                                    $maybe Entity teamId team <- mt
+                                        <a href="@{LeagueTeamR leagueId teamId}">
+                                            #{teamAbbreviation team}
+                                    $nothing
+                                        -
+                                <td .text-right>#{displayRational $ performancePoints pe}
+
+                <div .panel-footer .text-primary>
+                    All characters that appeared in the episode are listed
+
+        <div .col-md-8>
+            <div .panel .panel-default>
+                <div .panel-heading>
+                    <h5 .text-center>Event Log
+
+                <table .table .table-hover .table-striped .table-condensed>
+                    <thead>
+                        <tr>
+                            <th>Event
+                            <th .hidden-xs .hidden-sm>Details
+                            <th .visible-xs .visible-sm>
+                            <th .text-right .col-xs-1>#1 Points
+                            <th .text-right .col-xs-1>#2 Points
+
+                    <tbody>
+                        $forall (Entity _ p, _, Entity _ e, Entity prid pr, Entity _ c, _, mrp, mrc, _) <- plays
+                            <tr>
+                                <td>
+                                    $with (before, after) <- actionToSplitString (playAction p)
+                                        $if playerIsPlayable pr
+                                            <a href="@{LeaguePlayerR leagueId prid}">
+                                                #{characterName c}
+                                        $else
+                                            #{characterName c}
+                                        \ #{before} #
+                                        $maybe Entity rpid rp <- mrp
+                                            $maybe Entity _ rc <- mrc
+                                                $if playerIsPlayable rp
+                                                    <a href="@{LeaguePlayerR leagueId rpid}">
+                                                        #{characterName rc}
+                                                $else
                                                     #{characterName rc}
-                                            $else
-                                                #{characterName rc}
-                                    \ #{after}
+                                        \ #{after}
 
-                            <td>
-                                $maybe note <- eventNote e
-                                    <div .hidden-xs .hidden-sm>#{note}
-                                    <div .visible-xs .visible-sm .text-right>
-                                        <a tabindex="0" role="button" data-container="body" data-toggle="popover" data-trigger="focus" data-placement="left" data-content="#{note}">
-                                            <i .fa .fa-lg .fa-info-circle>
+                                <td>
+                                    $maybe note <- eventNote e
+                                        <div .hidden-xs .hidden-sm>#{note}
+                                        <div .visible-xs .visible-sm .text-right>
+                                            <a tabindex="0" role="button" data-container="body" data-toggle="popover" data-trigger="focus" data-placement="left" data-content="#{note}">
+                                                <i .fa .fa-lg .fa-info-circle>
 
-                            <td .text-right .col-xs-1>
-                                #{displayRational $ playPoints p}
-                            <td .text-right .col-xs-1>
-                                $maybe _ <- mrp
-                                    #{displayRational $ playReceivingPoints p}
-                                $nothing
-                                    -
+                                <td .text-right .col-xs-1>
+                                    #{displayRational $ playPoints p}
+                                <td .text-right .col-xs-1>
+                                    $maybe _ <- mrp
+                                        #{displayRational $ playReceivingPoints p}
+                                    $nothing
+                                        -
 
