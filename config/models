@@ -183,6 +183,7 @@ Transaction
     failureReason Text Maybe
     teamId TeamId
     otherTeamId TeamId Maybe
+    position Int Maybe
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId

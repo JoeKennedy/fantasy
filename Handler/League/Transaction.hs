@@ -105,10 +105,50 @@ postLeagueDeclineTradeR _ transactionId = do
     failTransaction_ transactionId "Receiving team owner declined trade"
     setMessage $ toMarkup ("Trade declined!" :: Text)
 
-postLeagueCancelTradeR :: LeagueId -> TransactionId -> Handler ()
-postLeagueCancelTradeR _ transactionId = do
-    failTransaction_ transactionId "Proposing team owner canceled trade"
-    setMessage $ toMarkup ("Trade canceled!" :: Text)
+postLeagueCancelTransactionR :: LeagueId -> TransactionId -> Handler ()
+postLeagueCancelTransactionR _ transactionId = do
+    transaction <- runDB $ get404 transactionId
+    let typeStr = toPathPiece $ transactionType transaction
+    failTransaction_ transactionId $ "Proposing team owner canceled " ++ typeStr
+    if transactionType transaction == Claim
+        then repositionClaimRequests $ transactionTeamId transaction
+        else return ()
+    setMessage $ toMarkup $ typeStr ++ " canceled!"
+
+postLeagueMoveClaimUpR :: LeagueId -> TransactionId -> Handler ()
+postLeagueMoveClaimUpR _ transactionId = do
+    claim <- runDB $ get404 transactionId
+    let claimToMoveUp = Just $ Entity transactionId claim
+    case transactionPosition claim of
+        Nothing -> return ()
+        Just position -> do
+            claimToMoveDown <- runDB $ selectFirst [ TransactionTeamId   ==. transactionTeamId claim
+                                                   , TransactionPosition ==. Just (position - 1)
+                                                   ] [Asc TransactionPosition]
+            swapClaimPositions claimToMoveUp claimToMoveDown
+            setMessage $ toMarkup ("Claim moved up!" :: Text)
+
+postLeagueMoveClaimDownR :: LeagueId -> TransactionId -> Handler ()
+postLeagueMoveClaimDownR _ transactionId = do
+    claim <- runDB $ get404 transactionId
+    let claimToMoveDown = Just $ Entity transactionId claim
+    case transactionPosition claim of
+        Nothing -> return ()
+        Just position -> do
+            claimToMoveUp <- runDB $ selectFirst [ TransactionTeamId   ==. transactionTeamId claim
+                                                 , TransactionPosition ==. Just (position + 1)
+                                                 ] [Asc TransactionPosition]
+            swapClaimPositions claimToMoveUp claimToMoveDown
+            setMessage $ toMarkup ("Claim moved down!" :: Text)
+
+swapClaimPositions :: Maybe (Entity Transaction) -> Maybe (Entity Transaction) -> Handler ()
+swapClaimPositions (Just (Entity claim1Id claim1)) (Just (Entity claim2Id claim2)) = do
+    case (transactionPosition claim1, transactionPosition claim2) of
+        (Just claim1Position, Just claim2Position) -> do
+            repositionClaimRequest claim1Id claim2Position
+            repositionClaimRequest claim2Id claim1Position
+        (_, _) -> return ()
+swapClaimPositions _ _ = return ()
 
 -------------
 -- Widgets --
@@ -121,7 +161,7 @@ transactionRequestsPanel transactions transType currentTeamId =
 
 transactionsTable :: [FullTransaction] -> Maybe TeamId -> Bool -> Widget
 transactionsTable transactions maybeCurrentTeamId usePastTense =
-    let zippedTransactions = zip [1..] $ groupByFirstOfSix transactions
+    let groupedTransactions = groupByFirstOfSix transactions
     in  $(widgetFile "league/transactions_table")
 
 transactionPlayerWidget :: Transaction -> FullTransactionPlayer -> TeamId -> Bool -> Widget
@@ -181,7 +221,10 @@ getRequestedTransactions leagueId maybeTeamId transactionType = runDB
                 Just teamId ->
                     (team ^. TeamId E.==. E.val teamId E.||.
                      transaction ^. TransactionOtherTeamId E.==. E.just (E.val teamId))
-        E.orderBy [E.asc (transaction ^. TransactionId), E.asc (transactionPlayer ^. TransactionPlayerPlayerId)]
+        E.orderBy [ E.asc (transaction ^. TransactionPosition)
+                  , E.asc (transaction ^. TransactionId)
+                  , E.asc (transactionPlayer ^. TransactionPlayerPlayerId)
+                  ]
         return (transaction, team, transactionPlayer, player, character, newTeam)
 
 getSuccessfulTransactions :: LeagueId -> Maybe TeamId -> Maybe TransactionType -> Handler [FullTransaction]
@@ -236,6 +279,7 @@ createTransaction player maybeDraftTeam transactionType = do
     case maybeTeam of
         Nothing -> error "You are not a member of this league"
         Just (Entity teamId team) -> do
+            position <- generateTransactionPosition teamId transactionType
             let transaction = Transaction
                     { transactionLeagueId = teamLeagueId team
                     , transactionType = transactionType
@@ -243,6 +287,7 @@ createTransaction player maybeDraftTeam transactionType = do
                     , transactionFailureReason = Nothing
                     , transactionTeamId = teamId
                     , transactionOtherTeamId = maybeOtherTeamId
+                    , transactionPosition  = position
                     , transactionCreatedBy = userId
                     , transactionCreatedAt = now
                     , transactionUpdatedBy = userId
@@ -290,6 +335,15 @@ twoPlayerTransaction (Entity player1Id player1) (Entity player2Id player2) trans
          (Entity player2Id player2) $ playerTeamId player1
     return transactionId
 
+generateTransactionPosition :: TeamId -> TransactionType -> Handler (Maybe Int)
+generateTransactionPosition teamId Claim = do
+    transactions <- runDB $ count [ TransactionTeamId ==. teamId
+                                  , TransactionType   ==. Claim
+                                  , TransactionStatus ==. Requested
+                                  ]
+    return $ Just $ transactions + 1
+generateTransactionPosition _ _ = return Nothing
+
 
 ---------------------------
 -- Process Transactions --
@@ -303,7 +357,7 @@ processClaimRequests = do
         [ TransactionStatus ==. Requested
         , TransactionType ==. Claim
         , TransactionProcessableAt <=. now
-        ] [Asc TransactionId]
+        ] [Asc TransactionPosition, Asc TransactionId]
     mapM_ (processMultiPlayerTransaction adminUserId) transactionIds
 
 processMultiPlayerTransaction :: UserId -> TransactionId -> Handler ()
@@ -466,4 +520,21 @@ updateTeamStartersCount teamId utcTime userId = runDB $ do
                   , TeamUpdatedAt =. utcTime
                   , TeamUpdatedBy =. userId
                   ]
+
+repositionClaimRequests :: TeamId -> Handler ()
+repositionClaimRequests teamId = do
+    claimRequests <- runDB $ selectKeysList [ TransactionTeamId ==. teamId
+                                            , TransactionType   ==. Claim
+                                            , TransactionStatus ==. Requested
+                                            ] [Asc TransactionPosition, Asc TransactionId]
+    mapM_ (\(p, t) -> repositionClaimRequest t p) $ zip [1..] claimRequests
+
+repositionClaimRequest :: TransactionId -> Int -> Handler ()
+repositionClaimRequest transactionId position = do
+    userId <- requireAuthId
+    now <- liftIO getCurrentTime
+    runDB $ update transactionId [ TransactionPosition  =. Just position
+                                 , TransactionUpdatedBy =. userId
+                                 , TransactionUpdatedAt =. now
+                                 ]
 

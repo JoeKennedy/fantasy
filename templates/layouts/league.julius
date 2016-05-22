@@ -4,7 +4,7 @@ function performPlayerAction(event) {
     switch (pieces[0]) {
         case 'bench':
         case 'start':
-            submitTransaction(url);
+            postAction(url);
             break;
         case 'claim':
         case 'trade':
@@ -16,7 +16,7 @@ function performPlayerAction(event) {
 function performTradeAction(event) {
     var pieces = $(this).prop('id').split('-');
     var url = '/leagues/' + pieces[1] + '/' + pieces[0] + '/' + pieces[2];
-    submitTransaction(url);
+    postAction(url);
 }
 
 function playersModal(transactionType, url, characterName) {
@@ -36,12 +36,12 @@ function playersModal(transactionType, url, characterName) {
         var full_url = url + '/' + $(this).val();
         $(button).removeClass('disabled').off('click').click(function() {
             $(this).addClass('disabled'); // prevent duplicate clicks
-            submitTransaction(full_url);
+            postAction(full_url);
         });
     });
 }
 
-function submitTransaction(url) {
+function postAction(url) {
     $.ajax ({
         url: url,
         type: 'POST',

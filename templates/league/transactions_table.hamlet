@@ -4,7 +4,7 @@ $if null transactions
 
 $else 
     <table .table .table-condensed .table-striped .transactions-table>
-        $forall (num, (Entity transactionId transaction, tps)) <- zippedTransactions
+        $forall (Entity transactionId transaction, tps) <- groupedTransactions
             $maybe (Entity teamId team, _, _, _, _) <- listToMaybe tps
                 <thead>
                     <tr .active>
@@ -18,8 +18,38 @@ $else
                                         <a href="@{LeagueTeamR (teamLeagueId team) teamId}">
                                             House #{teamName team}
                                     $if transactionType transaction == Claim
-                                        #{intToOrdinal num}
-                                        \ to be processed
+                                        $maybe position <- transactionPosition transaction
+                                            #{intToOrdinal position}
+                                            \ to be processed
+
+                            $if transactionType transaction == Claim
+                                $if transactionStatus transaction == Requested
+                                    $with leagueId <- transactionLeagueId transaction
+                                        $maybe position <- transactionPosition transaction
+                                            <div .pull-right>
+                                                <div .btn-toolbar role="toolbar">
+                                                    <div .btn-group .btn-group-xs role="group">
+                                                        $if position == length groupedTransactions
+                                                            <button .btn .btn-default .btn-xs .disabled>
+                                                                <i .fa .fa-chevron-down>
+                                                        $else
+                                                            <button .btn .btn-default .btn-xs .claim-action
+                                                                data-url=@{LeagueMoveClaimDownR leagueId transactionId}
+                                                                id="down-#{toPathPiece leagueId}-#{toPathPiece transactionId}">
+                                                                <i .fa .fa-chevron-down>
+                                                        $if position == 1
+                                                            <button .btn .btn-default .btn-xs .disabled>
+                                                                <i .fa .fa-chevron-up>
+                                                        $else
+                                                            <button .btn .btn-default .btn-xs .claim-action
+                                                                data-url=@{LeagueMoveClaimUpR leagueId transactionId}
+                                                                id="up-#{toPathPiece leagueId}-#{toPathPiece transactionId}">
+                                                                <i .fa .fa-chevron-up>
+                                                    <div .btn-group .btn-group-xs role="group">
+                                                        <button .btn .btn-danger .btn-xs .claim-action
+                                                            data-url=@{LeagueCancelTransactionR leagueId transactionId}
+                                                            id="cancel-#{toPathPiece leagueId}-#{toPathPiece transactionId}">
+                                                            <i .fa .fa-times>
 
                 <tbody>
                     <tr>

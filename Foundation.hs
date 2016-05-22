@@ -135,7 +135,10 @@ instance Yesod App where
     isAuthorized (LeagueTransactionsR leagueId)    _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueAcceptTradeR _ tid)        _ = requireTradeAcceptable tid
     isAuthorized (LeagueDeclineTradeR _ tid)       _ = requireTradeDeclinable tid
-    isAuthorized (LeagueCancelTradeR _ tid)        _ = requireTradeCancelable tid
+    isAuthorized (LeagueCancelTransactionR _ tid)  _ = requireTransactionCancelable tid
+    isAuthorized (LeagueMoveClaimUpR _ tid)        _ = requireClaimMovableUp tid
+    isAuthorized (LeagueMoveClaimDownR _ tid)      _ = requireClaimMovableDown tid
+
     isAuthorized (LeagueTeamsR leagueId)           _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueTeamR leagueId _)          _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueTeamJoinR _ tid verKey) True = requireCorrectVerKeyAndLoggedIn tid verKey
@@ -249,12 +252,33 @@ requireTradeAcceptable transactionId = do
 requireTradeDeclinable :: TransactionId -> Handler AuthResult
 requireTradeDeclinable = requireTradeAcceptable
 
-requireTradeCancelable :: TransactionId -> Handler AuthResult
-requireTradeCancelable transactionId = do
+requireTransactionCancelable :: TransactionId -> Handler AuthResult
+requireTransactionCancelable transactionId = do
     transaction <- runDB $ get404 transactionId
-    if transactionStatus transaction == Requested && transactionType transaction == Trade
-        then requireTeamOwner $ transactionTeamId transaction
-        else return $ Unauthorized "Must be a trade transaction with status of requested"
+    if transactionStatus transaction == Requested
+        && (transactionType transaction == Claim || transactionType transaction == Trade)
+            then requireTeamOwner $ transactionTeamId transaction
+            else return $ Unauthorized "Must be a claim or trade transaction with status of requested"
+
+requireClaimMovableUp :: TransactionId -> Handler AuthResult
+requireClaimMovableUp transactionId = do
+    transaction <- runDB $ get404 transactionId
+    if fromMaybe 1 (transactionPosition transaction) > 1 && transactionType transaction == Claim
+        then requireTransactionCancelable transactionId
+        else return $ Unauthorized "Must be a claim transaction that isn't first"
+
+requireClaimMovableDown :: TransactionId -> Handler AuthResult
+requireClaimMovableDown transactionId = do
+    transaction <- runDB $ get404 transactionId
+    let teamId = transactionTeamId transaction
+    claimRequests <- runDB $ count [ TransactionTeamId ==. teamId
+                                   , TransactionType   ==. Claim
+                                   , TransactionStatus ==. Requested
+                                   ]
+    if fromMaybe claimRequests (transactionPosition transaction) < claimRequests
+        && transactionType transaction == Claim
+            then requireTransactionCancelable transactionId
+            else return $ Unauthorized "Must be a claim transaction that isn't first"
 
 requireCorrectVerificationKey :: TeamId -> Text -> Handler AuthResult
 requireCorrectVerificationKey teamId verificationKey = do
@@ -404,14 +428,16 @@ instance YesodBreadcrumbs App where
     breadcrumb (SetupLeagueR SetupConfirmSettingsR) = return ("Complete Setup", Just $ SetupLeagueR SetupTeamsSettingsR)
 
     -- These pages never call breadcrumb
-    breadcrumb StaticR{}              = return ("", Nothing)
-    breadcrumb AuthR{}                = return ("", Nothing)
-    breadcrumb FaviconR               = return ("", Nothing)
-    breadcrumb RobotsR                = return ("", Nothing)
-    breadcrumb SeriesEpisodeEventsR{} = return ("", Nothing)
-    breadcrumb SeriesEpisodeScoreR{}  = return ("", Nothing)
-    breadcrumb LetsEncryptR{}         = return ("", Nothing)
-    breadcrumb LeagueCancelTradeR{}   = return ("", Nothing)
+    breadcrumb StaticR{}                  = return ("", Nothing)
+    breadcrumb AuthR{}                    = return ("", Nothing)
+    breadcrumb FaviconR                   = return ("", Nothing)
+    breadcrumb RobotsR                    = return ("", Nothing)
+    breadcrumb SeriesEpisodeEventsR{}     = return ("", Nothing)
+    breadcrumb SeriesEpisodeScoreR{}      = return ("", Nothing)
+    breadcrumb LetsEncryptR{}             = return ("", Nothing)
+    breadcrumb LeagueCancelTransactionR{} = return ("", Nothing)
+    breadcrumb LeagueMoveClaimUpR{}       = return ("", Nothing)
+    breadcrumb LeagueMoveClaimDownR{}     = return ("", Nothing)
 
 -- How to run database actions.
 instance YesodPersist App where

@@ -47,11 +47,13 @@
 /leagues/#LeagueId/results      LeagueResultsR     GET
 /leagues/#LeagueId/results/#Int LeagueResultsWeekR GET
 
-/leagues/#LeagueId/draft/#Int             LeagueDraftR        GET POST
-/leagues/#LeagueId/transactions           LeagueTransactionsR GET
-/leagues/#LeagueId/accept/#TransactionId  LeagueAcceptTradeR  POST
-/leagues/#LeagueId/decline/#TransactionId LeagueDeclineTradeR POST
-/leagues/#LeagueId/cancel/#TransactionId  LeagueCancelTradeR  POST
+/leagues/#LeagueId/draft/#Int               LeagueDraftR             GET POST
+/leagues/#LeagueId/transactions             LeagueTransactionsR      GET
+/leagues/#LeagueId/accept/#TransactionId    LeagueAcceptTradeR       POST
+/leagues/#LeagueId/decline/#TransactionId   LeagueDeclineTradeR      POST
+/leagues/#LeagueId/cancel/#TransactionId    LeagueCancelTransactionR POST
+/leagues/#LeagueId/move/#TransactionId/up   LeagueMoveClaimUpR       POST
+/leagues/#LeagueId/move/#TransactionId/down LeagueMoveClaimDownR     POST
 
 /leagues/#LeagueId/settings LeagueSettingsR:
     /league  LeagueEditSettingsR    GET POST

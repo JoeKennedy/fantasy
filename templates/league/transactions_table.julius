@@ -1,0 +1,28 @@
+function performClaimAction(event) {
+    var pieces = $(this).prop('id').split('-');
+    var url = '/leagues/' + pieces[1];
+    switch (pieces[0]) {
+        case 'up':
+        case 'down':
+            url += '/move/' + pieces[2] + '/' + pieces[0];
+            postAction(url);
+            break;
+        case 'cancel':
+            url += '/cancel/' + pieces[2];
+            if (confirm('Are you sure you want to cancel this claim?')) {
+                postAction(url);
+            }
+            break;
+    }
+}
+
+function transactionsTableReady(jQuery) {
+    $('.claim-action').off().on('click', performClaimAction);
+}
+
+// TODO - use similar url creation to performPlayerAction for performClaimAction
+// For cancels, pop modal that asks are you sure? Should be similar to claim and
+// trade in performPlayerAction
+// The first thing will involve switching to using id rather than data-url
+
+$(document).ready(transactionsTableReady)

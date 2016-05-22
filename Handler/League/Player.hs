@@ -110,6 +110,12 @@ postLeaguePlayerBenchR leagueId playerId = do
 
 postLeaguePlayerClaimR :: LeagueId -> PlayerId -> PlayerId -> Handler ()
 postLeaguePlayerClaimR leagueId playerIdToAdd playerIdToDrop = do
+    -- TODO - Remove this ASAP
+    unpositionedClaimRequests <- runDB $ count [TransactionPosition ==. Nothing]
+    if unpositionedClaimRequests > 0 then return () else do
+        teamIds <- runDB $ selectKeysList [] [Asc TeamId]
+        mapM_ repositionClaimRequests teamIds
+    -- END of Remove this ASAP
     playerToAdd  <- runDB $ get404 playerIdToAdd
     playerToDrop <- runDB $ get404 playerIdToDrop
     characterToAdd  <- runDB $ get404 $ playerCharacterId playerToAdd
