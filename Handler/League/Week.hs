@@ -23,7 +23,6 @@ getLeagueResultsR :: LeagueId -> Handler Html
 getLeagueResultsR leagueId = do
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId]
                                 [Desc TeamPointsThisSeason, Desc TeamDraftOrder]
-    let teamsWithRank = zip ([1..] :: [Int]) teams
     leagueResultsLayout leagueId "Standings" $(widgetFile "league/results")
 
 getLeagueResultsWeekR :: LeagueId -> Int -> Handler Html
@@ -32,8 +31,7 @@ getLeagueResultsWeekR leagueId weekNo = do
     games <- getGamesForWeek weekId
     performances <- getPerformancesForWeek weekId
     plays <- getPlaysForWeek weekId
-    let gamesWithRank = zip ([1..] :: [Int]) games
-        activePill    = "Week " ++ pack (show weekNo)
+    let activePill = "Week " ++ pack (show weekNo)
     leagueResultsLayout leagueId activePill $(widgetFile "league/week_results")
 
 

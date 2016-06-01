@@ -58,7 +58,6 @@ getLeagueR :: LeagueId -> Handler Html
 getLeagueR leagueId = do
     league <- runDB $ get404 leagueId
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisSeason]
-    let rankedTeams = zip ([1..] :: [Int]) teams
     leagueLayout leagueId "League" $ do
         let maybeCreatorTeam = find (\(Entity _ t) -> teamOwnerId t == Just (leagueCreatedBy league)) teams
         $(widgetFile "league/league")
@@ -333,8 +332,7 @@ determineWaiverOrder :: [Entity Team] -> Handler ()
 determineWaiverOrder teams = do
     -- sort teams by points this season ascending and make that the waiver order
     let sortedTeams = sortOn (teamPointsThisSeason . extractValue) teams
-        withWaiverOrder = zip [1..] sortedTeams
-    mapM_ updateWaiverOrder withWaiverOrder
+    mapM_ updateWaiverOrder $ rank sortedTeams
 
 updateWaiverOrder :: (Int, Entity Team) -> Handler ()
 updateWaiverOrder (waiverOrder, Entity teamId _) = do

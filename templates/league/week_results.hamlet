@@ -12,7 +12,7 @@
                         <th .hidden-sm .hidden-xs>Owner
                         <th .text-right>Points
                 <tbody>
-                    $forall (rank, (Entity _ game, Entity teamId team)) <- gamesWithRank
+                    $forall (rank, (Entity _ game, Entity teamId team)) <- rank games
                         <tr>
                             <td>#{rank}
                             <td>

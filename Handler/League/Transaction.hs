@@ -174,7 +174,7 @@ transactionPlayerWidget transaction fullTransactionPlayer teamId usePastTense =
 
 draftResults :: [FullTransaction] -> Widget
 draftResults draftFullTransactions =
-    let numberedTransactions = zip ([1..] :: [Int]) draftFullTransactions
+    let numberedTransactions = rank draftFullTransactions
         draftPicks = map (\(n, (_, t, _, p, c, _)) -> (n, t, p, c)) numberedTransactions
     in  $(widgetFile "league/draft_results_table")
 
@@ -527,7 +527,7 @@ repositionClaimRequests teamId = do
                                             , TransactionType   ==. Claim
                                             , TransactionStatus ==. Requested
                                             ] [Asc TransactionPosition, Asc TransactionId]
-    mapM_ (\(p, t) -> repositionClaimRequest t p) $ zip [1..] claimRequests
+    mapM_ (\(p, t) -> repositionClaimRequest t p) $ rank claimRequests
 
 repositionClaimRequest :: TransactionId -> Int -> Handler ()
 repositionClaimRequest transactionId position = do
