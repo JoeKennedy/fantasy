@@ -83,6 +83,7 @@ League
     isSetupComplete Bool default=false
     lastCompletedStep Int default=1
     isDraftComplete Bool default=false
+    isInPostSeason Bool default=false
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId
@@ -150,6 +151,9 @@ Team
     waiverOrder Int default=0
     verificationKey Text
     pointsThisSeason Rational default=0
+    pointsThisRegularSeason Rational default=0
+    pointsThisPostSeason Rational default=0
+    postSeasonStatus PostSeasonStatus default='Regular'
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId
@@ -170,6 +174,8 @@ Player
     isStarter Bool default=false
     isPlayable Bool default=true
     pointsThisSeason Rational default=0
+    pointsThisRegularSeason Rational default=0
+    pointsThisPostSeason Rational default=0
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId
@@ -209,6 +215,7 @@ Week
     episodeId EpisodeId
     number Int
     isScored Bool default=false
+    isPostSeason Bool default=false
     createdAt UTCTime
     updatedAt UTCTime
     UniqueWeekLeagueIdEpisodeId leagueId episodeId

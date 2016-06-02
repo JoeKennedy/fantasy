@@ -62,6 +62,9 @@ teamSettingsForm currentUserId league draftSettings teams extra = do
             <*> pure (teamWaiverOrder team)
             <*> pure (teamVerificationKey team)
             <*> pure (teamPointsThisSeason team)
+            <*> pure (teamPointsThisRegularSeason team)
+            <*> pure (teamPointsThisPostSeason team)
+            <*> pure (teamPostSeasonStatus team)
             <*> pure (teamCreatedBy team)
             <*> pure (teamCreatedAt team)
             <*> updatedByField currentUserId
@@ -108,7 +111,7 @@ postSetupTeamsSettingsR = do
 getLeagueTeamsR :: LeagueId -> Handler Html
 getLeagueTeamsR leagueId = do
     league <- runDB $ get404 leagueId
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisSeason]
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisRegularSeason]
     leagueLayout leagueId "Houses" $ do
         $(widgetFile "league/teams")
 

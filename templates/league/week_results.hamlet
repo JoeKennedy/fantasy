@@ -2,7 +2,12 @@
     <div .col-xs-12>
         <div .panel .panel-default>
             <div .panel-heading>
-                <h5 .text-center>Week #{weekNo} Results
+                <h5 .text-center>
+                    Week #{weekNo} Results
+                    $if weekIsPostSeason week
+                        <small>
+                            (Playoffs)
+
             <table .table .table-hover .table-striped>
                 <thead>
                     <tr>

@@ -25,9 +25,18 @@
                             $else
                                 Unjoined
                     <li .list-group-item>
-                        <h6 .list-group-item-heading>Points
+                        <h6 .list-group-item-heading>Regular Season Points
                         <p .list-group-item-text>
-                            #{displayRational $ teamPointsThisSeason team}
+                            #{displayRational $ teamPointsThisRegularSeason team}
+                    $if leagueIsInPostSeason league
+                        <li .list-group-item>
+                            <h6 .list-group-item-heading>Postseason Points
+                            <p .list-group-item-text>
+                                #{displayRational $ teamPointsThisPostSeason team}
+                        <li .list-group-item>
+                            <h6 .list-group-item-heading>Postseason Bracket
+                            <p .list-group-item-text>
+                                #{toPathPiece $ teamPostSeasonStatus team}
 
             <div .col-sm-6 .col-xs-12>
                 <div #transaction_request_accordion .panel-group role="tablist" aria-multiselectable="true">

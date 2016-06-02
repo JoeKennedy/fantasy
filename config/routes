@@ -45,6 +45,7 @@
 /leagues/#LeagueId/players/#PlayerId/trade/#PlayerId LeaguePlayerTradeR POST
 
 /leagues/#LeagueId/results      LeagueResultsR     GET
+/leagues/#LeagueId/playoffs     LeaguePlayoffsR    GET
 /leagues/#LeagueId/results/#Int LeagueResultsWeekR GET
 
 /leagues/#LeagueId/draft/#Int               LeagueDraftR             GET POST

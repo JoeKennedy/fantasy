@@ -1,7 +1,7 @@
 module Handler.League where
 
 import Import
-import Handler.Common        (extractKeyMaybe, extractValue, extractValueMaybe)
+import Handler.Common        (extractKeyMaybe, extractValueMaybe)
 import Handler.League.Setup
 import Handler.League.Layout
 import Handler.League.Week   (createWeekData_, createWeekData)
@@ -36,6 +36,7 @@ leagueForm currentUserId league extra = do
             <*> existingElseDefault False (leagueIsSetupComplete <$> league)
             <*> existingElseDefault 1 (leagueLastCompletedStep <$> league)
             <*> existingElseDefault False (leagueIsDraftComplete <$> league)
+            <*> existingElseDefault False (leagueIsInPostSeason <$> league)
             <*> createdByField currentUserId (leagueCreatedBy <$> league)
             <*> existingElseDefault now (leagueCreatedAt <$> league)
             <*> updatedByField currentUserId
@@ -57,10 +58,9 @@ getLeaguesR = do
 getLeagueR :: LeagueId -> Handler Html
 getLeagueR leagueId = do
     league <- runDB $ get404 leagueId
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisSeason]
-    leagueLayout leagueId "League" $ do
-        let maybeCreatorTeam = find (\(Entity _ t) -> teamOwnerId t == Just (leagueCreatedBy league)) teams
-        $(widgetFile "league/league")
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisRegularSeason]
+    let maybeCreatorTeam = find (\(Entity _ t) -> teamOwnerId t == Just (leagueCreatedBy league)) teams
+    leagueLayout leagueId "League" $(widgetFile "league/league")
 
 postLeagueCancelR :: LeagueId -> Handler ()
 postLeagueCancelR leagueId = do
@@ -206,6 +206,9 @@ createTeam (Entity leagueId league) (teamNumber, draftOrder) = do
                    , teamWaiverOrder      = teamNumber
                    , teamVerificationKey  = verificationKey
                    , teamPointsThisSeason = 0
+                   , teamPointsThisRegularSeason = 0
+                   , teamPointsThisPostSeason = 0
+                   , teamPostSeasonStatus = Regular
                    , teamCreatedBy        = leagueCreatedBy league
                    , teamCreatedAt        = leagueCreatedAt league
                    , teamUpdatedBy        = leagueUpdatedBy league
@@ -232,6 +235,8 @@ createPlayer (Entity leagueId league) (Entity characterId character) =
                      , playerTeamId           = Nothing
                      , playerIsStarter        = False
                      , playerPointsThisSeason = 0
+                     , playerPointsThisRegularSeason = 0
+                     , playerPointsThisPostSeason = 0
                      , playerIsPlayable       = characterIsPlayable character
                      , playerCreatedBy        = leagueCreatedBy league
                      , playerCreatedAt        = leagueCreatedAt league
@@ -256,18 +261,54 @@ leagueListGroupItem Nothing scoringType
     | otherwise = [whamlet|<a .list-group-item href="#">^{scoringTypeWidget scoringType}|]
 
 
+--------------------------------
+-- Move Leagues To Postseason --
+--------------------------------
+moveLeaguesToPostSeason :: EpisodeId -> Handler ()
+moveLeaguesToPostSeason episodeId = do
+    leagueIds <- runDB $ selectKeysList [ LeagueIsActive ==. True
+                                        , LeagueIsInPostSeason ==. False
+                                        ] [Asc LeagueId]
+    mapM_ (moveLeagueToPostSeason episodeId) leagueIds
+
+moveLeagueToPostSeason :: EpisodeId -> LeagueId -> Handler ()
+moveLeagueToPostSeason episodeId leagueId = runDB $ do
+    Entity _ week <- getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
+    Entity _ generalSettings <- getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+    let lastRegularSeasonWeek = generalSettingsRegularSeasonLength generalSettings
+
+    -- move league to postseason if this week is the last week of regular season
+    if weekNumber week < lastRegularSeasonWeek then return () else do
+        -- first, split teams into playoffs and consolation
+        teamIds <- selectKeysList [TeamLeagueId ==. leagueId]
+                                  [Desc TeamPointsThisRegularSeason]
+        let teamsInPlayoffs = generalSettingsNumberOfTeamsInPlayoffs generalSettings
+            (playoffTeamIds, consolationTeamIds) = splitAt teamsInPlayoffs teamIds
+        mapM_ (moveTeamToPostSeason Playoff) playoffTeamIds
+        mapM_ (moveTeamToPostSeason Consolation) consolationTeamIds
+
+        -- then, set league to being in postseason
+        now <- liftIO getCurrentTime
+        update leagueId [LeagueIsInPostSeason =. True, LeagueUpdatedAt =. now]
+
+moveTeamToPostSeason :: PostSeasonStatus -> TeamId -> ReaderT SqlBackend Handler ()
+moveTeamToPostSeason postSeasonStatus teamId = do
+    now <- liftIO getCurrentTime
+    update teamId [TeamPostSeasonStatus =. postSeasonStatus, TeamUpdatedAt =. now]
+
+
 ---------------------------------------------------------
 -- Calculate Scores -- THIS IS WHERE THE MAGIC HAPPENS --
 ---------------------------------------------------------
 
 calculateScores :: EpisodeId -> Handler ()
 calculateScores episodeId = do
-    leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
-    mapM_ (calculateLeagueScores episodeId) leagueIds
+    leagues <- runDB $ selectList [LeagueIsActive ==. True] [Asc LeagueId]
+    mapM_ (calculateLeagueScores episodeId) leagues
     setMessage "Calculating (or calculated) scores for all leagues for this episode"
 
-calculateLeagueScores :: EpisodeId -> LeagueId -> Handler ()
-calculateLeagueScores episodeId leagueId = do
+calculateLeagueScores :: EpisodeId -> Entity League -> Handler ()
+calculateLeagueScores episodeId (Entity leagueId league) = do
     -- check if any plays have already been created for this week
     episode <- runDB $ get404 episodeId
     weekId <- createWeekData (Entity episodeId episode) leagueId
@@ -281,9 +322,9 @@ calculateLeagueScores episodeId leagueId = do
 
         -- for each team, update total points on the season
         games <- runDB $ selectList [GameWeekId ==. weekId] []
-        teams <- mapM addToTeamPoints games
+        mapM_ (addToTeamPoints league) games
         -- then compare totals to determine waiver order
-        determineWaiverOrder teams
+        determineWaiverOrder $ Entity leagueId league
         -- for each player update total points on the season
         performances <- runDB $ selectList [PerformanceWeekId ==. weekId] []
         mapM_ addToPlayerPoints performances
@@ -320,19 +361,27 @@ addPointsToPerformanceAndGame weekId playerId maybeTeamId points = do
             update gameId [GamePoints +=. pointsToAdd, GameUpdatedAt =. now]
         (_, _) -> return ()
 
-addToTeamPoints :: Entity Game -> Handler (Entity Team)
-addToTeamPoints (Entity _gameId game) = do
+addToTeamPoints :: League -> Entity Game -> Handler ()
+addToTeamPoints league (Entity _gameId game) = runDB $ do
     let teamId = gameTeamId game
     now <- liftIO getCurrentTime
-    runDB $ update teamId [TeamPointsThisSeason +=. gamePoints game, TeamUpdatedAt =. now]
-    team <- runDB $ get404 teamId
-    return $ Entity teamId team
+    update teamId [ TeamPointsThisSeason +=. gamePoints game
+                  , if leagueIsInPostSeason league
+                        then TeamPointsThisPostSeason +=. gamePoints game
+                        else TeamPointsThisRegularSeason +=. gamePoints game
+                  , TeamUpdatedAt =. now
+                  ]
 
-determineWaiverOrder :: [Entity Team] -> Handler ()
-determineWaiverOrder teams = do
-    -- sort teams by points this season ascending and make that the waiver order
-    let sortedTeams = sortOn (teamPointsThisSeason . extractValue) teams
-    mapM_ updateWaiverOrder $ rank sortedTeams
+determineWaiverOrder :: Entity League -> Handler ()
+determineWaiverOrder (Entity leagueId league) = do
+    -- order teams by points (in regular or postseason) and make that the waiver order
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId]
+                                [if leagueIsInPostSeason league
+                                     then Asc TeamPointsThisRegularSeason
+                                     else Asc TeamPointsThisPostSeason
+                                        , Asc TeamPointsThisRegularSeason
+                                ]
+    mapM_ updateWaiverOrder $ rank teams
 
 updateWaiverOrder :: (Int, Entity Team) -> Handler ()
 updateWaiverOrder (waiverOrder, Entity teamId _) = do
@@ -342,8 +391,14 @@ updateWaiverOrder (waiverOrder, Entity teamId _) = do
 addToPlayerPoints :: Entity Performance -> Handler ()
 addToPlayerPoints (Entity _performanceId performance) = do
     let (playerId, points) = (performancePlayerId performance, performancePoints performance)
+    league <- runDB $ get404 $ performanceLeagueId performance
     now <- liftIO getCurrentTime
-    runDB $ update playerId [PlayerPointsThisSeason +=. points, PlayerUpdatedAt =. now]
+    runDB $ update playerId [ PlayerPointsThisSeason +=. points
+                            , if leagueIsInPostSeason league
+                                  then PlayerPointsThisPostSeason +=. points
+                                  else PlayerPointsThisRegularSeason +=. points
+                            , PlayerUpdatedAt =. now
+                            ]
 
 
 --------------
@@ -352,7 +407,8 @@ addToPlayerPoints (Entity _performanceId performance) = do
 backfillWeekData :: LeagueId -> Entity Episode -> Handler ()
 backfillWeekData leagueId (Entity episodeId episode) = do
     createWeekData_ (Entity episodeId episode) leagueId
-    calculateLeagueScores episodeId leagueId
+    league <- runDB $ get404 leagueId
+    calculateLeagueScores episodeId $ Entity leagueId league
 
 createPlay :: LeagueId -> WeekId -> Entity Event -> Handler Play
 createPlay leagueId weekId (Entity eventId event) = do

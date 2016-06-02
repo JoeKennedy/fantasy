@@ -200,3 +200,15 @@ instance PathPiece TransactionStatus where
     fromPathPiece = readFromPathPiece
     toPathPiece = showToPathPiece
 
+
+----------------------
+-- PostSeasonStatus --
+----------------------
+data PostSeasonStatus = Regular | Playoff | Consolation
+    deriving (Show, Read, Eq, Ord, Enum, Bounded)
+derivePersistField "PostSeasonStatus"
+
+instance PathPiece PostSeasonStatus where
+    fromPathPiece = readFromPathPiece
+    toPathPiece = showToPathPiece
+

@@ -22,4 +22,4 @@
                                 <a href="@{LeagueTeamR leagueId teamId}">
                                     #{teamAbbreviation team}
                             <td .hidden-sm .hidden-xs>#{teamOwnerName team}
-                            <td .text-right>#{displayRational $ teamPointsThisSeason team}
+                            <td .text-right>#{displayRational $ teamPointsThisRegularSeason team}

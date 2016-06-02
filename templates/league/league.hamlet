@@ -39,5 +39,5 @@
                                     House #{teamName team}
                             <td .text-right .hidden-sm>#{teamOwnerName team}
                             <td .text-right>
-                                #{displayRational $ teamPointsThisSeason team}
+                                #{displayRational $ teamPointsThisRegularSeason team}
 

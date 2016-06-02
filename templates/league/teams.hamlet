@@ -40,7 +40,7 @@
                                     #{teamWaiverOrder team}
                                 $else
                                     #{teamDraftOrder team}
-                            <td>#{displayRational $ teamPointsThisSeason team}
+                            <td>#{displayRational $ teamPointsThisRegularSeason team}
                             <td .hidden-xs>
                                 $if teamIsConfirmed team
                                     Joined

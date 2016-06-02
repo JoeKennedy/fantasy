@@ -146,6 +146,7 @@ instance Yesod App where
     isAuthorized (LeagueTeamSettingsR _ teamId)    _ = requireTeamOwner teamId
 
     isAuthorized (LeagueResultsR leagueId)         _ = requirePublicOrLeagueMember leagueId
+    isAuthorized (LeaguePlayoffsR leagueId)        _ = requireLeagueInPostSeason leagueId
     isAuthorized (LeagueResultsWeekR lid weekNo)   _ = requireWeekExists lid weekNo
     isAuthorized (LeaguePlayersR leagueId)         _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeaguePlayerR leagueId playerId) _ = requirePlayable leagueId playerId
@@ -230,6 +231,17 @@ requirePlayable leagueId playerId = do
     if playerIsPlayable player
         then requirePublicOrLeagueMember leagueId
         else return $ Unauthorized "Player is not playable"
+
+requireLeagueInPostSeason :: LeagueId -> Handler AuthResult
+requireLeagueInPostSeason leagueId = do
+    publicOrLeagueMember <- requirePublicOrLeagueMember leagueId
+    case publicOrLeagueMember of
+        Authorized -> do
+            league <- runDB $ get404 leagueId
+            return $ if leagueIsInPostSeason league
+                then Authorized
+                else Unauthorized "League is not in postseason"
+        _ -> return publicOrLeagueMember
 
 requireWeekExists :: LeagueId -> Int -> Handler AuthResult
 requireWeekExists leagueId weekNo = do
@@ -409,7 +421,8 @@ instance YesodBreadcrumbs App where
     breadcrumb (LeagueTeamJoinR leagueId teamId _)   = return ("Join", Just $ LeagueTeamR leagueId teamId)
 
     -- League week breadcrumbs
-    breadcrumb (LeagueResultsR leagueId) = return ("Results", Just $ LeagueR leagueId)
+    breadcrumb (LeagueResultsR leagueId)  = return ("Results",  Just $ LeagueR leagueId)
+    breadcrumb (LeaguePlayoffsR leagueId) = return ("Playoffs", Just $ LeagueR leagueId)
     breadcrumb (LeagueResultsWeekR leagueId weekNo) = return ("Week " ++ pack (show weekNo), Just $ LeagueResultsR leagueId)
 
     -- League settings breadcrumbs

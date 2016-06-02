@@ -2,7 +2,7 @@ module Handler.Series where
 
 import Import
 import Handler.Common (isAdmin, embeddedForm, groupByFirst)
-import Handler.League         (calculateScores)
+import Handler.League         (calculateScores, moveLeaguesToPostSeason)
 import Handler.League.Week    (createWeekData_)
 
 import qualified Database.Esqueleto as E
@@ -171,6 +171,8 @@ postSeriesEpisodeScoreR seriesNo episodeNo = do
         mapM_ (incrementCharacterEpisodeCount userId) appearEvents
         -- calculate scores for the events
         calculateScores episodeId
+        -- move relevant leagues to postseason
+        moveLeaguesToPostSeason episodeId
     redirect $ SeriesEpisodeR seriesNo episodeNo
 
 postSeriesEpisodeEventsR :: Int -> Int -> Handler Html

@@ -22,8 +22,14 @@ type FullPlay = ( Entity Play, Entity Week, Entity Event, Entity Player, Entity 
 getLeagueResultsR :: LeagueId -> Handler Html
 getLeagueResultsR leagueId = do
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId]
-                                [Desc TeamPointsThisSeason, Desc TeamDraftOrder]
+                                [Desc TeamPointsThisRegularSeason, Desc TeamDraftOrder]
     leagueResultsLayout leagueId "Standings" $(widgetFile "league/results")
+
+getLeaguePlayoffsR :: LeagueId -> Handler Html
+getLeaguePlayoffsR leagueId = do
+    (playoffTs, consolationTs) <- getPlayoffTeams leagueId
+    let groupedTeams = [(Playoff, rank playoffTs), (Consolation, rank consolationTs)]
+    leagueResultsLayout leagueId "Playoffs" $(widgetFile "league/playoffs")
 
 getLeagueResultsWeekR :: LeagueId -> Int -> Handler Html
 getLeagueResultsWeekR leagueId weekNo = do
@@ -174,15 +180,17 @@ createWeekData_ episodeEntity leagueId = do
     return ()
 
 createWeek :: LeagueId -> EpisodeId -> Int -> Handler WeekId
-createWeek leagueId episodeId episodeNo = do
+createWeek leagueId episodeId episodeNo = runDB $ do
     now <- liftIO getCurrentTime
-    runDB $ insert $ Week { weekLeagueId  = leagueId
-                          , weekEpisodeId = episodeId
-                          , weekNumber    = episodeNo
-                          , weekIsScored  = False
-                          , weekCreatedAt = now
-                          , weekUpdatedAt = now
-                          }
+    league <- get404 leagueId
+    insert $ Week { weekLeagueId     = leagueId
+                  , weekEpisodeId    = episodeId
+                  , weekNumber       = episodeNo
+                  , weekIsScored     = False
+                  , weekIsPostSeason = leagueIsInPostSeason league
+                  , weekCreatedAt    = now
+                  , weekUpdatedAt    = now
+                  }
 
 createGame :: LeagueId -> WeekId -> TeamId -> Handler ()
 createGame leagueId weekId teamId = do
@@ -221,3 +229,10 @@ createPerformance leagueId weekId (Entity playerId player) = do
             , performanceUpdatedAt = now
             }
 
+-------------
+-- Helpers --
+-------------
+getPlayoffTeams :: LeagueId -> Handler ([Entity Team], [Entity Team])
+getPlayoffTeams leagueId = do
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisRegularSeason]
+    return $ partition (\(Entity _ t) -> teamPostSeasonStatus t == Playoff) teams

@@ -4,6 +4,9 @@
         <small>Results
 
 <ul #league_results_nav .nav .nav-pills .league-nav-pills>
+    $if leagueIsInPostSeason league
+        <li role="presentation">
+            <a href="@{LeaguePlayoffsR leagueId}">Playoffs
     <li role="presentation">
         <a href="@{LeagueResultsR leagueId}">Standings
     $forall Entity _ week <- weeks
