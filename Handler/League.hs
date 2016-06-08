@@ -37,6 +37,7 @@ leagueForm currentUserId league extra = do
             <*> existingElseDefault 1 (leagueLastCompletedStep <$> league)
             <*> existingElseDefault False (leagueIsDraftComplete <$> league)
             <*> existingElseDefault False (leagueIsInPostSeason <$> league)
+            <*> existingElseDefault False (leagueIsAfterTradeDeadline <$> league)
             <*> createdByField currentUserId (leagueCreatedBy <$> league)
             <*> existingElseDefault now (leagueCreatedAt <$> league)
             <*> updatedByField currentUserId

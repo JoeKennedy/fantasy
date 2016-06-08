@@ -204,16 +204,18 @@ playersWithButtons (Entity leagueId league) players = do
     maybeUserId <- maybeAuthId
     isUserLeagueMember <- isLeagueMember maybeUserId leagueId
     let isDraftComplete = leagueIsDraftComplete league
+        isAfterTradeDeadline = leagueIsAfterTradeDeadline league
         playersAndButtons = if isUserLeagueMember && isDraftComplete
-            then map (\(fullPlayer) -> playerWithButton fullPlayer (fromJust maybeUserId)) players
-            else map (\(p, mt, c, s) -> (p, mt, c, s, [whamlet||])) players
+            then map (playerWithButton isAfterTradeDeadline $ fromJust maybeUserId) players
+            else map playerWithNoButton players
     return $ zipWith (\n (a,b,c,d,e) -> (n,a,b,c,d,e)) [1..] playersAndButtons
 
-playerWithButton :: FullPlayer -> UserId -> FullPlayerWithButton
-playerWithButton ((Entity playerId player), maybeTeam, character, series) userId =
+playerWithButton :: Bool -> UserId -> FullPlayer -> FullPlayerWithButton
+playerWithButton isAfterTradeDeadline userId ((Entity playerId player), maybeTeam, character, series) =
     let (text, dataToggle, dataTarget, icon) = playerButtonAttributes (Entity playerId player) maybeTeam userId
         buttonId = text ++ "-" ++ toPathPiece (playerLeagueId player) ++ "-" ++ toPathPiece playerId
         name = characterName $ extractValue character
+        isPostDeadlineTrade = text == "trade" && isAfterTradeDeadline
     in  (Entity playerId player, maybeTeam, character, series, $(widgetFile "league/player_action_button"))
 
 playerButtonAttributes :: Entity Player -> Maybe (Entity Team) -> UserId -> (Text, Text, Text, Text)
@@ -223,6 +225,9 @@ playerButtonAttributes (Entity _ player) (Just (Entity _ team)) userId =
         then ("bench", "", "", "level-down")
         else ("start", "", "", "level-up"))
     else ("trade", "modal", "#trade_modal", "refresh")
+
+playerWithNoButton :: (a, b, c, d) -> (a, b, c, d, Widget)
+playerWithNoButton (w, x, y, z) = (w, x, y, z, [whamlet||])
 
 -------------
 -- Helpers --

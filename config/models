@@ -84,6 +84,7 @@ League
     lastCompletedStep Int default=1
     isDraftComplete Bool default=false
     isInPostSeason Bool default=false
+    isAfterTradeDeadline Bool default=false
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId

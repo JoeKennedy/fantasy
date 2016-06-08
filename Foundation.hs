@@ -252,13 +252,16 @@ requireWeekExists leagueId weekNo = do
 requireTradeAcceptable :: TransactionId -> Handler AuthResult
 requireTradeAcceptable transactionId = do
     transaction <- runDB $ get404 transactionId
+    league <- runDB $ get404 $ transactionLeagueId transaction
     muid <- maybeAuthId
     case (muid, transactionOtherTeamId transaction) of
         (Nothing, _)     -> return AuthenticationRequired
         (_, Nothing)     -> return $ Unauthorized "Transaction must have another team"
         (_, Just teamId) ->
             if transactionStatus transaction == Requested && transactionType transaction == Trade
-                then requireTeamOwner teamId
+                then if leagueIsAfterTradeDeadline league
+                         then return $ Unauthorized "Trades cannot happen after trade deadline"
+                         else requireTeamOwner teamId
                 else return $ Unauthorized "Must be a trade transaction with status of requested"
 
 requireTradeDeclinable :: TransactionId -> Handler AuthResult
@@ -267,10 +270,16 @@ requireTradeDeclinable = requireTradeAcceptable
 requireTransactionCancelable :: TransactionId -> Handler AuthResult
 requireTransactionCancelable transactionId = do
     transaction <- runDB $ get404 transactionId
+    league <- runDB $ get404 $ transactionLeagueId transaction
+    let teamId = transactionTeamId transaction
     if transactionStatus transaction == Requested
-        && (transactionType transaction == Claim || transactionType transaction == Trade)
-            then requireTeamOwner $ transactionTeamId transaction
-            else return $ Unauthorized "Must be a claim or trade transaction with status of requested"
+        then case transactionType transaction of
+                 Claim -> requireTeamOwner teamId
+                 Trade -> if leagueIsAfterTradeDeadline league
+                              then return $ Unauthorized "Must be a trade transaction with status of requested"
+                              else requireTeamOwner teamId
+                 _ -> return $ Unauthorized "Must be a trade or claim transaction"
+        else return $ Unauthorized "Must be a transaction with status of requested"
 
 requireClaimMovableUp :: TransactionId -> Handler AuthResult
 requireClaimMovableUp transactionId = do

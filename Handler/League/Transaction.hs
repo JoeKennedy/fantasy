@@ -348,6 +348,7 @@ generateTransactionPosition _ _ = return Nothing
 ---------------------------
 -- Process Transactions --
 ---------------------------
+-- TODO - Actually make this go in waiver order, which it apparently doesn't
 processClaimRequests :: Handler ()
 processClaimRequests = do
     maybeAdmin <- runDB $ selectFirst [UserIsAdmin ==. True] [Asc UserId]
@@ -359,6 +360,18 @@ processClaimRequests = do
         , TransactionProcessableAt <=. now
         ] [Asc TransactionPosition, Asc TransactionId]
     mapM_ (processMultiPlayerTransaction adminUserId) transactionIds
+
+cancelAllTrades :: UserId -> LeagueId -> Handler ()
+cancelAllTrades adminUserId leagueId = do
+    transactionIds <- runDB $ selectKeysList [ TransactionLeagueId ==. leagueId
+                                             , TransactionStatus ==. Requested
+                                             , TransactionType ==. Trade
+                                             ] []
+    mapM_ (cancelTrade adminUserId) transactionIds
+
+cancelTrade :: UserId -> TransactionId -> Handler ()
+cancelTrade adminUserId transactionId =
+    failTransactionWithUserId_ transactionId adminUserId "Trade deadline has passed"
 
 processMultiPlayerTransaction :: UserId -> TransactionId -> Handler ()
 processMultiPlayerTransaction userId transactionId = do

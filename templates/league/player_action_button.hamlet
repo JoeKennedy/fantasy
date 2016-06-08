@@ -1,3 +1,5 @@
-<button .player-action-button .btn .btn-primary .btn-xs id="#{buttonId}" data-toggle="#{dataToggle}" data-target="#{dataTarget}" data-character-name="#{name}">
-    #{toUpper text}
-    <i class="fa fa-#{icon}">
+$if isPostDeadlineTrade
+$else
+    <button .player-action-button .btn .btn-primary .btn-xs id="#{buttonId}" data-toggle="#{dataToggle}" data-target="#{dataTarget}" data-character-name="#{name}">
+        #{toUpper text}
+        <i class="fa fa-#{icon}">
