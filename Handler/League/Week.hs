@@ -219,9 +219,7 @@ createPerformance leagueId weekId (Entity playerId player) = do
     let pointsThisSeason = playerPointsThisSeason player
         pointsLastSeason = toRational $ characterPointsLastSeason character
         cumulativePoints = pointsThisSeason + pointsLastSeason
-        -- TODO - don't hard code the number 500
-        cappedLastSeason = min 500 pointsLastSeason
-        cappedCumulative = max 0 $ pointsThisSeason + cappedLastSeason
+        cappedCumulative = max 0 $ pointsThisSeason + pointsLastSeason
     case maybePerformance of
         Just _ -> return ()
         Nothing -> runDB $ insert_ $ Performance
