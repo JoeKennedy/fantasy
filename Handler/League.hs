@@ -4,7 +4,7 @@ import Import
 import Handler.Common        (extractKeyMaybe, extractValueMaybe)
 import Handler.League.Setup
 import Handler.League.Layout
-import Handler.League.Week   (createWeekData_, createWeekData)
+import Handler.League.Week   (createWeekData_, createWeekData, updateCumulativePoints)
 
 import Data.Random.List
 import Data.Random.RVar
@@ -329,6 +329,14 @@ calculateLeagueScores episodeId (Entity leagueId league) = do
         -- for each player update total points on the season
         performances <- runDB $ selectList [PerformanceWeekId ==. weekId] []
         mapM_ addToPlayerPoints performances
+        -- if the next week exists, update cumulative points for that week
+        let nextEpisodeNumber = episodeNumber episode + 1
+        nextWeek <- runDB $ getBy $ UniqueWeekLeagueIdWeekNumber leagueId nextEpisodeNumber
+        case nextWeek of
+            Nothing -> return ()
+            Just (Entity nextWeekId _) -> do
+                nextWeekPerformances <- runDB $ selectList [PerformanceWeekId ==. nextWeekId] []
+                mapM_ updateCumulativePoints nextWeekPerformances
         -- mark the week scored
         now <- liftIO getCurrentTime
         runDB $ update weekId [WeekIsScored =. True, WeekUpdatedAt =. now]

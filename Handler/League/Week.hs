@@ -215,11 +215,7 @@ createPerformance :: LeagueId -> WeekId -> Entity Player -> Handler ()
 createPerformance leagueId weekId (Entity playerId player) = do
     now <- liftIO getCurrentTime
     maybePerformance <- runDB $ getBy $ UniquePerformanceWeekIdPlayerId weekId playerId
-    character <- runDB $ get404 $ playerCharacterId player
-    let pointsThisSeason = playerPointsThisSeason player
-        pointsLastSeason = toRational $ characterPointsLastSeason character
-        cumulativePoints = pointsThisSeason + pointsLastSeason
-        cappedCumulative = max 0 $ pointsThisSeason + pointsLastSeason
+    (cumulativePoints, cappedCumulativePoints) <- calculateCumulativePoints player
     case maybePerformance of
         Just _ -> return ()
         Nothing -> runDB $ insert_ $ Performance
@@ -230,7 +226,7 @@ createPerformance leagueId weekId (Entity playerId player) = do
             , performanceIsStarter = playerIsStarter player
             , performancePoints    = 0
             , performanceCumulativePoints = cumulativePoints
-            , performanceCappedCumulativePoints = cappedCumulative
+            , performanceCappedCumulativePoints = cappedCumulativePoints
             , performanceCreatedAt = now
             , performanceUpdatedAt = now
             }
@@ -238,6 +234,25 @@ createPerformance leagueId weekId (Entity playerId player) = do
 -------------
 -- Helpers --
 -------------
+calculateCumulativePoints :: Player -> Handler (Rational, Rational)
+calculateCumulativePoints player = do
+    character <- runDB $ get404 $ playerCharacterId player
+    let pointsThisSeason = playerPointsThisSeason player
+        pointsLastSeason = toRational $ characterPointsLastSeason character
+        cumulativePoints = pointsThisSeason + pointsLastSeason
+        cappedCumulative = max 0 $ pointsThisSeason + pointsLastSeason
+    return (cumulativePoints, cappedCumulative)
+
+updateCumulativePoints :: Entity Performance -> Handler ()
+updateCumulativePoints (Entity performanceId performance) = do
+    player <- runDB $ get404 $ performancePlayerId performance
+    (cumulativePoints, cappedCumulativePoints) <- calculateCumulativePoints player
+    now <- liftIO getCurrentTime
+    runDB $ update performanceId [ PerformanceCumulativePoints =. cumulativePoints
+                                 , PerformanceCappedCumulativePoints =. cappedCumulativePoints
+                                 , PerformanceUpdatedAt =. now
+                                 ]
+
 getPlayoffTeams :: LeagueId -> Handler ([Entity Team], [Entity Team])
 getPlayoffTeams leagueId = do
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisRegularSeason]

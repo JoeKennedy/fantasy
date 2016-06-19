@@ -27,6 +27,7 @@ episodeForm seriesId episode = renderBootstrap3 defaultBootstrapForm $ Episode
     <*> pure seriesId
     <*> existingElseDefault YetToAir (episodeStatus <$> episode)
     <*> existingElseDefault False (episodeAreEventsComplete <$> episode)
+    <*> existingElseDefault 0 (episodeTimesFinalized <$> episode)
 
 eventForm :: EpisodeId -> Maybe Event -> Form Event
 eventForm episodeId event = renderBootstrap3 defaultBootstrapForm $ Event
@@ -164,11 +165,13 @@ postSeriesEpisodeScoreR seriesNo episodeNo = do
         -- for kill and die events, change character status to Dead
         -- for raise events, change character status to Alive
         mapM_ (updateCharacterStatus userId) events
-        -- for appearance events, increment episodes appeared in for character
-        appearEvents <- runDB $ selectList [ EventEpisodeId ==. episodeId
-                                           , EventAction ==. Appear
-                                           ] [Asc EventTimeInEpisode]
-        mapM_ (incrementCharacterEpisodeCount userId) appearEvents
+
+        if episodeTimesFinalized episode > 0 then return () else do
+            -- for appearance events, increment episodes appeared in for character
+            appearEvents <- runDB $ selectList [ EventEpisodeId ==. episodeId
+                                               , EventAction ==. Appear
+                                               ] [Asc EventTimeInEpisode]
+            mapM_ (incrementCharacterEpisodeCount userId) appearEvents
         -- calculate scores for the events
         calculateScores episodeId
         -- move relevant leagues to postseason

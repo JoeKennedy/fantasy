@@ -62,6 +62,7 @@ Episode
     seriesId SeriesId
     status EpisodeStatus default='Aired'
     areEventsComplete Bool default=false
+    timesFinalized Int default=0
     UniqueEpisodeOverallNumber overallNumber
     UniqueEpisodeNumberSeries number seriesId
     UniqueEpisodeAirTime airTime
