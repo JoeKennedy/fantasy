@@ -313,9 +313,10 @@ calculateLeagueScores episodeId (Entity leagueId league) = do
     -- check if any plays have already been created for this week
     episode <- runDB $ get404 episodeId
     weekId <- createWeekData (Entity episodeId episode) leagueId
+    week <- runDB $ get404 weekId
     playsCount <- runDB $ count [PlayWeekId ==. weekId]
     -- if no plays exist for the week, create all the plays
-    if playsCount > 0 then return () else do
+    if playsCount > 0 || weekIsScored week then return () else do
         events <- runDB $ selectList [EventEpisodeId ==. episodeId] []
         plays <- mapM (createPlay leagueId weekId) events
         -- for each play, update points on the relevant performance and game
