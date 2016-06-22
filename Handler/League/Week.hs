@@ -250,7 +250,7 @@ updateCumulativePoints (Entity performanceId performance) = do
 
 getPlayoffTeams :: LeagueId -> Handler ([Entity Team], [Entity Team])
 getPlayoffTeams leagueId = do
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisRegularSeason]
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisPostSeason]
     return $ partition (\(Entity _ t) -> teamPostSeasonStatus t == Playoff) teams
 
 beforeTradeDeadline :: LeagueId -> Handler Bool
