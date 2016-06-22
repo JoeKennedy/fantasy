@@ -252,13 +252,11 @@ Play
     weekId WeekId
     eventId EventId
     playerId PlayerId
-    teamId TeamId Maybe
     points Rational
     actionPoints Rational default=0
     weightPoints Rational default=0
     action Action
     receivingPlayerId PlayerId Maybe
-    receivingTeamId TeamId Maybe
     receivingPoints Rational
     receivingActionPoints Rational default=0
     receivingWeightPoints Rational default=0

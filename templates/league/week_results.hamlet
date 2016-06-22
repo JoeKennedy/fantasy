@@ -75,7 +75,7 @@ $if weekIsScored week
                             <th .text-right .col-xs-1>#2 Points
 
                     <tbody>
-                        $forall (Entity _ p, _, Entity _ e, Entity prid pr, Entity _ c, _, mrp, mrc, _) <- plays
+                        $forall (Entity _ p, _, Entity _ e, Entity prid pr, Entity _ c, mrp, mrc) <- plays
                             <tr>
                                 <td>
                                     $with (before, after) <- actionToSplitString (playAction p)

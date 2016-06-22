@@ -346,16 +346,15 @@ calculateWeekPoints :: Play -> Handler ()
 calculateWeekPoints play = do
     let weekId = playWeekId play
     -- add points to performance and game for player
-    addPointsToPerformanceAndGame weekId (playPlayerId play) (playTeamId play) (playPoints play)
+    addPointsToPerformanceAndGame weekId (playPlayerId play) (playPoints play)
     case playReceivingPlayerId play of
         Nothing       -> return ()
         -- add points to performance and game for receiving player if relevant
         Just receivingPlayerId ->
-            addPointsToPerformanceAndGame weekId receivingPlayerId
-                    (playReceivingTeamId play) (playReceivingPoints play)
+            addPointsToPerformanceAndGame weekId receivingPlayerId $ playReceivingPoints play
 
-addPointsToPerformanceAndGame :: WeekId -> PlayerId -> Maybe TeamId -> Rational -> Handler ()
-addPointsToPerformanceAndGame weekId playerId maybeTeamId points = do
+addPointsToPerformanceAndGame :: WeekId -> PlayerId -> Rational -> Handler ()
+addPointsToPerformanceAndGame weekId playerId points = do
     player <- runDB $ get404 playerId
     let pointsToAdd = if playerIsPlayable player then points else 0
     Entity performanceId performance <- runDB $ getBy404 $ UniquePerformanceWeekIdPlayerId weekId playerId
@@ -364,7 +363,7 @@ addPointsToPerformanceAndGame weekId playerId maybeTeamId points = do
     runDB $ update performanceId [ PerformancePoints    +=. pointsToAdd
                                  , PerformanceUpdatedAt  =. now
                                  ]
-    case (maybeTeamId, performanceIsStarter performance) of
+    case (performanceTeamId performance, performanceIsStarter performance) of
         -- if the player is a starter on a team, add points to this team's game for this week
         (Just teamId, True) -> runDB $ do
             Entity gameId _ <- getBy404 $ UniqueGameWeekIdTeamId weekId teamId
@@ -422,20 +421,18 @@ backfillWeekData leagueId (Entity episodeId episode) = do
 
 createPlay :: LeagueId -> WeekId -> Entity Event -> Handler Play
 createPlay leagueId weekId (Entity eventId event) = do
-    (aPoints, wPoints, aRecPnts, wRecPnts, Entity playerId player, mRecPlayer) <- calculatePointsAndPlayers leagueId weekId event
+    (aPoints, wPoints, aRecPnts, wRecPnts, Entity playerId _, mRecPlayer) <- calculatePointsAndPlayers leagueId weekId event
 
     now <- liftIO getCurrentTime
     let play = Play { playLeagueId     = leagueId
                     , playWeekId       = weekId
                     , playEventId      = eventId
                     , playPlayerId     = playerId
-                    , playTeamId       = playerTeamId player
                     , playPoints       = aPoints + wPoints
                     , playActionPoints = aPoints
                     , playWeightPoints = wPoints
                     , playAction       = eventAction event
                     , playReceivingPlayerId     = extractKeyMaybe mRecPlayer
-                    , playReceivingTeamId       = join $ mapM playerTeamId $ extractValueMaybe mRecPlayer
                     , playReceivingPoints       = aRecPnts + wRecPnts
                     , playReceivingActionPoints = aRecPnts
                     , playReceivingWeightPoints = wRecPnts

@@ -15,9 +15,8 @@ import           Data.Maybe         (fromJust)
 -----------
 type FullPerformance = (Entity Performance, Entity Week, Entity Player, Maybe (Entity Team), Entity Character)
 type FullGame = (Entity Game, Entity Week, Entity Team)
-type FullPlay = ( Entity Play, Entity Week, Entity Event, Entity Player, Entity Character
-                , Maybe (Entity Team), Maybe (Entity Player), Maybe (Entity Character)
-                , Maybe (Entity Team))
+type FullPlay = ( Entity Play, Entity Week, Entity Event, Entity Player
+                , Entity Character, Maybe (Entity Player), Maybe (Entity Character))
 
 ------------
 -- Routes --
@@ -109,11 +108,9 @@ getPerformancesForPlayer playerId = runDB
 getPlaysForPerformance :: Entity Performance -> Handler [FullPlay]
 getPlaysForPerformance (Entity _ performance) = runDB
     $ E.select
-    $ E.from $ \(play `E.InnerJoin` week `E.InnerJoin` event `E.InnerJoin` player `E.InnerJoin` character `E.LeftOuterJoin` team `E.LeftOuterJoin` recPlayer `E.LeftOuterJoin` recCharacter `E.LeftOuterJoin` recTeam) -> do
-        E.on $ E.just (play ^. PlayReceivingTeamId) E.==. E.just (recTeam ?. TeamId)
+    $ E.from $ \(play `E.InnerJoin` week `E.InnerJoin` event `E.InnerJoin` player `E.InnerJoin` character `E.LeftOuterJoin` recPlayer `E.LeftOuterJoin` recCharacter) -> do
         E.on $ E.just (recPlayer ?. PlayerCharacterId) E.==. E.just (recCharacter ?. CharacterId)
         E.on $ E.just (play ^. PlayReceivingPlayerId) E.==. E.just (recPlayer ?. PlayerId)
-        E.on $ E.just (play ^. PlayTeamId) E.==. E.just (team ?. TeamId)
         E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
         E.on $ play ^. PlayPlayerId E.==. player ^. PlayerId
         E.on $ play ^. PlayEventId E.==. event ^. EventId
@@ -125,16 +122,14 @@ getPlaysForPerformance (Entity _ performance) = runDB
                   , E.asc (event ^. EventAction)
                   , E.asc (event ^. EventId)
                   ]
-        return (play, week, event, player, character, team, recPlayer, recCharacter, recTeam)
+        return (play, week, event, player, character, recPlayer, recCharacter)
 
 getPlaysForWeek :: WeekId -> Handler [FullPlay]
 getPlaysForWeek weekId = runDB
     $ E.select
-    $ E.from $ \(play `E.InnerJoin` week `E.InnerJoin` event `E.InnerJoin` player `E.InnerJoin` character `E.LeftOuterJoin` team `E.LeftOuterJoin` recPlayer `E.LeftOuterJoin` recCharacter `E.LeftOuterJoin` recTeam) -> do
-        E.on $ E.just (play ^. PlayReceivingTeamId) E.==. E.just (recTeam ?. TeamId)
+    $ E.from $ \(play `E.InnerJoin` week `E.InnerJoin` event `E.InnerJoin` player `E.InnerJoin` character `E.LeftOuterJoin` recPlayer `E.LeftOuterJoin` recCharacter) -> do
         E.on $ E.just (recPlayer ?. PlayerCharacterId) E.==. E.just (recCharacter ?. CharacterId)
         E.on $ E.just (play ^. PlayReceivingPlayerId) E.==. E.just (recPlayer ?. PlayerId)
-        E.on $ E.just (play ^. PlayTeamId) E.==. E.just (team ?. TeamId)
         E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
         E.on $ play ^. PlayPlayerId E.==. player ^. PlayerId
         E.on $ play ^. PlayEventId E.==. event ^. EventId
@@ -144,7 +139,7 @@ getPlaysForWeek weekId = runDB
                   , E.asc (event ^. EventAction)
                   , E.asc (event ^. EventId)
                   ]
-        return (play, week, event, player, character, team, recPlayer, recCharacter, recTeam)
+        return (play, week, event, player, character, recPlayer, recCharacter)
 
 
 -------------
