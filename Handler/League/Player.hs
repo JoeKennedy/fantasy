@@ -203,9 +203,9 @@ playersWithButtons :: Entity League -> [FullPlayer] -> Handler [FullPlayerForTab
 playersWithButtons (Entity leagueId league) players = do
     maybeUserId <- maybeAuthId
     isUserLeagueMember <- isLeagueMember maybeUserId leagueId
-    let isDraftComplete = leagueIsDraftComplete league
+    let transactionsPossible = leagueIsDraftComplete league && (not $ leagueIsSeasonComplete league)
         isAfterTradeDeadline = leagueIsAfterTradeDeadline league
-        playersAndButtons = if isUserLeagueMember && isDraftComplete
+        playersAndButtons = if isUserLeagueMember && transactionsPossible
             then map (playerWithButton isAfterTradeDeadline $ fromJust maybeUserId) players
             else map playerWithNoButton players
     return $ zipWith (\n (a,b,c,d,e) -> (n,a,b,c,d,e)) [1..] playersAndButtons

@@ -2,7 +2,9 @@ module Handler.Series where
 
 import Import
 import Handler.Common (isAdmin, embeddedForm, groupByFirst)
-import Handler.League         (calculateScores, moveLeaguesToPostSeason)
+import Handler.League         ( calculateScores, completeSeason
+                              , determineIfTradeDeadlineHasPassed
+                              , moveLeaguesToPostSeason)
 import Handler.League.Week    (createWeekData_)
 
 import qualified Database.Esqueleto as E
@@ -266,6 +268,11 @@ airEpisode = do
             runDB $ update episodeId [EpisodeStatus =. Airing]
             leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
             mapM_ (createWeekData_ $ Entity episodeId episode) leagueIds
+            -- TODO - try to figure out a way not to hard-code the episode
+            -- number to 10
+            let episodeNo = episodeNumber episode
+            if episodeNumber episode == 10 then mapM_ (completeSeason episodeNo) leagueIds else return ()
+            mapM_ (determineIfTradeDeadlineHasPassed episodeNo) leagueIds
 
 
 -------------

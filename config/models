@@ -86,6 +86,7 @@ League
     isDraftComplete Bool default=false
     isInPostSeason Bool default=false
     isAfterTradeDeadline Bool default=false
+    isSeasonComplete Bool default=false
     createdBy UserId
     createdAt UTCTime
     updatedBy UserId

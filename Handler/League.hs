@@ -1,11 +1,13 @@
 module Handler.League where
 
 import Import
-import Handler.Common        (extractKeyMaybe, extractValueMaybe)
+import Handler.Common             (extractKeyMaybe, extractValueMaybe)
 import Handler.League.Setup
 import Handler.League.Layout
-import Handler.League.Week   (createWeekData_, createWeekData, updateCumulativePoints)
+import Handler.League.Week        (createWeekData_, createWeekData, updateCumulativePoints)
+import Handler.League.Transaction (cancelAllTrades, cancelAllTransactionRequests)
 
+import Data.Maybe                   (fromJust)
 import Data.Random.List
 import Data.Random.RVar
 import Data.Random.Source.DevRandom
@@ -38,6 +40,7 @@ leagueForm currentUserId league extra = do
             <*> existingElseDefault False (leagueIsDraftComplete <$> league)
             <*> existingElseDefault False (leagueIsInPostSeason <$> league)
             <*> existingElseDefault False (leagueIsAfterTradeDeadline <$> league)
+            <*> existingElseDefault False (leagueIsSeasonComplete <$> league)
             <*> createdByField currentUserId (leagueCreatedBy <$> league)
             <*> existingElseDefault now (leagueCreatedAt <$> league)
             <*> updatedByField currentUserId
@@ -260,6 +263,46 @@ leagueListGroupItem Nothing scoringType
     | isDisabledScoringType scoringType =
         [whamlet|<div .list-group-item .disabled>^{scoringTypeWidget scoringType}|]
     | otherwise = [whamlet|<a .list-group-item href="#">^{scoringTypeWidget scoringType}|]
+
+
+--------------------
+-- Trade Deadline --
+--------------------
+determineIfTradeDeadlineHasPassed :: Int -> LeagueId -> Handler ()
+determineIfTradeDeadlineHasPassed weekNo leagueId = do
+    league <- runDB $ get404 leagueId
+    if leagueIsAfterTradeDeadline league then return () else do
+        isBeforeTradeDeadline <- weekNumberBeforeTradeDeadline leagueId weekNo
+        if isBeforeTradeDeadline then return () else do
+            maybeAdmin <- runDB $ selectFirst [UserIsAdmin ==. True] [Asc UserId]
+            let Entity adminUserId _ = fromJust maybeAdmin
+            now <- liftIO getCurrentTime
+            runDB $ update leagueId [ LeagueIsAfterTradeDeadline =. True
+                                    , LeagueUpdatedBy =. adminUserId
+                                    , LeagueUpdatedAt =. now
+                                    ]
+            cancelAllTrades adminUserId leagueId
+
+weekNumberBeforeTradeDeadline :: LeagueId -> Int -> Handler Bool
+weekNumberBeforeTradeDeadline leagueId weekNo = do
+    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+    return $ weekNo < generalSettingsTradeDeadlineWeek generalSettings
+
+
+---------------------
+-- Complete Season --
+---------------------
+completeSeason :: Int -> LeagueId -> Handler ()
+completeSeason weekNo leagueId = do
+    if weekNo /= 10 then return () else do
+        maybeAdmin <- runDB $ selectFirst [UserIsAdmin ==. True] [Asc UserId]
+        let Entity adminUserId _ = fromJust maybeAdmin
+        now <- liftIO getCurrentTime
+        runDB $ update leagueId [ LeagueIsSeasonComplete =. True
+                                , LeagueUpdatedBy =. adminUserId
+                                , LeagueUpdatedAt =. now
+                                ]
+        cancelAllTransactionRequests adminUserId leagueId
 
 
 --------------------------------

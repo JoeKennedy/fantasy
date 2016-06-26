@@ -2,13 +2,10 @@ module Handler.League.Week where
 
 import Import
 
-import Handler.Common             (extractValue)
 import Handler.League.Layout
-import Handler.League.Transaction (cancelAllTrades)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
-import           Data.Maybe         (fromJust)
 
 -----------
 -- Types --
@@ -171,9 +168,6 @@ createWeekData (Entity episodeId episode) leagueId = do
             -- create performance for each player in league
             players <- runDB $ selectList [PlayerLeagueId ==. leagueId] []
             mapM_ (createPerformance leagueId weekId) players
-            -- Cancel all trades if passed the trade deadline
-            league <- runDB $ get404 leagueId
-            determineIfTradeDeadlineHasPassed weekNo $ Entity leagueId league
 
             return weekId
 
@@ -252,28 +246,3 @@ getPlayoffTeams :: LeagueId -> Handler ([Entity Team], [Entity Team])
 getPlayoffTeams leagueId = do
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisPostSeason]
     return $ partition (\(Entity _ t) -> teamPostSeasonStatus t == Playoff) teams
-
-beforeTradeDeadline :: LeagueId -> Handler Bool
-beforeTradeDeadline leagueId = do
-    maybeWeek <- runDB $ selectFirst [WeekLeagueId ==. leagueId] [Desc WeekNumber]
-    let currentWeek = fromMaybe 0 $ map (weekNumber . extractValue) maybeWeek
-    weekNumberBeforeTradeDeadline leagueId currentWeek
-
-weekNumberBeforeTradeDeadline :: LeagueId -> Int -> Handler Bool
-weekNumberBeforeTradeDeadline leagueId weekNo = do
-    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
-    return $ weekNo < generalSettingsTradeDeadlineWeek generalSettings
-
-determineIfTradeDeadlineHasPassed :: Int -> Entity League -> Handler ()
-determineIfTradeDeadlineHasPassed weekNo (Entity leagueId league) =
-    if leagueIsAfterTradeDeadline league then return () else do
-        isBeforeTradeDeadline <- weekNumberBeforeTradeDeadline leagueId weekNo
-        if isBeforeTradeDeadline then return () else do
-            maybeAdmin <- runDB $ selectFirst [UserIsAdmin ==. True] [Asc UserId]
-            let Entity adminUserId _ = fromJust maybeAdmin
-            now <- liftIO getCurrentTime
-            runDB $ update leagueId [ LeagueIsAfterTradeDeadline =. True
-                                    , LeagueUpdatedBy =. adminUserId
-                                    , LeagueUpdatedAt =. now
-                                    ]
-            cancelAllTrades adminUserId leagueId

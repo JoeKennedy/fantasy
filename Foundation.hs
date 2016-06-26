@@ -150,10 +150,11 @@ instance Yesod App where
     isAuthorized (LeagueResultsWeekR lid weekNo)   _ = requireWeekExists lid weekNo
     isAuthorized (LeaguePlayersR leagueId)         _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeaguePlayerR leagueId playerId) _ = requirePlayable leagueId playerId
-    isAuthorized (LeaguePlayerStartR _ playerId)   _ = requirePlayerOwner playerId
-    isAuthorized (LeaguePlayerBenchR _ playerId)   _ = requirePlayerOwner playerId
-    isAuthorized (LeaguePlayerClaimR _ _ playerId) _ = requirePlayerOwner playerId
-    isAuthorized (LeaguePlayerTradeR _ _ playerId) _ = requirePlayerOwner playerId
+    -- The below four lines need more stringent conditions
+    isAuthorized (LeaguePlayerStartR lid playerId) _ = requirePlayerOwnerAndTransactionsPossible lid playerId
+    isAuthorized (LeaguePlayerBenchR lid playerId) _ = requirePlayerOwnerAndTransactionsPossible lid playerId
+    isAuthorized (LeaguePlayerClaimR lid _ plyrId) _ = requirePlayerOwnerAndTransactionsPossible lid plyrId
+    isAuthorized (LeaguePlayerTradeR lid _ plyrId) _ = requirePlayerOwnerAndTransactionsPossible lid plyrId
 
     isAuthorized (LeagueSettingsR leagueId _)   True = requireLeagueManager leagueId
     isAuthorized (LeagueSettingsR leagueId _)  False = requirePublicOrLeagueMember leagueId
@@ -352,16 +353,25 @@ requireLeagueManagerAndIncompleteDraft leagueId draftYear
                               else Authorized
             _ -> authResult
 
+requirePlayerOwnerAndTransactionsPossible :: LeagueId -> PlayerId -> Handler AuthResult
+requirePlayerOwnerAndTransactionsPossible leagueId playerId = do
+    league <- runDB $ get404 leagueId
+    muid <- maybeAuthId
+    case (muid, leagueIsDraftComplete league, leagueIsSeasonComplete league) of
+        (Nothing, _, _) -> return AuthenticationRequired
+        (_, False, _)   -> return $ Unauthorized "Transactions cannot happen before draft occurs"
+        (_, _, True)    -> return $ Unauthorized "Transactions cannot happen after season is complete"
+        (_, _, _)       -> requirePlayerOwner playerId
+
 requirePlayerOwner :: PlayerId -> Handler AuthResult
 requirePlayerOwner playerId = do
     player <- runDB $ get404 playerId
-    muid <- maybeAuthId
     let unauthorized = Unauthorized "This player is not on your team"
-    case (muid, playerTeamId player) of
-        (Nothing, _) -> return AuthenticationRequired
-        (_, Nothing) -> return unauthorized
-        (_, Just teamId) -> do
-            team <- runDB $ get404 teamId
+    case playerTeamId player of
+        Nothing  -> return unauthorized
+        Just tid -> do
+            team <- runDB $ get404 tid
+            muid <- maybeAuthId
             return $ if teamOwnerId team == muid then Authorized else unauthorized
 
 

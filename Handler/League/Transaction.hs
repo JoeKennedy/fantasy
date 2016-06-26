@@ -361,6 +361,17 @@ processClaimRequests = do
         ] [Asc TransactionPosition, Asc TransactionId]
     mapM_ (processMultiPlayerTransaction adminUserId) transactionIds
 
+cancelAllTransactionRequests :: UserId -> LeagueId -> Handler ()
+cancelAllTransactionRequests adminUserId leagueId = do
+    transactionIds <- runDB $ selectKeysList [ TransactionLeagueId ==. leagueId
+                                             , TransactionStatus ==. Requested
+                                             ] []
+    mapM_ (cancelTransaction adminUserId) transactionIds
+
+cancelTransaction :: UserId -> TransactionId -> Handler ()
+cancelTransaction adminUserId transactionId =
+    failTransactionWithUserId_ transactionId adminUserId "Season is complete"
+
 cancelAllTrades :: UserId -> LeagueId -> Handler ()
 cancelAllTrades adminUserId leagueId = do
     transactionIds <- runDB $ selectKeysList [ TransactionLeagueId ==. leagueId
