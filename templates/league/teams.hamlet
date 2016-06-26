@@ -8,21 +8,20 @@
         <div .panel .panel-default>
             <div .panel-heading>
                 <h5 .text-center>Houses
-            <table .table .table-hover .table-striped>
+            <table data-toggle="table" data-classes="table table-hover table-no-bordered" data-striped="true">
                 <thead>
                     <tr>
-                        <th .col-xs-1>Rank
-                        <th .col-xs-3>Name
-                        <th .col-sm-1 .hidden-xs>Abbreviation
-                        <th .col-xs-1 .visible-xs>Abbrev.
-                        <th .col-xs-3>Owner
-                        <th .col-sm-1 .hidden-xs>
+                        <th .col-sm-1 data-field="team-rank" data-sortable="true">Rank
+                        <th .col-sm-3 data-field="team-name" data-sortable="true" data-sorter="linkSorter">Name
+                        <th .col-sm-1 .hidden-xs data-field="team-abbreviation" data-sortable="true" data-sorter="linkSorter">Abbreviation
+                        <th .col-sm-3 data-field="team-owner" data-sortable="true">Owner
+                        <th .col-sm-1 .hidden-xs data-field="team-waiver-draft" data-sortable="true">
                             $if leagueIsDraftComplete league
                                 Waiver
                             $else
                                 Draft
-                        <th .col-xs-1>Points
-                        <th .col-sm-1 .hidden-xs>Status
+                        <th .col-sm-1 data-field="team-points" data-sortable="true">Points
+                        <th .col-sm-1 .hidden-xs data-field="team-status" data-sortable="true">Status
 
                 <tbody>
                     $forall (rank, Entity teamId team) <- rank teams
