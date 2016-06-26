@@ -497,10 +497,16 @@ insertDraftPick leagueId userId draftPick = do
     didAutoFail <- autoFailDraftTransaction leagueId transactionId player
     if didAutoFail then return () else do
         now <- liftIO getCurrentTime
-        runDB $ update playerId [PlayerTeamId =. Just teamId,
-                                 PlayerUpdatedBy =. userId, PlayerUpdatedAt =. now]
-        runDB $ update teamId [TeamPlayersCount +=. 1,
-                               TeamUpdatedBy =. userId, TeamUpdatedAt =. now]
+        Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+        let startPlayer = teamStartersCount team < generalSettingsNumberOfStarters generalSettings
+        runDB $ update playerId [ PlayerIsStarter =. startPlayer
+                                , PlayerTeamId =. Just teamId
+                                , PlayerUpdatedBy =. userId
+                                , PlayerUpdatedAt =. now
+                                ]
+        let teamUpdates = [TeamPlayersCount +=. 1, TeamUpdatedBy =. userId, TeamUpdatedAt =. now]
+        let fullUpdates = if startPlayer then (TeamStartersCount +=. 1) : teamUpdates else teamUpdates
+        runDB $ update teamId fullUpdates
         succeedTransaction transactionId
 
 movePlayerToNewTeam :: UserId -> (Entity TransactionPlayer, Entity Player) -> Handler ()
