@@ -3,6 +3,7 @@ module Handler.League.Team where
 import Import
 
 import Handler.Common             (extractValue)
+import Handler.League.ConfirmSettings (sendJoinEmail)
 import Handler.League.Layout
 import Handler.League.Player      (getTeamPlayers, isLeagueMember,
                                    maybeAuthTeamId, playersModal,
@@ -70,7 +71,9 @@ teamSettingsForm currentUserId league draftSettings teams extra = do
             <*> updatedByField currentUserId
             <*> pure now
             <*> pure (teamConfirmedBy team)
-            <*> pure (teamConfirmedAt team))
+            <*> pure (teamConfirmedAt team)
+            <*> pure (teamJoinEmailResentBy team)
+            <*> pure (teamJoinEmailResentAt team))
 
     return (teamSettingsResult, $(widgetFile "league/team_settings_form"))
 
@@ -110,10 +113,12 @@ postSetupTeamsSettingsR = do
 
 getLeagueTeamsR :: LeagueId -> Handler Html
 getLeagueTeamsR leagueId = do
+    maybeUserId <- maybeAuthId
     league <- runDB $ get404 leagueId
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisRegularSeason]
-    leagueLayout leagueId "Houses" $ do
-        $(widgetFile "league/teams")
+    joinEmailsResendable <- mapM (isJoinEmailResendable maybeUserId league) teams
+    let fullTeams = rankFirst $ zip teams joinEmailsResendable
+    leagueLayout leagueId "Houses" $(widgetFile "league/teams")
 
 getLeagueTeamR :: LeagueId -> TeamId -> Handler Html
 getLeagueTeamR leagueId teamId = do
@@ -123,6 +128,7 @@ getLeagueTeamR leagueId teamId = do
     league <- runDB $ get404 leagueId
     let leagueEntity = Entity leagueId league
     team <- runDB $ get404 teamId
+    joinEmailResendable <- isJoinEmailResendable maybeUserId league $ Entity teamId team
     teamPlayers <- getTeamPlayers $ Just teamId
     players <- playersWithButtons leagueEntity teamPlayers
     Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
@@ -180,6 +186,26 @@ postLeagueTeamJoinR leagueId teamId _verificationKey = do
     setMessage "Congrats! You've successfully joined the league!"
     redirect $ LeagueTeamR leagueId teamId
 
+postLeagueTeamResendR :: LeagueId -> TeamId -> Handler ()
+postLeagueTeamResendR leagueId teamId = do
+    userId <- requireAuthId
+    league <- runDB $ get404 leagueId
+    team <- runDB $ get404 teamId
+    leagueManagerTeam <- runDB $ selectFirst [TeamLeagueId ==. leagueId] [Asc TeamId]
+    case leagueManagerTeam of
+        Nothing -> return ()
+        Just managerTeam -> do
+            sendJoinEmail (Entity leagueId league) managerTeam $ Entity teamId team
+            now <- liftIO getCurrentTime
+            runDB $ update teamId [ TeamJoinEmailResentBy =. Just userId
+                                  , TeamJoinEmailResentAt =. Just now
+                                  , TeamUpdatedBy =. userId
+                                  , TeamUpdatedAt =. now
+                                  ]
+            setMessage $ toMarkup $ "Resent join email for House " ++ teamName team ++ " to " ++
+                        teamOwnerName team ++ " at " ++ teamOwnerEmail team ++ "."
+
+
 -------------
 -- Widgets --
 -------------
@@ -195,6 +221,11 @@ teamPerformancesTable performances totalPoints numberOfStarters rosterSize =
                             , ("Bench", fullBench, extraBenchSlots, Nothing)
                             ]
     in  $(widgetFile "league/performances_table")
+
+resendJoinButton :: LeagueId -> TeamId -> Widget
+resendJoinButton leagueId teamId =
+    let buttonId = "resend-" ++ toPathPiece leagueId ++ "-" ++ toPathPiece teamId
+    in  $(widgetFile "league/resend_join_button")
 
 -------------
 -- Helpers --
@@ -237,3 +268,13 @@ getTeamsForSettings _ (Just teamId) = do
 teamSettingsAction :: LeagueId -> Maybe TeamId -> Route App
 teamSettingsAction leagueId (Just teamId) = LeagueTeamSettingsR leagueId teamId
 teamSettingsAction leagueId Nothing = LeagueSettingsR leagueId LeagueTeamsSettingsR
+
+isJoinEmailResendable :: Maybe UserId -> League -> Entity Team -> Handler Bool
+isJoinEmailResendable Nothing _ _ = return False
+isJoinEmailResendable (Just userId) league (Entity _ team) = do
+    emailSentRecently <- liftIO $ past24Hours $ teamJoinEmailResentAt team
+    -- now <- liftIO getCurrentTime
+    -- let resend = fromMaybe now $ teamJoinEmailResentAt team
+    -- $(logInfo) (pack $ show emailSentRecently)
+    -- $(logInfo) ()
+    return $ isLeagueManager (Just userId) league && not emailSentRecently

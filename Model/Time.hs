@@ -46,3 +46,11 @@ dayOfWeekToText 5 = "Friday"
 dayOfWeekToText 6 = "Saturday"
 dayOfWeekToText x = dayOfWeekToText $ x `mod` 7
 
+past24Hours :: Maybe UTCTime -> IO Bool
+past24Hours = map (fromMaybe False) . traverse past24Hrs
+
+past24Hrs :: UTCTime -> IO Bool
+past24Hrs utcTime = do
+    now <- getCurrentTime
+    return $ diffUTCTime now utcTime <= 86400
+

@@ -144,6 +144,7 @@ instance Yesod App where
     isAuthorized (LeagueTeamJoinR _ tid verKey) True = requireCorrectVerKeyAndLoggedIn tid verKey
     isAuthorized (LeagueTeamJoinR _ tid vkey)  False = requireCorrectVerificationKey tid vkey
     isAuthorized (LeagueTeamSettingsR _ teamId)    _ = requireTeamOwner teamId
+    isAuthorized (LeagueTeamResendR lid teamId)    _ = requireJoinEmailResendable lid teamId
 
     isAuthorized (LeagueResultsR leagueId)         _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeaguePlayoffsR leagueId)        _ = requireLeagueInPostSeason leagueId
@@ -243,6 +244,23 @@ requireLeagueInPostSeason leagueId = do
                 then Authorized
                 else Unauthorized "League is not in postseason"
         _ -> return publicOrLeagueMember
+
+requireJoinEmailResendable :: LeagueId -> TeamId -> Handler AuthResult
+requireJoinEmailResendable leagueId teamId = do
+    authResult <- requireLeagueManager leagueId
+    case authResult of
+        Authorized -> do
+            league <- runDB $ get404 leagueId
+            team <- runDB $ get404 teamId
+            emailSentRecently <- liftIO $ past24Hours $ teamJoinEmailResentAt team
+            return $ if leagueIsActive league && leagueIsSetupComplete league
+                then if teamIsConfirmed team
+                        then Unauthorized "Team is already confirmed"
+                        else if emailSentRecently
+                                then Unauthorized "Join email was resent in past 24 hours"
+                                else Authorized
+                else Unauthorized "League must be set up and active"
+        _ -> return authResult
 
 requireWeekExists :: LeagueId -> Int -> Handler AuthResult
 requireWeekExists leagueId weekNo = do
@@ -470,6 +488,7 @@ instance YesodBreadcrumbs App where
     breadcrumb LeagueCancelTransactionR{} = return ("", Nothing)
     breadcrumb LeagueMoveClaimUpR{}       = return ("", Nothing)
     breadcrumb LeagueMoveClaimDownR{}     = return ("", Nothing)
+    breadcrumb LeagueTeamResendR{}        = return ("", Nothing)
 
 -- How to run database actions.
 instance YesodPersist App where

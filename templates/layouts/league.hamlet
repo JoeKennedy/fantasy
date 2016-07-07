@@ -19,8 +19,6 @@
           <a .tab-name href="@{LeaguePlayersR leagueId}">Characters
         <li>
           <a .tab-name href="@{LeagueResultsR leagueId}">Results
-        <!-- <li> -->
-        <!--   <a .tab-name href="#">Scoreboard -->
         <li>
           <a .tab-name href="@{LeagueTransactionsR leagueId}">Transactions
 

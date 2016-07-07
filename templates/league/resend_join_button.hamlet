@@ -1,0 +1,2 @@
+<button .resend-join-button .btn .btn-primary .btn-xs id="#{buttonId}">
+    Resend Email

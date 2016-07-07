@@ -163,6 +163,8 @@ Team
     updatedAt UTCTime
     confirmedBy UserId Maybe
     confirmedAt UTCTime Maybe
+    joinEmailResentBy UserId Maybe
+    joinEmailResentAt UTCTime Maybe
     UniqueTeamNameLeagueId name leagueId
     UniqueTeamAbbreviationLeagueId abbreviation leagueId
     UniqueTeamOwnerEmailLeagueId ownerEmail leagueId

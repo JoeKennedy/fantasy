@@ -8,7 +8,7 @@
         <div .panel .panel-default>
             <div .panel-heading>
                 <h5 .text-center>Houses
-            <table data-toggle="table" data-classes="table table-hover table-no-bordered" data-striped="true">
+            <table data-toggle="table" data-classes="table table-hover table-no-bordered teams-table" data-striped="true">
                 <thead>
                     <tr>
                         <th .col-sm-1 data-field="team-rank" data-sortable="true">Rank
@@ -24,7 +24,7 @@
                         <th .col-sm-1 .hidden-xs data-field="team-status" data-sortable="true">Status
 
                 <tbody>
-                    $forall (rank, Entity teamId team) <- rank teams
+                    $forall (rank, Entity teamId team, joinEmailResendable) <- fullTeams
                         <tr>
                             <td>#{rank}
                             <td>
@@ -43,4 +43,6 @@
                             <td .hidden-xs>
                                 $if teamIsConfirmed team
                                     Joined
+                                $elseif joinEmailResendable
+                                    ^{resendJoinButton leagueId teamId}
 

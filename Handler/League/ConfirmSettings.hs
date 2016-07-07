@@ -40,6 +40,7 @@ postSetupConfirmSettingsR = do
 -------------
 -- Helpers --
 -------------
+-- TODO - make a new Handler for emails
 sendJoinEmail :: Entity League -> Entity Team -> Entity Team -> Handler ()
 sendJoinEmail (Entity leagueId league) (Entity _ leagueManagerTeam) (Entity teamId team) = do
     master <- getYesod

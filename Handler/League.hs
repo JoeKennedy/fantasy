@@ -219,6 +219,8 @@ createTeam (Entity leagueId league) (teamNumber, draftOrder) = do
                    , teamUpdatedAt        = leagueUpdatedAt league
                    , teamConfirmedBy      = maybeTeamOwnerId
                    , teamConfirmedAt      = maybeConfirmedAt
+                   , teamJoinEmailResentBy = Nothing
+                   , teamJoinEmailResentAt = Nothing
                    }
 
 teamTextAttributes :: Int -> (Text, Text, Text, Text)

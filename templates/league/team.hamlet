@@ -22,6 +22,8 @@
                         <p .list-group-item-text>
                             $if teamIsConfirmed team
                                 Joined
+                            $elseif joinEmailResendable
+                                Unjoined ^{resendJoinButton leagueId teamId}
                             $else
                                 Unjoined
                     <li .list-group-item>
