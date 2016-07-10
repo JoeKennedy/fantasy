@@ -128,7 +128,7 @@ getLeagueTeamR leagueId number = do
     maybeUserTeamId <- maybeAuthTeamId leagueId
     league <- runDB $ get404 leagueId
     let leagueEntity = Entity leagueId league
-    Entity teamId team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+    Entity teamId team <- runDB $ getBy404 $ UniqueTeamLeagueIdNumber leagueId number
     joinEmailResendable <- isJoinEmailResendable maybeUserId league $ Entity teamId team
     teamPlayers <- getTeamPlayers $ Just teamId
     players <- playersWithButtons leagueEntity teamPlayers
@@ -165,7 +165,7 @@ getLeagueTeamJoinR :: LeagueId -> Int -> Text -> Handler Html
 getLeagueTeamJoinR leagueId number verificationKey = do
     maybeUserId <- maybeAuthId
     league <- runDB $ get404 leagueId
-    Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+    Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdNumber leagueId number
     maybeLeagueManagerTeam <- runDB $ selectFirst [TeamLeagueId ==. leagueId] [Asc TeamNumber]
     defaultLayout $ do
         setTitle $ toMarkup $ "Join League " ++ leagueName league
@@ -175,7 +175,7 @@ postLeagueTeamJoinR :: LeagueId -> Int -> Text -> Handler Html
 postLeagueTeamJoinR leagueId number _verificationKey = do
     userId <- requireAuthId
     now <- liftIO getCurrentTime
-    Entity teamId _ <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+    Entity teamId _ <- runDB $ getBy404 $ UniqueTeamLeagueIdNumber leagueId number
     runDB $ update teamId [ TeamIsConfirmed =. True
                           , TeamOwnerId =. Just userId
                           , TeamUpdatedBy =. userId
@@ -191,7 +191,7 @@ postLeagueTeamResendR :: LeagueId -> Int -> Handler ()
 postLeagueTeamResendR leagueId number = do
     userId <- requireAuthId
     league <- runDB $ get404 leagueId
-    Entity teamId team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+    Entity teamId team <- runDB $ getBy404 $ UniqueTeamLeagueIdNumber leagueId number
     leagueManagerTeam <- runDB $ selectFirst [TeamLeagueId ==. leagueId] [Asc TeamNumber]
     case leagueManagerTeam of
         Nothing -> return ()
@@ -263,7 +263,7 @@ updateTeamSettings leagueId maybeTeamNumber pillName = do
 getTeamsForSettings :: LeagueId -> Maybe Int -> Handler [Entity Team]
 getTeamsForSettings leagueId Nothing = runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamNumber]
 getTeamsForSettings leagueId (Just number) = do
-    teamEntity <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+    teamEntity <- runDB $ getBy404 $ UniqueTeamLeagueIdNumber leagueId number
     return [teamEntity]
 
 teamSettingsAction :: LeagueId -> Maybe Int -> Route App

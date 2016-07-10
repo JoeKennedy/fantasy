@@ -248,7 +248,7 @@ requireJoinEmailResendable leagueId number = do
     case authResult of
         Authorized -> do
             league <- runDB $ get404 leagueId
-            Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+            Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdNumber leagueId number
             emailSentRecently <- liftIO $ past24Hours $ teamJoinEmailResentAt team
             return $ if leagueIsActive league && leagueIsSetupComplete league
                 then if teamIsConfirmed team
@@ -319,7 +319,7 @@ requireClaimMovableDown transactionId = do
 
 requireCorrectVerificationKey :: LeagueId -> Int -> Text -> Handler AuthResult
 requireCorrectVerificationKey leagueId number verificationKey = do
-    Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+    Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdNumber leagueId number
     return $ if teamVerificationKey team == verificationKey
         then Authorized
         else Unauthorized "You aren't allowed to join this league"
@@ -332,7 +332,7 @@ requireCorrectVerKeyAndLoggedIn leagueId number verKey = do
 
 requireTeamOwnerByNumber :: LeagueId -> Int -> Handler AuthResult
 requireTeamOwnerByNumber leagueId number = do
-    Entity teamId _ <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+    Entity teamId _ <- runDB $ getBy404 $ UniqueTeamLeagueIdNumber leagueId number
     requireTeamOwner teamId
 
 requireTeamOwner :: TeamId -> Handler AuthResult
@@ -449,7 +449,7 @@ instance YesodBreadcrumbs App where
     -- League teams breadcrumbs
     breadcrumb (LeagueTeamsR leagueId) = return ("Houses", Just $ LeagueR leagueId)
     breadcrumb (LeagueTeamR leagueId number) = do
-        Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+        Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdNumber leagueId number
         return ("House " ++ teamName team, Just $ LeagueTeamsR leagueId)
     breadcrumb (LeagueTeamSettingsR leagueId number) = return ("Settings", Just $ LeagueTeamR leagueId number)
     breadcrumb (LeagueTeamJoinR leagueId number _)   = return ("Join", Just $ LeagueTeamR leagueId number)

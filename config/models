@@ -166,6 +166,7 @@ Team
     confirmedAt UTCTime Maybe
     joinEmailResentBy UserId Maybe
     joinEmailResentAt UTCTime Maybe
+    UniqueTeamLeagueIdNumber leagueId number
     UniqueTeamNameLeagueId name leagueId
     UniqueTeamAbbreviationLeagueId abbreviation leagueId
     UniqueTeamOwnerEmailLeagueId ownerEmail leagueId
