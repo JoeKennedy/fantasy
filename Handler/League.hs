@@ -1,7 +1,7 @@
 module Handler.League where
 
 import Import
-import Handler.Common             (extractKeyMaybe, extractValueMaybe)
+import Handler.Common             (backgroundHandler, extractKeyMaybe, extractValueMaybe)
 import Handler.League.Setup
 import Handler.League.Layout
 import Handler.League.Week        (createWeekData_, createWeekData, updateCumulativePoints)
@@ -133,6 +133,7 @@ postLeagueEditSettingsR leagueId = do
             redirect action
         _ -> leagueSettingsLayout leagueId action enctype widget "League"
 
+
 -------------------
 -- Create League --
 -------------------
@@ -141,37 +142,43 @@ createLeague league = do
     let teamNumbers = [1..(leagueTeamsCount league)]
     draftOrder <- liftIO (runRVar (shuffle teamNumbers) DevRandom :: IO [Int])
     leagueId <- runDB $ insert league
+    let leagueEntity = Entity leagueId league
     runDB $ do
-        let teamsCount = leagueTeamsCount league
-            leagueEntity = Entity leagueId league
-        insert_ $ GeneralSettings
-            { generalSettingsLeagueId = leagueId
-            , generalSettingsNumberOfStarters = fst $ defaultRosterSize teamsCount
-            , generalSettingsRosterSize = snd $ defaultRosterSize teamsCount
-            , generalSettingsRegularSeasonLength = fst $ defaultSeasonLength teamsCount
-            , generalSettingsPlayoffLength = snd $ defaultSeasonLength teamsCount
-            , generalSettingsNumberOfTeamsInPlayoffs = defaultNumberOfTeamsInPlayoffs teamsCount
-            , generalSettingsTradeDeadlineWeek = defaultTradeDeadlineWeek teamsCount
-            , generalSettingsWaiverPeriodInDays = defaultWaiverPeriodInDays
-            , generalSettingsCreatedBy = leagueCreatedBy league
-            , generalSettingsCreatedAt = leagueCreatedAt league
-            , generalSettingsUpdatedBy = leagueUpdatedBy league
-            , generalSettingsUpdatedAt = leagueUpdatedAt league
-            }
+        createGeneralSettings leagueEntity
         mapM_ (createScoringSettingsRow leagueEntity) allActions
         mapM_ (createTeam leagueEntity) $ zip teamNumbers draftOrder
-        characters <- selectList [] [Asc CharacterName]
-        mapM_ (createPlayer leagueEntity) characters
 
-    -- create week and related data for any already aired episodes this season
-    maybeSeries <- runDB $ selectFirst [] [Desc SeriesNumber]
-    case maybeSeries of
-        Nothing -> return ()
-        Just (Entity seriesId _) -> do
-            episodes <- runDB $ selectList [ EpisodeSeriesId ==. seriesId
-                                           , EpisodeStatus !=. YetToAir
-                                           ] [Asc EpisodeId]
-            mapM_ (backfillWeekData leagueId) episodes
+    -- create players and previous weeks in background; they aren't needed for setup
+    backgroundHandler $ do
+        characters <- runDB $ selectList [] [Asc CharacterName]
+        runDB $ mapM_ (createPlayer leagueEntity) characters
+        -- create week and related data for any already aired episodes this season
+        maybeSeries <- runDB $ selectFirst [] [Desc SeriesNumber]
+        case maybeSeries of
+            Nothing -> return ()
+            Just (Entity seriesId _) -> do
+                episodes <- runDB $ selectList [ EpisodeSeriesId ==. seriesId
+                                               , EpisodeStatus !=. YetToAir
+                                               ] [Asc EpisodeId]
+                mapM_ (backfillWeekData leagueId) episodes
+
+createGeneralSettings :: Entity League -> ReaderT SqlBackend Handler ()
+createGeneralSettings (Entity leagueId league) = do
+    let teamsCount = leagueTeamsCount league
+    insert_ $ GeneralSettings
+        { generalSettingsLeagueId = leagueId
+        , generalSettingsNumberOfStarters = fst $ defaultRosterSize teamsCount
+        , generalSettingsRosterSize = snd $ defaultRosterSize teamsCount
+        , generalSettingsRegularSeasonLength = fst $ defaultSeasonLength teamsCount
+        , generalSettingsPlayoffLength = snd $ defaultSeasonLength teamsCount
+        , generalSettingsNumberOfTeamsInPlayoffs = defaultNumberOfTeamsInPlayoffs teamsCount
+        , generalSettingsTradeDeadlineWeek = defaultTradeDeadlineWeek teamsCount
+        , generalSettingsWaiverPeriodInDays = defaultWaiverPeriodInDays
+        , generalSettingsCreatedBy = leagueCreatedBy league
+        , generalSettingsCreatedAt = leagueCreatedAt league
+        , generalSettingsUpdatedBy = leagueUpdatedBy league
+        , generalSettingsUpdatedAt = leagueUpdatedAt league
+        }
 
 createScoringSettingsRow :: Entity League -> Action -> ReaderT SqlBackend Handler ()
 createScoringSettingsRow (Entity leagueId league) action =
@@ -250,6 +257,7 @@ createPlayer (Entity leagueId league) (Entity characterId character) =
                      , playerUpdatedBy        = leagueUpdatedBy league
                      , playerUpdatedAt        = leagueUpdatedAt league
                      }
+
 
 -------------
 -- Helpers --

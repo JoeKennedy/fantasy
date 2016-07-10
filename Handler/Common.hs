@@ -23,6 +23,12 @@ getLetsEncryptR text = do
         then return $ appLetsEncrypt master
         else redirect $ HomeR
 
+--------------------------
+-- Background Processes --
+--------------------------
+backgroundHandler :: Handler () -> Handler ()
+backgroundHandler = forkHandler $ $logErrorS "errorHandler" . tshow
+
 ----------
 -- USER --
 ----------
