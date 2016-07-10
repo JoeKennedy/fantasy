@@ -122,12 +122,9 @@ instance Yesod App where
     isAuthorized (SeriesEpisodeEventR _ _ _) _      = requireAdmin
     isAuthorized (SeriesEpisodeScoreR _ _)   _      = requireAdmin
 
-    -- TODO - For team and player routes, make sure that each
-    -- entity is in the correct league
-    -- Another option would be to use teamNumber (need to be added first)
-    -- instead of teamId and characterId instead of playerId
-    -- I like this solution better, but it might be an issue with the join
-    -- links, so it might make sense to add later in or after the season
+    -- TODO - For transaction routes, make sure transaction is in the correct
+    -- league, or take leagueId out of the route, OR figure out how to get a
+    -- transactionNumber within league, or something like that
     isAuthorized LeaguesR                          _ = return Authorized
     isAuthorized (LeagueR leagueId)                _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueCancelR leagueId)          _ = requireLeagueManager leagueId
@@ -141,21 +138,21 @@ instance Yesod App where
 
     isAuthorized (LeagueTeamsR leagueId)           _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueTeamR leagueId _)          _ = requirePublicOrLeagueMember leagueId
-    isAuthorized (LeagueTeamJoinR _ tid verKey) True = requireCorrectVerKeyAndLoggedIn tid verKey
-    isAuthorized (LeagueTeamJoinR _ tid vkey)  False = requireCorrectVerificationKey tid vkey
-    isAuthorized (LeagueTeamSettingsR _ teamId)    _ = requireTeamOwner teamId
-    isAuthorized (LeagueTeamResendR lid teamId)    _ = requireJoinEmailResendable lid teamId
+    isAuthorized (LeagueTeamJoinR lid tid ver)  True = requireCorrectVerKeyAndLoggedIn lid tid ver
+    isAuthorized (LeagueTeamJoinR lid tid ver) False = requireCorrectVerificationKey lid tid ver
+    isAuthorized (LeagueTeamSettingsR lid tNumber) _ = requireTeamOwnerByNumber lid tNumber
+    isAuthorized (LeagueTeamResendR lid tNumber)   _ = requireJoinEmailResendable lid tNumber
 
     isAuthorized (LeagueResultsR leagueId)         _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeaguePlayoffsR leagueId)        _ = requireLeagueInPostSeason leagueId
     isAuthorized (LeagueResultsWeekR lid weekNo)   _ = requireWeekExists lid weekNo
     isAuthorized (LeaguePlayersR leagueId)         _ = requirePublicOrLeagueMember leagueId
-    isAuthorized (LeaguePlayerR leagueId playerId) _ = requirePlayable leagueId playerId
+    isAuthorized (LeaguePlayerR leagueId characId) _ = requirePlayable leagueId characId
     -- The below four lines need more stringent conditions
-    isAuthorized (LeaguePlayerStartR lid playerId) _ = requirePlayerOwnerAndTransactionsPossible lid playerId
-    isAuthorized (LeaguePlayerBenchR lid playerId) _ = requirePlayerOwnerAndTransactionsPossible lid playerId
-    isAuthorized (LeaguePlayerClaimR lid _ plyrId) _ = requirePlayerOwnerAndTransactionsPossible lid plyrId
-    isAuthorized (LeaguePlayerTradeR lid _ plyrId) _ = requirePlayerOwnerAndTransactionsPossible lid plyrId
+    isAuthorized (LeaguePlayerStartR lid characId) _ = requirePlayerOwnerAndTransactionsPossible lid characId
+    isAuthorized (LeaguePlayerBenchR lid characId) _ = requirePlayerOwnerAndTransactionsPossible lid characId
+    isAuthorized (LeaguePlayerClaimR lid _ charId) _ = requirePlayerOwnerAndTransactionsPossible lid charId
+    isAuthorized (LeaguePlayerTradeR lid _ charId) _ = requirePlayerOwnerAndTransactionsPossible lid charId
 
     isAuthorized (LeagueSettingsR leagueId _)   True = requireLeagueManager leagueId
     isAuthorized (LeagueSettingsR leagueId _)  False = requirePublicOrLeagueMember leagueId
@@ -227,9 +224,9 @@ requirePublicOrLeagueMember leagueId = do
         then requireLeagueMember leagueId
         else return Authorized
 
-requirePlayable :: LeagueId -> PlayerId -> Handler AuthResult
-requirePlayable leagueId playerId = do
-    player <- runDB $ get404 playerId
+requirePlayable :: LeagueId -> CharacterId -> Handler AuthResult
+requirePlayable leagueId characterId = do
+    Entity _ player <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
     if playerIsPlayable player
         then requirePublicOrLeagueMember leagueId
         else return $ Unauthorized "Player is not playable"
@@ -245,13 +242,13 @@ requireLeagueInPostSeason leagueId = do
                 else Unauthorized "League is not in postseason"
         _ -> return publicOrLeagueMember
 
-requireJoinEmailResendable :: LeagueId -> TeamId -> Handler AuthResult
-requireJoinEmailResendable leagueId teamId = do
+requireJoinEmailResendable :: LeagueId -> Int -> Handler AuthResult
+requireJoinEmailResendable leagueId number = do
     authResult <- requireLeagueManager leagueId
     case authResult of
         Authorized -> do
             league <- runDB $ get404 leagueId
-            team <- runDB $ get404 teamId
+            Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
             emailSentRecently <- liftIO $ past24Hours $ teamJoinEmailResentAt team
             return $ if leagueIsActive league && leagueIsSetupComplete league
                 then if teamIsConfirmed team
@@ -320,18 +317,23 @@ requireClaimMovableDown transactionId = do
             then requireTransactionCancelable transactionId
             else return $ Unauthorized "Must be a claim transaction that isn't first"
 
-requireCorrectVerificationKey :: TeamId -> Text -> Handler AuthResult
-requireCorrectVerificationKey teamId verificationKey = do
-    team <- runDB $ get404 teamId
+requireCorrectVerificationKey :: LeagueId -> Int -> Text -> Handler AuthResult
+requireCorrectVerificationKey leagueId number verificationKey = do
+    Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
     return $ if teamVerificationKey team == verificationKey
         then Authorized
         else Unauthorized "You aren't allowed to join this league"
 
-requireCorrectVerKeyAndLoggedIn :: TeamId -> Text -> Handler AuthResult
-requireCorrectVerKeyAndLoggedIn teamId verKey = do
+requireCorrectVerKeyAndLoggedIn :: LeagueId -> Int -> Text -> Handler AuthResult
+requireCorrectVerKeyAndLoggedIn leagueId number verKey = do
     authResult <- requireLoggedIn
-    case authResult of Authorized -> requireCorrectVerificationKey teamId verKey
+    case authResult of Authorized -> requireCorrectVerificationKey leagueId number verKey
                        _ -> return authResult
+
+requireTeamOwnerByNumber :: LeagueId -> Int -> Handler AuthResult
+requireTeamOwnerByNumber leagueId number = do
+    Entity teamId _ <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+    requireTeamOwner teamId
 
 requireTeamOwner :: TeamId -> Handler AuthResult
 requireTeamOwner teamId = do
@@ -371,19 +373,19 @@ requireLeagueManagerAndIncompleteDraft leagueId draftYear
                               else Authorized
             _ -> authResult
 
-requirePlayerOwnerAndTransactionsPossible :: LeagueId -> PlayerId -> Handler AuthResult
-requirePlayerOwnerAndTransactionsPossible leagueId playerId = do
+requirePlayerOwnerAndTransactionsPossible :: LeagueId -> CharacterId -> Handler AuthResult
+requirePlayerOwnerAndTransactionsPossible leagueId characterId = do
     league <- runDB $ get404 leagueId
     muid <- maybeAuthId
     case (muid, leagueIsDraftComplete league, leagueIsSeasonComplete league) of
         (Nothing, _, _) -> return AuthenticationRequired
         (_, False, _)   -> return $ Unauthorized "Transactions cannot happen before draft occurs"
         (_, _, True)    -> return $ Unauthorized "Transactions cannot happen after season is complete"
-        (_, _, _)       -> requirePlayerOwner playerId
+        (_, _, _)       -> requirePlayerOwner leagueId characterId
 
-requirePlayerOwner :: PlayerId -> Handler AuthResult
-requirePlayerOwner playerId = do
-    player <- runDB $ get404 playerId
+requirePlayerOwner :: LeagueId -> CharacterId -> Handler AuthResult
+requirePlayerOwner leagueId characterId = do
+    Entity _ player <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
     let unauthorized = Unauthorized "This player is not on your team"
     case playerTeamId player of
         Nothing  -> return unauthorized
@@ -440,22 +442,17 @@ instance YesodBreadcrumbs App where
 
     -- League players breadcrumbs
     breadcrumb (LeaguePlayersR leagueId) = return ("Characters", Just $ LeagueR leagueId)
-    breadcrumb (LeaguePlayerR leagueId playerId) = do
-        player <- runDB $ get404 playerId
-        character <- runDB $ get404 $ playerCharacterId player
+    breadcrumb (LeaguePlayerR leagueId characterId) = do
+        character <- runDB $ get404 characterId
         return (characterName character, Just $ LeagueR leagueId)
-    breadcrumb (LeaguePlayerStartR leagueId playerId)   = return ("Start", Just $ LeaguePlayerR leagueId playerId)
-    breadcrumb (LeaguePlayerBenchR leagueId playerId)   = return ("Bench", Just $ LeaguePlayerR leagueId playerId)
-    breadcrumb (LeaguePlayerClaimR leagueId playerId _) = return ("Claim", Just $ LeaguePlayerR leagueId playerId)
-    breadcrumb (LeaguePlayerTradeR leagueId playerId _) = return ("Trade", Just $ LeaguePlayerR leagueId playerId)
 
     -- League teams breadcrumbs
     breadcrumb (LeagueTeamsR leagueId) = return ("Houses", Just $ LeagueR leagueId)
-    breadcrumb (LeagueTeamR leagueId teamId) = do
-        team <- runDB $ get404 teamId
+    breadcrumb (LeagueTeamR leagueId number) = do
+        Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
         return ("House " ++ teamName team, Just $ LeagueTeamsR leagueId)
-    breadcrumb (LeagueTeamSettingsR leagueId teamId) = return ("Settings", Just $ LeagueTeamR leagueId teamId)
-    breadcrumb (LeagueTeamJoinR leagueId teamId _)   = return ("Join", Just $ LeagueTeamR leagueId teamId)
+    breadcrumb (LeagueTeamSettingsR leagueId number) = return ("Settings", Just $ LeagueTeamR leagueId number)
+    breadcrumb (LeagueTeamJoinR leagueId number _)   = return ("Join", Just $ LeagueTeamR leagueId number)
 
     -- League week breadcrumbs
     breadcrumb (LeagueResultsR leagueId)  = return ("Results",  Just $ LeagueR leagueId)
@@ -489,6 +486,11 @@ instance YesodBreadcrumbs App where
     breadcrumb LeagueMoveClaimUpR{}       = return ("", Nothing)
     breadcrumb LeagueMoveClaimDownR{}     = return ("", Nothing)
     breadcrumb LeagueTeamResendR{}        = return ("", Nothing)
+
+    breadcrumb LeaguePlayerStartR{}       = return ("", Nothing)
+    breadcrumb LeaguePlayerBenchR{}       = return ("", Nothing)
+    breadcrumb LeaguePlayerClaimR{}       = return ("", Nothing)
+    breadcrumb LeaguePlayerTradeR{}       = return ("", Nothing)
 
 -- How to run database actions.
 instance YesodPersist App where

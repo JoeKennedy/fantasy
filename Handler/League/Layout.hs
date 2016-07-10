@@ -12,7 +12,7 @@ leagueLayout leagueId activeTab widget = do
     maybeUserId <- maybeAuthId
     league <- leagueOrRedirectIfIncomplete leagueId
     maybeTeam <- getCurrentTeam leagueId maybeUserId
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamNumber]
     leagues <- getLeaguesByUser maybeUserId
     defaultLayout $ do
         setTitle $ toMarkup $ leagueLayoutTitle league activeTab

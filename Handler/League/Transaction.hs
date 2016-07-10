@@ -167,7 +167,7 @@ transactionsTable transactions maybeCurrentTeamId usePastTense =
 transactionPlayerWidget :: Transaction -> FullTransactionPlayer -> TeamId -> Bool -> Widget
 transactionPlayerWidget transaction fullTransactionPlayer teamId usePastTense =
     let transType = transactionType transaction
-        (Entity _ transactionPlayer, Entity playerId _, Entity _ character, maybeNewTeam) = fullTransactionPlayer
+        (Entity _ transactionPlayer, _, Entity characterId character, maybeNewTeam) = fullTransactionPlayer
         newTeamIsTransTeam = Just teamId == transactionPlayerNewTeamId transactionPlayer
         (icon, pastTense, presentTense, showTeam) = transactionPlayerAttributes transType newTeamIsTransTeam
     in  $(widgetFile "league/transaction_player")

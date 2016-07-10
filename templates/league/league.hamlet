@@ -31,11 +31,11 @@
                 <h5 .text-center>Houses
             <table .table .table-hover .table-striped>
                 <tbody>
-                    $forall (rank, Entity teamId team) <- rank teams
+                    $forall (rank, Entity _ team) <- rank teams
                         <tr>
                             <td>#{rank}
                             <td>
-                                <a href="@{LeagueTeamR leagueId teamId}">
+                                <a href="@{LeagueTeamR leagueId $ teamNumber team}">
                                     House #{teamName team}
                             <td .text-right .hidden-sm>#{teamOwnerName team}
                             <td .text-right>

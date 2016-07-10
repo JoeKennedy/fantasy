@@ -13,8 +13,8 @@
         <li>
           <a .tab-name href="@{LeagueR leagueId}">League
         <li>
-          $maybe Entity teamId _ <- maybeTeam
-            <a .tab-name href="@{LeagueTeamR leagueId teamId}">My House
+          $maybe Entity _ team <- maybeTeam
+            <a .tab-name href="@{LeagueTeamR leagueId $ teamNumber team}">My House
         <li>
           <a .tab-name href="@{LeaguePlayersR leagueId}">Characters
         <li>
@@ -24,8 +24,8 @@
 
         $maybe _ <- maybeUserId
           <li .dropdown .dropdown-hover>
-            $maybe Entity teamId _ <- maybeTeam
-              <a .tab-name href="@{LeagueTeamSettingsR leagueId teamId}">
+            $maybe Entity _ team <- maybeTeam
+              <a .tab-name href="@{LeagueTeamSettingsR leagueId $ teamNumber team}">
                 Settings
                 <span .fa .fa-caret-down>
             $nothing
@@ -33,9 +33,9 @@
                 Settings
                 <span .fa .fa-caret-down>
             <ul .dropdown-menu>
-              $maybe Entity teamId _ <- maybeTeam
+              $maybe Entity _ team <- maybeTeam
                 <li>
-                  <a href="@{LeagueTeamSettingsR leagueId teamId}">My House
+                  <a href="@{LeagueTeamSettingsR leagueId $ teamNumber team}">My House
                 <li .divider role="separator">
               <li>
                 <a href="@{LeagueSettingsR leagueId LeagueEditSettingsR}">League
@@ -53,9 +53,9 @@
             Houses
             <span .fa .fa-caret-down>
           <ul .dropdown-menu>
-            $forall Entity teamId team <- teams
+            $forall Entity _ team <- teams
               <li>
-                <a href="@{LeagueTeamR leagueId teamId}">#{teamName team}
+                <a href="@{LeagueTeamR leagueId $ teamNumber team}">#{teamName team}
 
       <ul .nav .navbar-nav .navbar-right>
         <li .dropdown .dropdown-hover>

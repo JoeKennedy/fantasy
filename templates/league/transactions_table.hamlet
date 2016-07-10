@@ -5,7 +5,7 @@ $if null transactions
 $else 
     <table .table .table-condensed .table-striped .transactions-table>
         $forall (Entity transactionId transaction, tps) <- groupedTransactions
-            $maybe (Entity teamId team, _, _, _, _) <- listToMaybe tps
+            $maybe (Entity _ team, _, _, _, _) <- listToMaybe tps
                 <thead>
                     <tr .active>
                         <td>
@@ -15,7 +15,7 @@ $else
                                 $nothing
                                     $if transactionType transaction == Trade
                                         \ Proposed by
-                                        <a href="@{LeagueTeamR (teamLeagueId team) teamId}">
+                                        <a href="@{LeagueTeamR (teamLeagueId team) (teamNumber team)}">
                                             House #{teamName team}
                                     $if transactionType transaction == Claim
                                         $maybe position <- transactionPosition transaction
@@ -55,7 +55,7 @@ $else
                     <tr>
                         <td>
                             $if isNothing maybeCurrentTeamId && usePastTense
-                                <a .text-decoration-none href="@{LeagueTeamR (teamLeagueId team) teamId}">
+                                <a .text-decoration-none href="@{LeagueTeamR (teamLeagueId team) (teamNumber team)}">
                                     <h6 .text-primary>
                                         House #{teamName team}
 

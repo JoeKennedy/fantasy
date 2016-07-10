@@ -43,12 +43,11 @@ getLeaguePlayersR leagueId = do
         rosterSize = generalSettingsRosterSize generalSettings
     leagueLayout leagueId "Characters" $(widgetFile "league/players")
 
-getLeaguePlayerR :: LeagueId -> PlayerId -> Handler Html
-getLeaguePlayerR leagueId playerId = do
+getLeaguePlayerR :: LeagueId -> CharacterId -> Handler Html
+getLeaguePlayerR leagueId characterId = do
     maybeUser <- maybeAuth
     league <- runDB $ get404 leagueId
-    player <- runDB $ get404 playerId
-    let characterId = playerCharacterId player
+    Entity playerId player <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
     character <- runDB $ get404 characterId
     blurbs <- runDB $ selectList [BlurbCharacterId ==. characterId] [Desc BlurbId]
     performances <- getPerformancesForPlayer playerId
@@ -61,16 +60,16 @@ getLeaguePlayerR leagueId playerId = do
             return $ Just $ Entity teamId team
     leagueLayout leagueId "Characters" $(widgetFile "league/player")
 
-postLeaguePlayerStartR :: LeagueId -> PlayerId -> Handler ()
-postLeaguePlayerStartR leagueId playerId = do
-    player <- runDB $ get404 playerId
+postLeaguePlayerStartR :: LeagueId -> CharacterId -> Handler ()
+postLeaguePlayerStartR leagueId characterId = do
+    Entity playerId player <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
     transactionId <- singlePlayerTransaction (Entity playerId player) Start
     didAutoFail <- autoFailStartTransaction leagueId transactionId player
     if didAutoFail then return () else do
         Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
         let teamId = fromJust $ playerTeamId player
         team <- runDB $ get404 teamId
-        character <- runDB $ get404 $ playerCharacterId player
+        character <- runDB $ get404 characterId
         if teamStartersCount team >= generalSettingsNumberOfStarters generalSettings
             then do
                 let message = "You need to bench another player before starting "
@@ -87,9 +86,9 @@ postLeaguePlayerStartR leagueId playerId = do
                 let message = characterName character ++ " is now starting in your lineup."
                 setMessage $ toMarkup message
 
-postLeaguePlayerBenchR :: LeagueId -> PlayerId -> Handler ()
-postLeaguePlayerBenchR leagueId playerId = do
-    player <- runDB $ get404 playerId
+postLeaguePlayerBenchR :: LeagueId -> CharacterId -> Handler ()
+postLeaguePlayerBenchR leagueId characterId = do
+    Entity playerId player <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
     transactionId <- singlePlayerTransaction (Entity playerId player) Bench
     didAutoFail <- autoFailBenchTransaction leagueId transactionId player
     if didAutoFail then return () else do
@@ -100,7 +99,7 @@ postLeaguePlayerBenchR leagueId playerId = do
         runDB $ update playerId [PlayerIsStarter =. False, PlayerUpdatedAt =. now,
                                  PlayerUpdatedBy =. userId]
         updateTeamStartersCount teamId now userId
-        character <- runDB $ get404 $ playerCharacterId player
+        character <- runDB $ get404 characterId
         team <- runDB $ get404 teamId
         let spotsLeft = generalSettingsNumberOfStarters generalSettings - teamStartersCount team + 1
             message = characterName character ++ " is now benched in your lineup and you have "
@@ -108,12 +107,12 @@ postLeaguePlayerBenchR leagueId playerId = do
         succeedTransaction transactionId
         setMessage $ toMarkup message
 
-postLeaguePlayerClaimR :: LeagueId -> PlayerId -> PlayerId -> Handler ()
-postLeaguePlayerClaimR leagueId playerIdToAdd playerIdToDrop = do
-    playerToAdd  <- runDB $ get404 playerIdToAdd
-    playerToDrop <- runDB $ get404 playerIdToDrop
-    characterToAdd  <- runDB $ get404 $ playerCharacterId playerToAdd
-    characterToDrop <- runDB $ get404 $ playerCharacterId playerToDrop
+postLeaguePlayerClaimR :: LeagueId -> CharacterId -> CharacterId -> Handler ()
+postLeaguePlayerClaimR leagueId characterIdToAdd characterIdToDrop = do
+    Entity playerIdToAdd  playerToAdd  <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterIdToAdd
+    Entity playerIdToDrop playerToDrop <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterIdToDrop
+    characterToAdd  <- runDB $ get404 characterIdToAdd
+    characterToDrop <- runDB $ get404 characterIdToDrop
     transactionId <- twoPlayerTransaction (Entity playerIdToAdd playerToAdd)
                      (Entity playerIdToDrop playerToDrop) Claim
     didAutoFail <- autoFailClaimTransaction leagueId transactionId playerToAdd playerToDrop
@@ -127,17 +126,17 @@ postLeaguePlayerClaimR leagueId playerIdToAdd playerIdToDrop = do
             "Claim to pick up " ++ characterName characterToAdd ++ " and drop " ++
             characterName characterToDrop ++ " will be processed" ++ day ++ " at 9am UTC."
 
-postLeaguePlayerTradeR :: LeagueId -> PlayerId -> PlayerId -> Handler ()
-postLeaguePlayerTradeR leagueId playerIdToTake playerIdToGive = do
-    playerToTake <- runDB $ get404 playerIdToTake
-    playerToGive <- runDB $ get404 playerIdToGive
+postLeaguePlayerTradeR :: LeagueId -> CharacterId -> CharacterId -> Handler ()
+postLeaguePlayerTradeR leagueId characterIdToTake characterIdToGive = do
+    Entity playerIdToTake playerToTake <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterIdToTake
+    Entity playerIdToGive playerToGive <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterIdToGive
     transactionId <- twoPlayerTransaction (Entity playerIdToTake playerToTake)
                      (Entity playerIdToGive playerToGive) Trade
     didAutoFail <- autoFailTradeTransaction leagueId transactionId playerToTake playerToGive
     if didAutoFail then return () else do
         otherTeam <- runDB $ get404 $ fromJust $ playerTeamId playerToTake
-        characterToTake <- runDB $ get404 $ playerCharacterId playerToTake
-        characterToGive <- runDB $ get404 $ playerCharacterId playerToGive
+        characterToTake <- runDB $ get404 characterIdToTake
+        characterToGive <- runDB $ get404 characterIdToGive
         setMessage $ toMarkup $ "Trade to give " ++ characterName characterToGive ++
             " to House " ++ teamName otherTeam ++ " in exchange for " ++
             characterName characterToTake ++ " has been submitted. It is up to House " ++
@@ -213,7 +212,7 @@ playersWithButtons (Entity leagueId league) players = do
 playerWithButton :: Bool -> UserId -> FullPlayer -> FullPlayerWithButton
 playerWithButton isAfterTradeDeadline userId ((Entity playerId player), maybeTeam, character, series) =
     let (text, dataToggle, dataTarget, icon) = playerButtonAttributes (Entity playerId player) maybeTeam userId
-        buttonId = text ++ "-" ++ toPathPiece (playerLeagueId player) ++ "-" ++ toPathPiece playerId
+        buttonId = text ++ "-" ++ toPathPiece (playerLeagueId player) ++ "-" ++ toPathPiece (playerCharacterId player)
         name = characterName $ extractValue character
         isPostDeadlineTrade = text == "trade" && isAfterTradeDeadline
     in  (Entity playerId player, maybeTeam, character, series, $(widgetFile "league/player_action_button"))

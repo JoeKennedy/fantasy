@@ -12,14 +12,14 @@
                         <th .hidden-sm .hidden-xs>Owner
                         <th .text-right>Points
                 <tbody>
-                    $forall (rank, Entity teamId team) <- rank teams
+                    $forall (rank, Entity _ team) <- rank teams
                         <tr>
                             <td>#{rank}
                             <td>
-                                <a href="@{LeagueTeamR leagueId teamId}">
+                                <a href="@{LeagueTeamR leagueId $ teamNumber team}">
                                     House #{teamName team}
                             <td .hidden-xs>
-                                <a href="@{LeagueTeamR leagueId teamId}">
+                                <a href="@{LeagueTeamR leagueId $ teamNumber team}">
                                     #{teamAbbreviation team}
                             <td .hidden-sm .hidden-xs>#{teamOwnerName team}
                             <td .text-right>#{displayRational $ teamPointsThisRegularSeason team}

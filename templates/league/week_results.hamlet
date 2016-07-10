@@ -17,14 +17,14 @@
                         <th .hidden-sm .hidden-xs>Owner
                         <th .text-right>Points
                 <tbody>
-                    $forall (rank, (Entity _ game, Entity teamId team)) <- rank games
+                    $forall (rank, (Entity _ game, Entity _ team)) <- rank games
                         <tr>
                             <td>#{rank}
                             <td>
-                                <a href="@{LeagueTeamR leagueId teamId}">
+                                <a href="@{LeagueTeamR leagueId $ teamNumber team}">
                                     House #{teamName team}
                             <td .hidden-xs>
-                                <a href="@{LeagueTeamR leagueId teamId}">
+                                <a href="@{LeagueTeamR leagueId $ teamNumber team}">
                                     #{teamAbbreviation team}
                             <td .hidden-sm .hidden-xs>#{teamOwnerName team}
                             <td .text-right>#{displayRational $ gamePoints game}
@@ -44,14 +44,14 @@ $if weekIsScored week
                             <th .text-right>Points
 
                     <tbody>
-                        $forall (Entity _ pe, _, Entity plid _, mt, Entity _ c) <- performances
+                        $forall (Entity _ pe, _, _, mt, Entity cid c) <- performances
                             <tr>
                                 <td>
-                                    <a href="@{LeaguePlayerR leagueId plid}">
+                                    <a href="@{LeaguePlayerR leagueId cid}">
                                         #{characterName c}
                                 <td>
-                                    $maybe Entity teamId team <- mt
-                                        <a href="@{LeagueTeamR leagueId teamId}">
+                                    $maybe Entity _ team <- mt
+                                        <a href="@{LeagueTeamR leagueId $ teamNumber team}">
                                             #{teamAbbreviation team}
                                     $nothing
                                         -
@@ -75,20 +75,20 @@ $if weekIsScored week
                             <th .text-right .col-xs-1>#2 Points
 
                     <tbody>
-                        $forall (Entity _ p, _, Entity _ e, Entity prid pr, Entity _ c, mrp, mrc) <- plays
+                        $forall (Entity _ p, _, Entity _ e, Entity _ pr, Entity cid c, mrp, mrc) <- plays
                             <tr>
                                 <td>
                                     $with (before, after) <- actionToSplitString (playAction p)
                                         $if playerIsPlayable pr
-                                            <a href="@{LeaguePlayerR leagueId prid}">
+                                            <a href="@{LeaguePlayerR leagueId cid}">
                                                 #{characterName c}
                                         $else
                                             #{characterName c}
                                         \ #{before} #
-                                        $maybe Entity rpid rp <- mrp
-                                            $maybe Entity _ rc <- mrc
+                                        $maybe Entity _ rp <- mrp
+                                            $maybe Entity rcid rc <- mrc
                                                 $if playerIsPlayable rp
-                                                    <a href="@{LeaguePlayerR leagueId rpid}">
+                                                    <a href="@{LeaguePlayerR leagueId rcid}">
                                                         #{characterName rc}
                                                 $else
                                                     #{characterName rc}

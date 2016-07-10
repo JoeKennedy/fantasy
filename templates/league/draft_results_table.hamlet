@@ -7,17 +7,17 @@
                   <th>Character
 
         <tbody>
-              $forall (number, Entity teamId team, Entity playerId _, Entity _ character) <- draftPicks
+              $forall (number, Entity _ team, _, Entity characterId character) <- draftPicks
                   $with leagueId <- teamLeagueId team
                       <tr .draft-pick-row>
                           <td .col-xs-1>#{show number}
                           <td .col-xs-5 .hidden-sm .hidden-xs>
-                              <a href="@{LeagueTeamR leagueId teamId}">
+                              <a href="@{LeagueTeamR leagueId $ teamNumber team}">
                                   House #{teamName team}
                           <td .col-xs-3 .hidden-lg .hidden-md>
-                              <a href="@{LeagueTeamR leagueId teamId}">
+                              <a href="@{LeagueTeamR leagueId $ teamNumber team}">
                                   #{teamAbbreviation team}
                           <td .col-md-6 .col-xs-8>
-                              <a href=@{LeaguePlayerR leagueId playerId}>
+                              <a href=@{LeaguePlayerR leagueId characterId}>
                                   #{characterName character}
 

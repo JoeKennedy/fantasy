@@ -142,6 +142,7 @@ DraftSettings
 
 Team
     leagueId LeagueId
+    number Int default=0
     name Text
     abbreviation Text
     ownerId UserId Maybe

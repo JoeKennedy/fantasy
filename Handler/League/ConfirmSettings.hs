@@ -28,7 +28,7 @@ postSetupConfirmSettingsR = do
     userId <- requireAuthId
     let action = SetupLeagueR SetupConfirmSettingsR
     (Entity leagueId league, _) <- leagueOrRedirect userId action
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamNumber]
     case uncons teams of
         Nothing -> error "This league has no teams"
         Just (leagueManagerTeam, unjoinedTeams) -> do
@@ -42,11 +42,12 @@ postSetupConfirmSettingsR = do
 -------------
 -- TODO - make a new Handler for emails
 sendJoinEmail :: Entity League -> Entity Team -> Entity Team -> Handler ()
-sendJoinEmail (Entity leagueId league) (Entity _ leagueManagerTeam) (Entity teamId team) = do
+sendJoinEmail (Entity leagueId league) (Entity _ leagueManagerTeam) (Entity _ team) = do
     master <- getYesod
     render <- getUrlRender
     let email = teamOwnerEmail team
-        url = render $ LeagueTeamJoinR leagueId teamId $ teamVerificationKey team
+        number = teamNumber team
+        url = render $ LeagueTeamJoinR leagueId number $ teamVerificationKey team
     renderSendMailSES (appHttpManager master) (appSesCreds master email) Mail
         { mailHeaders =
             [ ( "Subject"

@@ -32,18 +32,18 @@
 /leagues/#LeagueId        LeagueR       GET
 /leagues/#LeagueId/cancel LeagueCancelR POST
 
-/leagues/#LeagueId/teams                    LeagueTeamsR        GET
-/leagues/#LeagueId/teams/#TeamId            LeagueTeamR         GET
-/leagues/#LeagueId/teams/#TeamId/settings   LeagueTeamSettingsR GET POST
-/leagues/#LeagueId/teams/#TeamId/join/#Text LeagueTeamJoinR     GET POST
-/leagues/#LeagueId/teams/#TeamId/resend     LeagueTeamResendR       POST
+/leagues/#LeagueId/teams                 LeagueTeamsR        GET
+/leagues/#LeagueId/teams/#Int            LeagueTeamR         GET
+/leagues/#LeagueId/teams/#Int/settings   LeagueTeamSettingsR GET POST
+/leagues/#LeagueId/teams/#Int/join/#Text LeagueTeamJoinR     GET POST
+/leagues/#LeagueId/teams/#Int/resend     LeagueTeamResendR       POST
 
-/leagues/#LeagueId/players                           LeaguePlayersR     GET
-/leagues/#LeagueId/players/#PlayerId                 LeaguePlayerR      GET
-/leagues/#LeagueId/players/#PlayerId/start           LeaguePlayerStartR POST
-/leagues/#LeagueId/players/#PlayerId/bench           LeaguePlayerBenchR POST
-/leagues/#LeagueId/players/#PlayerId/claim/#PlayerId LeaguePlayerClaimR POST
-/leagues/#LeagueId/players/#PlayerId/trade/#PlayerId LeaguePlayerTradeR POST
+/leagues/#LeagueId/players                                 LeaguePlayersR     GET
+/leagues/#LeagueId/players/#CharacterId                    LeaguePlayerR      GET
+/leagues/#LeagueId/players/#CharacterId/start              LeaguePlayerStartR POST
+/leagues/#LeagueId/players/#CharacterId/bench              LeaguePlayerBenchR POST
+/leagues/#LeagueId/players/#CharacterId/claim/#CharacterId LeaguePlayerClaimR POST
+/leagues/#LeagueId/players/#CharacterId/trade/#CharacterId LeaguePlayerTradeR POST
 
 /leagues/#LeagueId/results      LeagueResultsR     GET
 /leagues/#LeagueId/playoffs     LeaguePlayoffsR    GET

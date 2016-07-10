@@ -11,11 +11,11 @@
                     <th .text-right>Points
 
             <tbody>
-                $forall (slot, Entity _ pe, _, Entity plid _, _, Entity _ c) <- fullPerformances
+                $forall (slot, Entity _ pe, _, _, _, Entity cid c) <- fullPerformances
                     <tr>
                         <td .col-xs-1>#{slot}
                         <td .col-xs-10>
-                            <a href="@{LeaguePlayerR (performanceLeagueId pe) plid}">
+                            <a href="@{LeaguePlayerR (performanceLeagueId pe) cid}">
                                 #{characterName c}
                         <td .col-xs-1 .text-right>
                             #{displayRational $ performancePoints pe}

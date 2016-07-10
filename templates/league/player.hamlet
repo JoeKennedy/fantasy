@@ -10,8 +10,8 @@
             <li .list-group-item>
                 <h6 .list-group-item-heading>House
                 <p .list-group-item-text>
-                    $maybe Entity teamId team <- maybeTeam
-                        <a href=@{LeagueTeamR leagueId teamId}>
+                    $maybe Entity _ team <- maybeTeam
+                        <a href=@{LeagueTeamR leagueId $ teamNumber team}>
                             House #{teamName team}
                     $nothing
                         <a href=@{LeaguePlayersR leagueId}>
@@ -51,8 +51,8 @@
                         <a href="@{LeagueResultsWeekR leagueId $ weekNumber week}">
                             Week #{weekNumber week}
                         <span .pull-right>
-                            $maybe Entity teamId team <- maybeTeam
-                                <a href="@{LeagueTeamR leagueId teamId}">
+                            $maybe Entity _ team <- maybeTeam
+                                <a href="@{LeagueTeamR leagueId $ teamNumber team}">
                                     House #{teamName team}
                             $nothing
                                 <a href="@{LeaguePlayersR leagueId}">
@@ -68,16 +68,16 @@
                                 <th .text-right .col-xs-1>Points
 
                         <tbody>
-                            $forall (Entity _ p, _, Entity _ e, Entity prid pr, Entity _ c, mrp, mrc) <- plays
+                            $forall (Entity _ p, _, Entity _ e, Entity _ pr, Entity cid c, mrp, mrc) <- plays
                                 <tr>
                                     <td>
                                         $if playPlayerId p == playerId
                                             $with (actionBefore, actionAfter) <- actionToSplitCaps (playAction p)
                                                 #{actionBefore} #
-                                                $maybe Entity rpid rp <- mrp
-                                                    $maybe Entity _ rc <- mrc
+                                                $maybe Entity _ rp <- mrp
+                                                    $maybe Entity rcid rc <- mrc
                                                         $if playerIsPlayable rp
-                                                            <a href="@{LeaguePlayerR leagueId rpid}">
+                                                            <a href="@{LeaguePlayerR leagueId rcid}">
                                                                 #{characterName rc}
                                                         $else
                                                             #{characterName rc}
@@ -86,7 +86,7 @@
                                         $else
                                             #{reverseActionCaps $ playAction p} #
                                             $if playerIsPlayable pr
-                                                <a href="@{LeaguePlayerR leagueId prid}">
+                                                <a href="@{LeaguePlayerR leagueId cid}">
                                                     #{characterName c}
                                             $else
                                                 #{characterName c}

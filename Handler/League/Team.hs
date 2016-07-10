@@ -49,6 +49,7 @@ teamSettingsForm currentUserId league draftSettings teams extra = do
                                   (t:_) -> Just currentUserId == teamOwnerId t
         teamSettingsResult = for forms (\(team, textFields, draftOrderField, _) -> Team
             <$> pure (teamLeagueId team)
+            <*> pure (teamNumber team)
             <*> fst (textFields !! 0) -- teamNameRec
             <*> fst (textFields !! 1) -- teamAbbreviationRec
             <*> pure (teamOwnerId team)
@@ -85,7 +86,7 @@ getSetupTeamsSettingsR = do
     userId <- requireAuthId
     let action = SetupLeagueR SetupTeamsSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamNumber]
     Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
     (widget, enctype) <- generateFormPost $ teamSettingsForm userId league draftSettings $ map extractValue teams
     defaultLayout $ do
@@ -98,7 +99,7 @@ postSetupTeamsSettingsR = do
     userId <- requireAuthId
     let action = SetupLeagueR SetupTeamsSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
+    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamNumber]
     Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
     ((result, widget), enctype) <- runFormPost $ teamSettingsForm userId league draftSettings $ map extractValue teams
     case result of
@@ -120,14 +121,14 @@ getLeagueTeamsR leagueId = do
     let fullTeams = rankFirst $ zip teams joinEmailsResendable
     leagueLayout leagueId "Houses" $(widgetFile "league/teams")
 
-getLeagueTeamR :: LeagueId -> TeamId -> Handler Html
-getLeagueTeamR leagueId teamId = do
+getLeagueTeamR :: LeagueId -> Int -> Handler Html
+getLeagueTeamR leagueId number = do
     maybeUserId <- maybeAuthId
     isUserLeagueMember <- isLeagueMember maybeUserId leagueId
     maybeUserTeamId <- maybeAuthTeamId leagueId
     league <- runDB $ get404 leagueId
     let leagueEntity = Entity leagueId league
-    team <- runDB $ get404 teamId
+    Entity teamId team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
     joinEmailResendable <- isJoinEmailResendable maybeUserId league $ Entity teamId team
     teamPlayers <- getTeamPlayers $ Just teamId
     players <- playersWithButtons leagueEntity teamPlayers
@@ -144,37 +145,37 @@ getLeagueTeamR leagueId teamId = do
         tab = if isUserTeamOwner maybeUserId team then "My House" else "Houses"
         numberOfStarters = generalSettingsNumberOfStarters generalSettings
         rosterSize = generalSettingsRosterSize generalSettings
-    leagueLayout leagueId tab $ do
-        $(widgetFile "league/team")
+    leagueLayout leagueId tab $(widgetFile "league/team")
 
 -- For now, just use the same form as all teams, just with one team
 -- TODO - make a new form
-getLeagueTeamSettingsR :: LeagueId -> TeamId -> Handler Html
-getLeagueTeamSettingsR leagueId teamId = editTeamSettings leagueId (Just teamId) "My House"
+getLeagueTeamSettingsR :: LeagueId -> Int -> Handler Html
+getLeagueTeamSettingsR leagueId number = editTeamSettings leagueId (Just number) "My House"
 
 getLeagueTeamsSettingsR :: LeagueId -> Handler Html
 getLeagueTeamsSettingsR leagueId = editTeamSettings leagueId Nothing "Houses"
 
-postLeagueTeamSettingsR :: LeagueId -> TeamId -> Handler Html
-postLeagueTeamSettingsR leagueId teamId = updateTeamSettings leagueId (Just teamId) "My House"
+postLeagueTeamSettingsR :: LeagueId -> Int -> Handler Html
+postLeagueTeamSettingsR leagueId number = updateTeamSettings leagueId (Just number) "My House"
 
 postLeagueTeamsSettingsR :: LeagueId -> Handler Html
 postLeagueTeamsSettingsR leagueId = updateTeamSettings leagueId Nothing "Houses"
 
-getLeagueTeamJoinR :: LeagueId -> TeamId -> Text -> Handler Html
-getLeagueTeamJoinR leagueId teamId verificationKey = do
+getLeagueTeamJoinR :: LeagueId -> Int -> Text -> Handler Html
+getLeagueTeamJoinR leagueId number verificationKey = do
     maybeUserId <- maybeAuthId
     league <- runDB $ get404 leagueId
-    team <- runDB $ get404 teamId
-    maybeLeagueManagerTeam <- runDB $ selectFirst [TeamLeagueId ==. leagueId] [Asc TeamId]
+    Entity _ team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+    maybeLeagueManagerTeam <- runDB $ selectFirst [TeamLeagueId ==. leagueId] [Asc TeamNumber]
     defaultLayout $ do
         setTitle $ toMarkup $ "Join League " ++ leagueName league
         $(widgetFile "league/join")
 
-postLeagueTeamJoinR :: LeagueId -> TeamId -> Text -> Handler Html
-postLeagueTeamJoinR leagueId teamId _verificationKey = do
+postLeagueTeamJoinR :: LeagueId -> Int -> Text -> Handler Html
+postLeagueTeamJoinR leagueId number _verificationKey = do
     userId <- requireAuthId
     now <- liftIO getCurrentTime
+    Entity teamId _ <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
     runDB $ update teamId [ TeamIsConfirmed =. True
                           , TeamOwnerId =. Just userId
                           , TeamUpdatedBy =. userId
@@ -184,14 +185,14 @@ postLeagueTeamJoinR leagueId teamId _verificationKey = do
                           ]
     -- TODO - send an email to the owner who just joined
     setMessage "Congrats! You've successfully joined the league!"
-    redirect $ LeagueTeamR leagueId teamId
+    redirect $ LeagueTeamR leagueId number
 
-postLeagueTeamResendR :: LeagueId -> TeamId -> Handler ()
-postLeagueTeamResendR leagueId teamId = do
+postLeagueTeamResendR :: LeagueId -> Int -> Handler ()
+postLeagueTeamResendR leagueId number = do
     userId <- requireAuthId
     league <- runDB $ get404 leagueId
-    team <- runDB $ get404 teamId
-    leagueManagerTeam <- runDB $ selectFirst [TeamLeagueId ==. leagueId] [Asc TeamId]
+    Entity teamId team <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+    leagueManagerTeam <- runDB $ selectFirst [TeamLeagueId ==. leagueId] [Asc TeamNumber]
     case leagueManagerTeam of
         Nothing -> return ()
         Just managerTeam -> do
@@ -222,9 +223,9 @@ teamPerformancesTable performances totalPoints numberOfStarters rosterSize =
                             ]
     in  $(widgetFile "league/performances_table")
 
-resendJoinButton :: LeagueId -> TeamId -> Widget
-resendJoinButton leagueId teamId =
-    let buttonId = "resend-" ++ toPathPiece leagueId ++ "-" ++ toPathPiece teamId
+resendJoinButton :: LeagueId -> Int -> Widget
+resendJoinButton leagueId number =
+    let buttonId = "resend-" ++ toPathPiece leagueId ++ "-" ++ (pack $ show number)
     in  $(widgetFile "league/resend_join_button")
 
 -------------
@@ -234,24 +235,24 @@ isUserTeamOwner :: Maybe UserId -> Team -> Bool
 isUserTeamOwner (Just userId) team = teamOwnerId team == Just userId
 isUserTeamOwner _ _ = False
 
-editTeamSettings :: LeagueId -> Maybe TeamId -> Text -> Handler Html
-editTeamSettings leagueId maybeTeamId pillName = do
+editTeamSettings :: LeagueId -> Maybe Int -> Text -> Handler Html
+editTeamSettings leagueId maybeTeamNumber pillName = do
     userId <- requireAuthId
     league <- runDB $ get404 leagueId
-    teams <- getTeamsForSettings leagueId maybeTeamId
+    teams <- getTeamsForSettings leagueId maybeTeamNumber
     Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
     (widget, enctype) <- generateFormPost $ teamSettingsForm userId league draftSettings $ map extractValue teams
-    let action = teamSettingsAction leagueId maybeTeamId
+    let action = teamSettingsAction leagueId maybeTeamNumber
     leagueSettingsLayout leagueId action enctype widget pillName
 
-updateTeamSettings :: LeagueId -> Maybe TeamId -> Text -> Handler Html
-updateTeamSettings leagueId maybeTeamId pillName = do
+updateTeamSettings :: LeagueId -> Maybe Int -> Text -> Handler Html
+updateTeamSettings leagueId maybeTeamNumber pillName = do
     userId <- requireAuthId
     league <- runDB $ get404 leagueId
-    teams <- getTeamsForSettings leagueId maybeTeamId
+    teams <- getTeamsForSettings leagueId maybeTeamNumber
     Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
     ((result, widget), enctype) <- runFormPost $ teamSettingsForm userId league draftSettings $ map extractValue teams
-    let action = teamSettingsAction leagueId maybeTeamId
+    let action = teamSettingsAction leagueId maybeTeamNumber
     case result of
         FormSuccess teams' -> do
             forM_ (zip teams teams') (\(Entity teamId _, team') -> runDB $ replace teamId team')
@@ -259,14 +260,14 @@ updateTeamSettings leagueId maybeTeamId pillName = do
             redirect action
         _ -> leagueSettingsLayout leagueId action enctype widget pillName
 
-getTeamsForSettings :: LeagueId -> Maybe TeamId -> Handler [Entity Team]
-getTeamsForSettings leagueId Nothing = runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamId]
-getTeamsForSettings _ (Just teamId) = do
-    team <- runDB $ get404 teamId
-    return [Entity teamId team]
+getTeamsForSettings :: LeagueId -> Maybe Int -> Handler [Entity Team]
+getTeamsForSettings leagueId Nothing = runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamNumber]
+getTeamsForSettings leagueId (Just number) = do
+    teamEntity <- runDB $ getBy404 $ UniqueTeamLeagueIdDraftOrder leagueId number
+    return [teamEntity]
 
-teamSettingsAction :: LeagueId -> Maybe TeamId -> Route App
-teamSettingsAction leagueId (Just teamId) = LeagueTeamSettingsR leagueId teamId
+teamSettingsAction :: LeagueId -> Maybe Int -> Route App
+teamSettingsAction leagueId (Just number) = LeagueTeamSettingsR leagueId number
 teamSettingsAction leagueId Nothing = LeagueSettingsR leagueId LeagueTeamsSettingsR
 
 isJoinEmailResendable :: Maybe UserId -> League -> Entity Team -> Handler Bool

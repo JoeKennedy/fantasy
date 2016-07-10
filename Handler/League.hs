@@ -192,12 +192,13 @@ createScoringSettingsRow (Entity leagueId league) action =
             }
 
 createTeam :: Entity League -> (Int, Int) -> ReaderT SqlBackend Handler ()
-createTeam (Entity leagueId league) (teamNumber, draftOrder) = do
+createTeam (Entity leagueId league) (number, draftOrder) = do
     stdgen <- liftIO newStdGen
-    let (name, abbrev, owner, email) = teamTextAttributes teamNumber
-        (maybeTeamOwnerId, maybeConfirmedAt) = teamNonTextAttributes league teamNumber
+    let (name, abbrev, owner, email) = teamTextAttributes number
+        (maybeTeamOwnerId, maybeConfirmedAt) = teamNonTextAttributes league number
         verificationKey = pack $ fst $ randomString 24 stdgen
     insert_ $ Team { teamLeagueId         = leagueId
+                   , teamNumber           = number
                    , teamName             = name
                    , teamAbbreviation     = abbrev
                    , teamOwnerId          = maybeTeamOwnerId
@@ -207,7 +208,7 @@ createTeam (Entity leagueId league) (teamNumber, draftOrder) = do
                    , teamPlayersCount     = 0
                    , teamStartersCount    = 0
                    , teamDraftOrder       = draftOrder
-                   , teamWaiverOrder      = teamNumber
+                   , teamWaiverOrder      = number
                    , teamVerificationKey  = verificationKey
                    , teamPointsThisSeason = 0
                    , teamPointsThisRegularSeason = 0

@@ -27,24 +27,24 @@
                     <th data-field="player-action">
 
             <tbody>
-                $forall (num, Entity playerId player, maybeTeam, Entity _ character, Entity _ rookieSeries, button) <- subTablePlayers
+                $forall (num, Entity _ player, maybeTeam, Entity characterId character, Entity _ rookieSeries, button) <- subTablePlayers
                     <tr .vertical-align-middle>
                         $if hasRadioButton playersTableType
-                            $with pid <- toPathPiece playerId
+                            $with cid <- toPathPiece characterId
                                 <td>
-                                    <input .player-radio type="radio" name="players" id="player-#{pid}" value="#{pid}" aria-label="player-#{pid}">
+                                    <input .player-radio type="radio" name="players" id="player-#{cid}" value="#{cid}" aria-label="player-#{cid}">
                         $if subTableHeader == "Starters"
                             <td>#{num}
                         $if subTableHeader == "Bench"
                             <td>Bench
                         <td>
                             $with leagueId <- playerLeagueId player
-                                <a href=@{LeaguePlayerR leagueId playerId}>
+                                <a href=@{LeaguePlayerR leagueId characterId}>
                                     #{characterName character}
                         $if isMultipleTeams playersTableType
                             <td>
-                                $maybe Entity teamId team <- maybeTeam
-                                    <a href="@{LeagueTeamR (playerLeagueId player) teamId}">
+                                $maybe Entity _ team <- maybeTeam
+                                    <a href="@{LeagueTeamR (teamLeagueId team) (teamNumber team)}">
                                         #{teamAbbreviation team}
                                 $nothing
                                     -

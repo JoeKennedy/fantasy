@@ -5,8 +5,8 @@
 
 <ul #league_settings_nav .nav .nav-pills .league-nav-pills>
     <li role="presentation">
-        $maybe Entity teamId _ <- maybeTeam
-            <a href="@{LeagueTeamSettingsR leagueId teamId}">My House
+        $maybe Entity _ team <- maybeTeam
+            <a href="@{LeagueTeamSettingsR leagueId $ teamNumber team}">My House
     <li role="presentation">
         <a href="@{LeagueSettingsR leagueId LeagueEditSettingsR}">League
     <li role="presentation">

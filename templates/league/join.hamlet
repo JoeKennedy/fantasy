@@ -26,7 +26,7 @@
                         <a .btn .btn-primary .btn-lg .text-center href=@{AuthR LoginR}>
                             Sign In/Up
                     $else
-                        <form method="post" action=@{LeagueTeamJoinR leagueId teamId verificationKey}>
+                        <form method="post" action=@{LeagueTeamJoinR leagueId (teamNumber team) verificationKey}>
                             <button .btn .btn-primary .btn-lg .text-center type="submit" name="commit">
                                 Join League
 
