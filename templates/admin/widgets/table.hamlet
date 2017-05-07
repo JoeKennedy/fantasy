@@ -1,0 +1,9 @@
+$maybe header <- maybeHeader
+    <div .page-header>
+        <h5>#{header}
+
+<div .panel .panel-default>
+    <table data-toggle="table" data-classes="table table-hover table-no-bordered" data-striped="true">
+        ^{widget}
+
+^{adminDeleteModal modelLower}

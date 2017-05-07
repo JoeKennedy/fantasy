@@ -1,0 +1,16 @@
+<thead>
+    <th data-field="blurb-character" data-sortable="true" data-sorter="linkSorter">
+        Character
+    <th data-field="blurb-content" data-sortable="true">
+        Status
+    <th data-field="blurb-created-at" data-sortable="true">
+        Posted
+    <th>
+
+<tbody>
+    $forall (Entity blurbId blurb, Entity _characterId character) <- blurbs
+        <tr>
+            <td>#{characterName character}
+            <td>#{blurbContent blurb}
+            <td>#{displayUTCDate $ blurbCreatedAt blurb}
+            ^{adminActionButtons "blurb" blurbId Nothing}

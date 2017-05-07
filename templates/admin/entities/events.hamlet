@@ -1,0 +1,31 @@
+<thead>
+    <th data-field="event-episode" data-sortable="true">
+        Episode
+    <th data-field="event-time" data-sortable="true">
+        Time In Episode
+    <th data-field="event-character" data-sortable="true">
+        Character
+    <th data-field="event-action" data-sortable="true">
+        Action
+    <th data-field="event-receiving-character" data-sortable="true">
+        Receiving Character
+    <th .hidden-sm .hidden-xs data-field="event-note" data-sortable="true">
+        Note
+    <th>
+
+<tbody>
+    $forall (Entity eventId event, Entity _ episode, Entity _ character, maybeReceivingCharacter) <- events
+        <tr>
+            <td>#{episodeToText episode}
+            <td>#{displayTime $ eventTimeInEpisode event}
+            <td>#{characterName character}
+            <td>#{show $ eventAction event}
+            <td>
+                $maybe Entity _ receivingCharacter <- maybeReceivingCharacter
+                    #{characterName receivingCharacter}
+                $nothing
+                    -
+            <td .hidden-sm .hidden-xs>
+                $maybe note <- eventNote event
+                    #{note}
+            ^{adminActionButtons "event" eventId Nothing}

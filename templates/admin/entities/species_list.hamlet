@@ -1,0 +1,16 @@
+<thead>
+    <th data-field="species-name" data-sortable="true">
+        Species
+    <th .hidden-xs .hidden-sm data-field="species-description" data-sortable="true">
+        Description
+    <th data-field="species-character-count" data-sortable="true">
+        Characters
+    <th>
+
+<tbody>
+    $forall (Entity speciesId species, E.Value characterCount) <- speciesList
+        <tr>
+            <td>#{speciesName species}
+            <td .hidden-xs .hidden-sm>#{speciesDescription species}
+            <td>#{show characterCount}
+            ^{adminActionButtons "species" speciesId $ Just "character"}

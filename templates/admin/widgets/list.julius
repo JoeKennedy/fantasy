@@ -1,0 +1,12 @@
+function adminListReady(jQuery) {
+    $.each(#{toJSON params}, function(index, value) {
+        if (value.length == 2 && value[0] != "new") {
+            var $field = $('#' + value[0]);
+            if ($field) { $field.val(value[1]); }
+        }
+    });
+
+    return true;
+}
+
+$(document).ready(adminListReady);

@@ -1,0 +1,155 @@
+function eventRow(event) {
+    return $(event.target).closest('tr');
+}
+
+function upsertEvent(event) {
+    var row = eventRow(event);
+    var data = validateForm(row);
+
+    if (data) {
+        markRowInProcess(row);
+        $.ajax({
+            url: getAjaxUrl(row),
+            type: 'POST',
+            data: data,
+            success: function(data) {
+              row.find('.event-id').val(data);
+              row.find('a.edit-event').removeClass('disabled')
+                                      .prop('href', '/admin/event/' + data);
+              markRowSuccess(row);
+            },
+            error: function(request, error) { markRowError(row, error); }
+        });
+    }
+}
+
+function copyEventRow(event) {
+    cloneEventRow(eventRow(event), false);
+}
+
+function deleteEventRow(event) {
+    var row = eventRow(event);
+    var id = row.find('.event-id').val();
+
+    if (id) {
+        var $modal = $('#deleteEvent');
+        $modal.find('span').text(id);
+        $modal.find('.delete').data('id', id);
+        $modal.modal('show');
+    } else {
+        row.remove();
+    }
+
+    return true;
+}
+
+function addEventRows(event) {
+    var rowsToAdd = parseInt($('input#event_rows_to_add').val());
+    for (i = 0; i < rowsToAdd; i++) {
+        cloneEventRow($('#score_episode_panel tbody tr').last(), true);
+    }
+}
+
+function cloneEventRow(row, resetFields) {
+    var clone = row.clone()
+    markRowNew(clone, resetFields);
+    row.after(clone);
+}
+
+function markRowInProcess(row) {
+    row.find('i.success-icon').removeClass('fa-close text-danger')
+                              .removeClass('fa-check text-success')
+                              .addClass('fa-spin fa-spinner')
+                              .prop('title', '');
+}
+
+function markRowSuccess(row) {
+    row.find('i.success-icon').removeClass('fa-close text-danger')
+                              .removeClass('fa-spin fa-spinner')
+                              .addClass('fa-check text-success')
+                              .prop('title', '');
+}
+
+function markRowError(row, error) {
+    row.find('i.success-icon').removeClass('fa-check text-success')
+                              .removeClass('fa-spin fa-spinner')
+                              .addClass('fa-close text-danger')
+                              .prop('title', error);
+}
+
+function markRowNew(row, resetFields) {
+    if (resetFields) {
+        row.find('input, select').val('');
+        row.find('.receiving-character').addClass('hidden');
+    } else {
+        row.find('input.event-id').val('');
+    }
+    row.find('a.edit-event').addClass('disabled').prop('href', '#');
+    row.find('i.success-icon').removeClass('fa-check text-success')
+                              .removeClass('fa-close text-danger')
+                              .removeClass('fa-spin fa-spinner')
+                              .prop('title', '');
+}
+
+function getAjaxUrl(row) {
+    var url = '/admin/score/';
+    var eventId = row.find('input.event-id').val();
+    if (eventId) {
+      return url + eventId + '/event';
+    } else {
+      return url + #{toJSON $ toPathPiece episodeId};
+    }
+}
+
+function validateForm(row) {
+    var recCharField = row.find('.receiving-character');
+    var data = {
+        character: row.find('.character').val(),
+        action: row.find('.action').val(),
+        receivingCharacter: recCharField.val(),
+        note: row.find('.note').val(),
+        time: row.find('.time').val()
+    };
+
+    if (data['character'] && data['action'] && data['time']) {
+        if (data['time'].match(/^\d+:[0-5]\d$/)) {
+            row.find('.time').parent().removeClass('has-error');
+            if ($.isNumeric(data['receivingCharacter']) || recCharField.hasClass('hidden')) {
+                recCharField.parent().removeClass('has-error');
+                return data;
+            } else {
+                recCharField.parent().addClass('has-error');
+                markRowError(row, 'needs a receiving character')
+            }
+        } else {
+            row.find('.time').parent().addClass('has-error');
+            markRowError(row, 'time in incorrect format');
+        }
+    }
+
+    return null;
+}
+
+function toggleReceivingCharacter(event) {
+    var selected = $(event.target).find('option:selected').text();
+    var receivingCharacter = eventRow(event).find('select.receiving-character')
+    var multiCharacterActions = #{toJSON multiCharacterActions};
+    if (multiCharacterActions.indexOf(selected) > -1) {
+        receivingCharacter.removeClass('optional hidden').addClass('required');
+        receivingCharacter.prop('required', true);
+    } else {
+        receivingCharacter.removeClass('required').addClass('optional hidden');
+        receivingCharacter.prop('required', false);
+        receivingCharacter.find('option:selected').prop('selected', false);
+    }
+}
+
+function scoreEpisodeFormReady(jQuery) {
+    $('#score_episode_panel').on('change', 'select.action', toggleReceivingCharacter);
+    $('#score_episode_panel').on('change', '.form-control', upsertEvent);
+    $('#score_episode_panel').on('click',  '.copy-event', copyEventRow);
+    $('#score_episode_panel').on('click',  '.delete-event', deleteEventRow);
+    $('#score_episode_panel button#add_event_rows').on('click', addEventRows);
+}
+
+$(document).ready(scoreEpisodeFormReady)

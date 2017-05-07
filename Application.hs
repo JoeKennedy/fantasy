@@ -41,7 +41,17 @@ import qualified Web.ServerSession.Backend.Persistent as SS
 -- Don't forget to add new modules to your cabal file!
 import Handler.Common
 
+import Handler.Admin.Blurb
+import Handler.Admin.Character
+import Handler.Admin.Common
+import Handler.Admin.Episode
+import Handler.Admin.Event
+import Handler.Admin.House
+import Handler.Admin.Score
+import Handler.Admin.Series
+import Handler.Admin.Species
 import Handler.Character
+import Handler.Episode
 import Handler.Home
 import Handler.House
 import Handler.League
@@ -50,8 +60,6 @@ import Handler.League.DraftSettings
 import Handler.League.GeneralSettings
 import Handler.League.Player
 import Handler.League.Scoring
--- The below currently have no routes in them
--- import Handler.League.Setup
 import Handler.League.Team
 import Handler.League.Transaction
 import Handler.Series

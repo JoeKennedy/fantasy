@@ -1,0 +1,70 @@
+<nav #header_nav .navbar .navbar-default .navbar-fixed-top>
+  <div .container-fluid>
+    <div .navbar-header>
+      <button .navbar-toggle .collapsed type="button" data-toggle="collapse" data-target="#header_navbar" aria-expanded="false">
+        <span .sr-only>Toggle navigation
+        <span .icon-bar>
+        <span .icon-bar>
+        <span .icon-bar>
+      <a .navbar-brand href=@{AdminR AdminDashboardR}>
+        Fantasy Game Of Thrones
+        <small>Admin Page
+
+    <div #header_navbar .collapse .navbar-collapse>
+      <ul .nav .navbar-nav .navbar-left>
+        $forall (entity, additionalClass) <- entities
+          <li class="#{additionalClass}">
+            <a href="/admin/#{toLower entity}">#{entity}
+
+      <ul .nav .navbar-nav .navbar-right>
+        <li>
+          <a href="/">Main Site
+
+<div .container-fluid>
+  <div .row>
+
+    <div .col-md-2 .col-sm-3>
+      $forall listGroupItems <- listGroups
+        <div .list-group>
+          $forall (item, additionalClass) <- listGroupItems
+            <a .list-group-item class="#{additionalClass}" href="/admin/#{toLower item}">
+              <h6 .list-group-item-heading>#{item}
+
+    <div .col-md-10 .col-sm-9>
+
+      <div .page-header>
+        $if elem activeItem entityNames
+          <a .btn .btn-primary .pull-right href="/admin/#{toLower activeItem}?new">
+            <i .fa .fa-plus>
+            New #{activeItem}
+        <h3>#{title}
+
+      $maybe msg <- mmsg
+        <div #message .alert .alert-dismissible .alert-primary .bg-primary>
+          <button .close type="button" data-dismiss="alert">
+            <i .fa .fa-times>
+          #{msg}
+
+      <!-- TODO - upgrade yesod-core to 1.4.20 (or higher) and use these lines -->
+      <!-- $forall (status, message) <- messages -->
+      <!--   <div #message .alert .alert-dismissible class="#{alertClass status}"> -->
+      <!--     <button .close type="button" data-dismiss="alert"> -->
+      <!--       <i .fa .fa-times> -->
+      <!--     #{message} -->
+
+      <ol .breadcrumb>
+          $if not (null parents)
+              $forall p <- parents
+                  <li>
+                      <a href="@{fst p}">
+                          $if snd p == "Dashboard"
+                              <i .fa .fa-tachometer>
+                          $else
+                              #{preEscapedToMarkup $ snd p}
+          <li .active>
+              $if title' == "Dashboard"
+                  <i .fa .fa-tachometer>
+              $else
+                  #{preEscapedToMarkup $ title'}
+
+      ^{widget}

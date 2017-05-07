@@ -1,0 +1,21 @@
+<div .modal .fade .delete-object-modal id="delete#{model}" tabindex="-1" role="dialog">
+    <div .modal-dialog role="document">
+        <div .modal-content>
+            <div .modal-header>
+                <button .close type="button" data-dismiss="modal">
+                    <i .fa .fa-times>
+                <h5 .modal-title id="delete#{model}Title">
+                    Delete #{model} #<span></span>
+
+            <div .modal-body>
+                <p>
+                    You are about to delete <b>#{model} #<span></span></b>.
+                    This procedure is irreversible.
+                <p> Are you sure you want to proceed?
+
+            <div .modal-footer>
+                <button .btn .btn-default type="button" data-dismiss="modal">
+                    Cancel
+                <button .btn .btn-danger .delete type="button" data-model="#{modelLower}">
+                    Delete #{model}
+

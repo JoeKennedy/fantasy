@@ -1,0 +1,11 @@
+.fixed-table-container .table {
+    border-bottom: 0px !important;
+}
+
+.fixed-table-container .table th, .fixed-table-container .table td {
+    border: 1px !important;
+}
+
+.fixed-table-container {
+    border: 0px !important;
+}

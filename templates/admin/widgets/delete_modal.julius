@@ -1,0 +1,34 @@
+function renderDeleteObjectModal() {
+    var $modal = $($(this).data('target'));
+    var id = $(this).data('id');
+    if (id) {
+        $modal.find('span').text(id);
+        $modal.find('.delete').data('id', id);
+    }
+
+    return true;
+}
+
+function deleteObject() {
+    var id = $(this).data('id');
+    var base_path = '/admin/' + $(this).data('model');
+    var path = base_path + '/' + id;
+    $.ajax({
+        url: path,
+        type: 'DELETE',
+        success: function(result) {
+            if (window.location.pathname == path) {
+                window.location.replace(base_path);
+            } else {
+                window.location.reload(true);
+            }
+        }
+    });
+}
+
+function deleteModalReady(jQuery) {
+    $('.delete-object').on('click', renderDeleteObjectModal);
+    $('.delete-object-modal .delete').on('click', deleteObject);
+}
+
+$(document).ready(deleteModalReady);

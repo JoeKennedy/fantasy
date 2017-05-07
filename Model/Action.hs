@@ -120,3 +120,6 @@ capitalize :: String -> String
 capitalize []     = []
 capitalize (x:xs) = (Char.toUpper x):xs
 
+capitalizeText :: Text -> Text
+capitalizeText text = case uncons text of Just (x, xs) -> cons (Char.toUpper x) xs
+                                          Nothing      -> text

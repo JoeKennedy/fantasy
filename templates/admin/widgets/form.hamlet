@@ -1,0 +1,32 @@
+<form .form-horizontal method="post" action="#{action}" enctype=#{enctype}>
+    <div .panel .panel-default>
+        <div .panel-heading>
+            <h5>#{title} #{model}
+
+        $if not (null uniqueFailureFields)
+            <div .alert .alert-danger .alert-dismissible>
+                <button .close type="button" data-dismiss="alert">
+                    <i .fa .fa-times>
+                $if length uniqueFailureFields == 1
+                    The value for field #
+                    $forall (haskellName, _dbName) <- uniqueFailureFields
+                        <strong .text-capitalize>
+                            #{unHaskellName haskellName}
+                    \ already exists, suggesting this is an accidental duplicate.
+                    Choose a different value for that field.
+
+                $else
+                    The values for the following fields already exist,
+                    suggesting this is an accidental duplicate.
+                    Choose different values for those fields.
+                    <ul>
+                        $forall (haskellName, _dbName) <- uniqueFailureFields
+                            <li .text-capitalize>
+                                <strong>#{unHaskellName haskellName}
+
+        <div .panel-body>
+                ^{widget}
+
+        <div .panel-footer .text-right>
+              <input .btn .btn-primary .submit type="submit" name="commit" value="#{submit} #{model}">
+

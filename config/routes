@@ -5,28 +5,41 @@
 /robots.txt RobotsR GET
 /.well-known/acme-challenge/#Text LetsEncryptR GET
 
+/admin AdminR:
+    /                       AdminDashboardR    GET
+    /blurb                  AdminBlurbsR       GET POST
+    /blurb/#BlurbId         AdminBlurbR        GET POST DELETE
+    /character              AdminCharactersR   GET POST
+    /character/#CharacterId AdminCharacterR    GET POST DELETE
+    /episode                AdminEpisodesR     GET POST
+    /episode/#EpisodeId     AdminEpisodeR      GET POST DELETE
+    /event                  AdminEventsR       GET POST
+    /event/#EventId         AdminEventR        GET POST DELETE
+    /house                  AdminHousesR       GET POST
+    /house/#HouseId         AdminHouseR        GET POST DELETE
+    /score/                 AdminScoreR        GET
+    /score/#EpisodeId       AdminScoreEpisodeR GET POST
+    /score/#EventId/event   AdminScoreEventR       POST
+    /series                 AdminSeriesListR   GET POST
+    /series/#SeriesId       AdminSeriesR       GET POST DELETE
+    /species                AdminSpeciesListR  GET POST
+    /species/#SpeciesId     AdminSpeciesR      GET POST DELETE
+
 /faq FAQR GET
 
-/characters                              CharactersR      GET
-/characters/new                          NewCharacterR    GET POST
-!/characters/#CharacterId                CharacterR       GET
-/characters/#CharacterId/edit            EditCharacterR   GET POST
-/characters/#CharacterId/blurbs          CharacterBlurbsR GET POST
-/characters/#CharacterId/blurbs/#BlurbId CharacterBlurbR  GET POST
+/characters              CharactersR GET
+/characters/#CharacterId CharacterR  GET
 
-/species            SpeciesListR GET POST
-/species/#SpeciesId SpeciesR     GET POST
+/species            SpeciesListR GET
+/species/#SpeciesId SpeciesR     GET
 
-/houses          HousesR GET POST
-/houses/#HouseId HouseR  GET POST
+/houses          HousesR GET
+/houses/#HouseId HouseR  GET
 
-/seasons                                    SeriesListR          GET POST
-/seasons/#Int                               SeriesR              GET POST
-/seasons/#Int/episodes                      SeriesEpisodesR      GET POST
-/seasons/#Int/episodes/#Int                 SeriesEpisodeR       GET POST
-/seasons/#Int/episodes/#Int/score           SeriesEpisodeScoreR      POST
-/seasons/#Int/episodes/#Int/events          SeriesEpisodeEventsR     POST
-/seasons/#Int/episodes/#Int/events/#EventId SeriesEpisodeEventR  GET POST
+/seasons                                    SeriesListR          GET
+/seasons/#Int                               SeriesR              GET
+/seasons/#Int/episodes                      SeriesEpisodesR      GET
+/seasons/#Int/episodes/#Int                 SeriesEpisodeR       GET
 
 /leagues/                 LeaguesR      GET
 /leagues/#LeagueId        LeagueR       GET

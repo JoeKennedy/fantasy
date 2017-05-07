@@ -1,0 +1,22 @@
+<thead>
+    <th data-field="episode-series-number" data-sortable="true">
+        Season
+    <th data-field="episode-number" data-sortable="true">
+        # In Season
+    <th data-field="episode-number-overall" data-sortable="true">
+        # Overall
+    <th data-field="episode-title" data-sortable="true">
+        Title
+    <th data-field="episode-air-date" data-sortable="true">
+        Original Air Date
+    <th>
+
+<tbody>
+    $forall (Entity _ series, Entity episodeId episode) <- episodes
+        <tr>
+            <td>#{seriesNumber series}
+            <td>#{episodeNumber episode}
+            <td>#{episodeOverallNumber episode}
+            <td>#{episodeName episode}
+            <td>#{displayAirDate $ episodeAirTime episode}
+            ^{adminActionButtons "episode" episodeId $ Just "event"}

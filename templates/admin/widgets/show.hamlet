@@ -1,0 +1,47 @@
+<ul .nav .nav-tabs>
+    <li .active>
+        <a href="#">
+            <i .fa .fa-pencil>
+            Edit
+
+    <li>
+        <a .delete-object href="#" data-toggle="modal" data-target="#delete#{model}" data-id="#{theId}">
+            <i .fa .fa-times>
+            Delete
+
+    <li>
+        <a href="/#{pluralize modelLower}/#{theId}">
+            <i .fa .fa-eye>
+            Show In App
+
+    $maybe (subModelLower, _) <- maybeSubTable
+        <li>
+            <a href="/admin/#{subModelLower}?#{modelLower}=#{theId}">
+                <i .fa .fa-plus>
+                Add New #{capitalize subModelLower}
+
+<br>
+
+<div .row>
+    <div .col-md-8>
+        ^{adminForm modelLower formWidget enctype uniqueFailureFields $ Just entityId}
+
+    <div .col-md-4>
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <h5>Audit Info
+            <div .panel-body>
+                <h6>Created At
+                <div>#{cAt}
+                <h6>Created By
+                <div>#{cBy}
+                <h6>Updated At
+                <div>#{uAt}
+                <h6>Updated By
+                <div>#{uBy}
+
+^{adminDeleteModal modelLower}
+
+$maybe (subModelLower, subTableWidget) <- maybeSubTable
+    ^{adminTable subModelLower subTableWidget $ Just $ capitalize $ pluralize subModelLower}
+

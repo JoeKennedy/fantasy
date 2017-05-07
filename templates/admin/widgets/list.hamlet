@@ -1,0 +1,17 @@
+<ul .nav .nav-tabs>
+    $forall (tabId, faClass) <- tabs
+        <li .text-capitalize class="#{determineActive activeTabId tabId}">
+            <a href="##{tabId}" data-toggle="tab">
+                <i .fa class="fa-#{faClass}">
+                #{tabId}
+
+<br>
+
+<div .tab-content>
+    <div #list .tab-pane class="#{determineActive activeTabId "list"}">
+        ^{adminTable modelLower tableWidget Nothing}
+
+    <div #new .tab-pane class="#{determineActive activeTabId "new"}">
+        <div .row>
+            <div .col-md-8>
+                ^{adminForm modelLower formWidget enctype uniqueFailureFields nothing}

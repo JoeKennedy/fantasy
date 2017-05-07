@@ -1,0 +1,35 @@
+<div .row>
+    <div .col-xs-12 .col-md-2>
+        <div .page-header>
+            <h6>Select A Series
+
+        <ul .nav .nav-pills .nav-stacked>
+            $forall (Entity seriesId series, _) <- seriesList
+                <li>
+                    <a href="#series#{idToString seriesId}" data-toggle="pill">
+                        #{seriesNumber series}
+
+    <div .col-xs-12 .col-md-10>
+        <div .tab-content>
+            $forall (Entity seriesId _, episodeList) <- seriesList
+                <div .tab-pane id="series#{idToString seriesId}">
+                    <div .panel .panel-default>
+                        <table .table .table-hover .table-striped>
+                            <thead>
+                                <th>
+                                <th># Overall
+                                <th># In Season
+                                <th>Title
+                                <th>Original Air Date
+
+                            <tbody>
+                                $forall Entity episodeId episode <- episodeList
+                                    <tr>
+                                        <td .admin-action-buttons>
+                                            <a .btn .btn-xs .btn-success href=@{AdminR $ AdminScoreEpisodeR episodeId}>
+                                                SCORE EPISODE
+                                        <td>#{episodeOverallNumber episode}
+                                        <td>#{episodeNumber episode}
+                                        <td>#{episodeName episode}
+                                        <td>#{displayAirDate $ episodeAirTime episode}
+

@@ -16,13 +16,24 @@ Ident
 Species
     name Text
     description Text
+    createdBy UserId default=5
+    createdAt UTCTime default=now()
+    updatedBy UserId default=5
+    updatedAt UTCTime default=now()
     UniqueSpeciesName name
     UniqueSpeciesDescription description
+    deriving Eq Show
+
 House
     name Text
     words Text
     description Text
+    createdBy UserId default=5
+    createdAt UTCTime default=now()
+    updatedBy UserId default=5
+    updatedAt UTCTime default=now()
     UniqueHouseName name
+    deriving Eq Show
 
 Character
     name Text
@@ -40,6 +51,7 @@ Character
     updatedAt UTCTime
     UniqueCharacterName name
     UniqueCharacterBio bio
+    deriving Eq Show
 
 Blurb
     characterId CharacterId
@@ -49,11 +61,17 @@ Blurb
     updatedBy UserId
     updatedAt UTCTime
     UniqueBlurbContent content
+    deriving Eq Show
 
 Series
     number Int
+    createdBy UserId default=2
+    createdAt UTCTime default=now()
+    updatedBy UserId default=2
+    updatedAt UTCTime default=now()
     UniqueSeriesNumber number
-    deriving Eq Ord
+    deriving Eq Ord Show
+
 Episode
     name Text
     number Int
@@ -63,10 +81,16 @@ Episode
     status EpisodeStatus default='Aired'
     areEventsComplete Bool default=false
     timesFinalized Int default=0
+    createdBy UserId default=2
+    createdAt UTCTime default=now()
+    updatedBy UserId default=2
+    updatedAt UTCTime default=now()
     UniqueEpisodeOverallNumber overallNumber
     UniqueEpisodeNumberSeries number seriesId
     UniqueEpisodeAirTime airTime
     UniqueEpisodeName name
+    deriving Eq Show
+
 Event
     characterId CharacterId
     action Action
@@ -74,6 +98,11 @@ Event
     episodeId EpisodeId
     note Text Maybe
     timeInEpisode Int
+    createdBy UserId default=6
+    createdAt UTCTime default=now()
+    updatedBy UserId default=6
+    updatedAt UTCTime default=now()
+    deriving Eq Show
 
 League
     name Text

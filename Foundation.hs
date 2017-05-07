@@ -86,9 +86,11 @@ instance Yesod App where
             addStylesheet $ StaticR css_font_awesome_css
             addStylesheet $ StaticR css_bootstrap_social_css
             addStylesheet $ StaticR css_bootstrap_table_css
+            addStylesheet $ StaticR css_bootstrap_override_css
             addScriptRemote "https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"
             addScript $ StaticR js_bootstrap_js
             addScript $ StaticR js_bootstrap_table_js
+            addScript $ StaticR js_bootstrap_override_js
             $(widgetFile "layouts/default-layout")
         withUrlRenderer $(hamletFile "templates/layouts/default-layout-wrapper.hamlet")
 
@@ -104,23 +106,18 @@ instance Yesod App where
     isAuthorized FAQR        _ = return Authorized
     isAuthorized LetsEncryptR{} _ = return Authorized
 
-    isAuthorized CharactersR                 _      = return Authorized
-    isAuthorized (CharacterR _)              _      = return Authorized
-    isAuthorized NewCharacterR               _      = requireAdmin
-    isAuthorized (EditCharacterR _)          _      = requireAdmin
-    isAuthorized (CharacterBlurbsR _)        _      = requireAdmin
-    isAuthorized (CharacterBlurbR _ _)       _      = requireAdmin
-    isAuthorized HousesR                     isPost = requireAdminIfPost isPost
-    isAuthorized (HouseR _)                  isPost = requireAdminIfPost isPost
-    isAuthorized SpeciesListR                isPost = requireAdminIfPost isPost
-    isAuthorized (SpeciesR _)                isPost = requireAdminIfPost isPost
-    isAuthorized SeriesListR                 isPost = requireAdminIfPost isPost
-    isAuthorized (SeriesR _)                 isPost = requireAdminIfPost isPost
-    isAuthorized (SeriesEpisodesR _)         isPost = requireAdminIfPost isPost
-    isAuthorized (SeriesEpisodeR _ _)        isPost = requireAdminIfPost isPost
-    isAuthorized (SeriesEpisodeEventsR _ _)  _      = requireAdmin
-    isAuthorized (SeriesEpisodeEventR _ _ _) _      = requireAdmin
-    isAuthorized (SeriesEpisodeScoreR _ _)   _      = requireAdmin
+    isAuthorized (AdminR _) _ = requireAdmin
+
+    isAuthorized CharactersR          _ = return Authorized
+    isAuthorized (CharacterR _)       _ = return Authorized
+    isAuthorized HousesR              _ = return Authorized
+    isAuthorized (HouseR _)           _ = return Authorized
+    isAuthorized SpeciesListR         _ = return Authorized
+    isAuthorized (SpeciesR _)         _ = return Authorized
+    isAuthorized SeriesListR          _ = return Authorized
+    isAuthorized (SeriesR _)          _ = return Authorized
+    isAuthorized (SeriesEpisodesR _)  _ = return Authorized
+    isAuthorized (SeriesEpisodeR _ _) _ = return Authorized
 
     -- TODO - For transaction routes, make sure transaction is in the correct
     -- league, or take leagueId out of the route, OR figure out how to get a
@@ -400,15 +397,37 @@ instance YesodBreadcrumbs App where
     breadcrumb (AuthR LoginR) = return ("Sign In", Just HomeR)
     breadcrumb FAQR = return ("How To Play", Just HomeR)
 
+    -- Admin
+    breadcrumb (AdminR AdminDashboardR) = return ("Dashboard", Nothing)
+    breadcrumb (AdminR AdminScoreR) = return ("Score", Just $ AdminR AdminDashboardR)
+    breadcrumb (AdminR (AdminScoreEpisodeR eid)) = return (toPathPiece eid, Just $ AdminR AdminScoreR)
+
+    breadcrumb (AdminR AdminBlurbsR)      = return ("Blurbs", Just $ AdminR AdminDashboardR)
+    breadcrumb (AdminR (AdminBlurbR bid)) = return (toPathPiece bid, Just $ AdminR AdminBlurbsR)
+
+    breadcrumb (AdminR AdminCharactersR)      = return ("Characters", Just $ AdminR AdminDashboardR)
+    breadcrumb (AdminR (AdminCharacterR cid)) = return (toPathPiece cid, Just $ AdminR AdminCharactersR)
+
+    breadcrumb (AdminR AdminEpisodesR)      = return ("Episodes", Just $ AdminR AdminDashboardR)
+    breadcrumb (AdminR (AdminEpisodeR hid)) = return (toPathPiece hid, Just $ AdminR AdminEpisodesR)
+
+    breadcrumb (AdminR AdminEventsR)      = return ("Events", Just $ AdminR AdminDashboardR)
+    breadcrumb (AdminR (AdminEventR hid)) = return (toPathPiece hid, Just $ AdminR AdminEventsR)
+
+    breadcrumb (AdminR AdminHousesR)      = return ("Houses", Just $ AdminR AdminDashboardR)
+    breadcrumb (AdminR (AdminHouseR hid)) = return (toPathPiece hid, Just $ AdminR AdminHousesR)
+
+    breadcrumb (AdminR AdminSeriesListR)   = return ("Series", Just $ AdminR AdminDashboardR)
+    breadcrumb (AdminR (AdminSeriesR sid)) = return (toPathPiece sid, Just $ AdminR AdminSeriesListR)
+
+    breadcrumb (AdminR AdminSpeciesListR)   = return ("Species", Just $ AdminR AdminDashboardR)
+    breadcrumb (AdminR (AdminSpeciesR sid)) = return (toPathPiece sid, Just $ AdminR AdminSpeciesListR)
+
     -- Character, species, and house breadcrumbs
     breadcrumb CharactersR = return ("Characters", Just HomeR)
-    breadcrumb NewCharacterR = return ("New", Just CharactersR)
     breadcrumb (CharacterR characterId) = do
         character <- runDB $ get404 characterId
         return (characterName character, Just CharactersR)
-    breadcrumb (EditCharacterR characterId) = return ("Edit", Just $ CharacterR characterId)
-    breadcrumb (CharacterBlurbsR characterId) = return ("Blurbs", Just $ CharacterR characterId)
-    breadcrumb (CharacterBlurbR characterId blurbId) = return (toPathPiece blurbId, Just $ CharacterBlurbsR characterId)
 
     breadcrumb SpeciesListR = return ("Species", Just HomeR)
     breadcrumb (SpeciesR speciesId) = do
@@ -426,8 +445,6 @@ instance YesodBreadcrumbs App where
     breadcrumb (SeriesEpisodesR seriesNo) = return ("Episodes", Just $ SeriesR seriesNo)
     breadcrumb (SeriesEpisodeR seriesNo episodeNo) =
         return (toPathPiece episodeNo, Just $ SeriesEpisodesR seriesNo)
-    breadcrumb (SeriesEpisodeEventR seriesNo episodeNo eventId) =
-        return ("Event #" ++ toPathPiece eventId, Just $ SeriesEpisodeR seriesNo episodeNo)
 
     -- League breadcrumbs
     breadcrumb LeaguesR           = return ("Leagues", Just HomeR)
@@ -475,13 +492,14 @@ instance YesodBreadcrumbs App where
     breadcrumb (SetupLeagueR SetupConfirmSettingsR) = return ("Complete Setup", Just $ SetupLeagueR SetupTeamsSettingsR)
 
     -- These pages never call breadcrumb
-    breadcrumb StaticR{}                  = return ("", Nothing)
-    breadcrumb AuthR{}                    = return ("", Nothing)
-    breadcrumb FaviconR                   = return ("", Nothing)
-    breadcrumb RobotsR                    = return ("", Nothing)
-    breadcrumb SeriesEpisodeEventsR{}     = return ("", Nothing)
-    breadcrumb SeriesEpisodeScoreR{}      = return ("", Nothing)
-    breadcrumb LetsEncryptR{}             = return ("", Nothing)
+    breadcrumb StaticR{}      = return ("", Nothing)
+    breadcrumb AuthR{}        = return ("", Nothing)
+    breadcrumb FaviconR       = return ("", Nothing)
+    breadcrumb RobotsR        = return ("", Nothing)
+    breadcrumb LetsEncryptR{} = return ("", Nothing)
+
+    breadcrumb (AdminR (AdminScoreEventR _)) = return ("", Nothing)
+
     breadcrumb LeagueCancelTransactionR{} = return ("", Nothing)
     breadcrumb LeagueMoveClaimUpR{}       = return ("", Nothing)
     breadcrumb LeagueMoveClaimDownR{}     = return ("", Nothing)

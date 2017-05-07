@@ -1,11 +1,6 @@
 <div .page-header>
     <h4>Houses
 
-$if isAdmin maybeUser
-    <div>
-        <a href="#" role="button" .btn .btn-primary>Create a new house
-    ^{embeddedForm action enctype widget}
-
 <div .panel .panel-default>
     <table .table .table-striped .table-hover>
         <thead>

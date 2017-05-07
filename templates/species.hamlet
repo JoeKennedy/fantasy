@@ -10,9 +10,4 @@
                 <h6 .list-group-item-heading>Description
                 <p .list-group-item-text>#{speciesDescription s}
 
-    $if isAdmin maybeUser
-        <div .col-md-9 .col-xs-12>
-            <a href="#" role="button" .btn .btn-primary>Edit this species
-            ^{embeddedForm action enctype widget}
-
 ^{charactersTable characters}

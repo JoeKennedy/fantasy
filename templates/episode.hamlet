@@ -17,22 +17,10 @@
                 <p .list-group-item-text>
                     #{displayAirDate $ episodeAirTime episode}
 
-        $if areEventsCompletable
-            <button .btn .btn-primary type="button" data-toggle="modal" data-target="#score_modal">
-                Finalize Events
-
-    $if isAdmin maybeUser
-        <div .col-md-9 .col-xs-12>
-            ^{embeddedForm episodeAction episodeEnctype episodeWidget}
-            $if not (episodeAreEventsComplete episode)
-                ^{eventFormWidget eventHtmlAction eventEnctype eventWidget}
-
 $if not (null events)
     <div .panel .panel-default>
         <table .table .table-striped .table-hover>
             <thead>
-                $if isAdmin maybeUser
-                    <th>
                 <th>Time In Episode
                 <th .hidden-sm .hidden-xs>Character
                 <th .hidden-sm .hidden-xs>Action
@@ -40,12 +28,8 @@ $if not (null events)
                 <th>Event
 
             <tbody>
-                $forall (Entity eventId event, Entity _ character, maybeReceivingCharacter) <- events
+                $forall (Entity _ event, _, Entity _ character, maybeReceivingCharacter) <- events
                     <tr>
-                        $if isAdmin maybeUser
-                            <td>
-                                <a href=@{SeriesEpisodeEventR seriesNo episodeNo eventId}>
-                                    <span .fa .fa-pencil>
                         <td>#{displayTime (eventTimeInEpisode event)}
                         <td .hidden-sm .hidden-xs>
                             $if characterIsPlayable character
@@ -80,36 +64,4 @@ $if not (null events)
                                     #{actionAfter}
                                 $maybe note <- eventNote event
                                     \ #{note}
-
-$if areEventsCompletable
-    <div #score_modal .modal .fade tabindex="-1" role="dialog" aria-labelledby="score_modal_label">
-        <div .modal-dialog role="document">
-            <div .modal-content>
-                <div .modal-header>
-                    <button .close type="button" data-dismiss="modal" aria-label="Close">
-                        <span .fa .fa-times aria-hidden="true">
-                    <h5 .modal-title>Finalize Events
-                <div .modal-body>
-                    <p .text-primary> In order to finalize events, you'll need to click the
-                        below button, and then another button will appear. #
-                        <b>Important:
-                        \ Finalizing the events will create the scoring for all
-                        leagues. Proceed with caution.
-                    <p>
-                        <button .btn .btn-default type="button" data-dismiss="modal" aria-label="Cancel">
-                            Cancel
-                        <button .btn .btn-primary type="button" data-toggle="collapse" data-target="#finalize" aria-expanded="false" aria-controls="finalize">
-                            Finalize Events
-                            <span .fa .fa-caret-down>
-                    <div #finalize .collapse>
-                        <div .well>
-                            <form method="post" action=@{SeriesEpisodeScoreR seriesNo episodeNo} enctype=#{UrlEncoded}>
-                                <p> Press "Finalize Events" at your own discretion: #
-                                    <button .btn .btn-default type="button" data-dismiss="modal" aria-label="Cancel">
-                                        Cancel
-                                    <button .btn .btn-danger type="submit">
-                                        Finalize Events
-                <div .modal-footer>
-                    <button .btn .btn-default type="button" data-dismiss="modal" aria-label="Cancel">
-                        Cancel
 

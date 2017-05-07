@@ -1,6 +1,6 @@
 name:              fantasy
 version:           0.0.0
-cabal-version:     1.22.3.0
+cabal-version:     1.22.2.0
 build-type:        Simple
 
 Flag dev
@@ -26,8 +26,21 @@ library
                      Model.Types
                      Settings
                      Settings.StaticFiles
+                     Handler.Admin
+                     Handler.Admin.Blurb
+                     Handler.Admin.Character
+                     Handler.Admin.Common
+                     Handler.Admin.Episode
+                     Handler.Admin.Event
+                     Handler.Admin.House
+                     Handler.Admin.Record
+                     Handler.Admin.Score
+                     Handler.Admin.Series
+                     Handler.Admin.Species
                      Handler.Common
                      Handler.Character
+                     Handler.Episode
+                     Handler.Event
                      Handler.Home
                      Handler.House
                      Handler.League
@@ -41,6 +54,7 @@ library
                      Handler.League.Team
                      Handler.League.Transaction
                      Handler.League.Week
+                     Handler.Score
                      Handler.Series
                      Handler.Species
 
@@ -124,6 +138,8 @@ library
                  , utf8-string
                  , random
                  , numbers
+                 , regex-compat
+                 , wai
 
 executable         fantasy
     if flag(library-only)

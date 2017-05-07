@@ -41,7 +41,7 @@
                     $if null blurbs
                         \ for #{characterName character}
         $forall blurb <- blurbs
-            ^{blurbPanel maybeUser characterId blurb}
+            ^{blurbPanel maybeUser blurb}
 
     <div .col-sm-8>
         $forall ((Entity _ performance, Entity _ week, maybeTeam), plays) <- performancesAndPlays

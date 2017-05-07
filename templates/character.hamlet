@@ -40,11 +40,11 @@
                     <h6 .list-group-item-heading>Bio
                     <p .list-group-item-text>#{characterBio character}
 
-            $if isAdmin maybeUser
-                <div .panel-footer>
-                    <div .text-right>
-                        <a .btn .btn-primary href=@{CharacterBlurbsR characterId}>
-                            Blurbs
+            <div .page-header>
+                <h5>Updates
+
+            $forall blurb <- blurbs
+                ^{blurbPanel maybeUser blurb}
 
     $if not (null events)
         <div .col-sm-9 .col-xs-12>

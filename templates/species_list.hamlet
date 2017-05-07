@@ -1,11 +1,6 @@
 <div .page-header>
     <h4>Species
 
-$if isAdmin maybeUser
-    <div>
-        <a href="#" role="button" .btn .btn-primary>Create a new species
-    ^{embeddedForm action enctype widget}
-
 <div .panel .panel-default>
     <table .table .table-striped .table-hover>
         <thead>
@@ -13,7 +8,7 @@ $if isAdmin maybeUser
             <th>Description
             <th>Number Of Characters
         <tbody>
-            $forall (Entity speciesId species, E.Value characterCount) <- species_list
+            $forall (Entity speciesId species, E.Value characterCount) <- speciesList
                 <tr>
                     <td>
                         <a href=@{SpeciesR speciesId}>#{speciesName species}

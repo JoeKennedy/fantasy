@@ -3,7 +3,7 @@
         <h6 .panel-title>
             #{displayUTCDate $ blurbCreatedAt blurb}
             $if isAdmin maybeUser
-                <a .pull-right href=@{CharacterBlurbR characterId blurbId}>
+                <a .pull-right href=@{AdminR $ AdminBlurbR blurbId}>
                     <i .fa .fa-pencil>
     <table .table .panel-table>
         <tbody>

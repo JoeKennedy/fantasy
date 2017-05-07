@@ -1,0 +1,27 @@
+<div .panel .panel-default>
+    <table .table .table-hover .table-no-bordered .table-striped>
+        <thead>
+            <th>Model
+            <th>Records
+            <th>
+
+        <tbody>
+            $forall (modelLower, recordCount) <- recordCounts
+                <tr>
+                    <td .col-xs-2 .col-md-1>
+                        <a href="/admin/#{modelLower}">
+                            #{capitalize $ pluralize modelLower}
+                    <td>
+                        $with (width, color) <- progressBarAttributes recordCount maxCount
+                            <div .progress>
+                                <div .active .progress-bar .progress-bar-striped class="progress-bar-#{color}" style="min-width: 1em; width: #{width}%">
+                                    #{recordCount}
+                    <td .admin-action-buttons .text-right>
+                        <div .btn-group .btn-group-xs>
+                            <a .btn .btn-default href="/admin/#{modelLower}" title="List #{pluralize $ capitalize modelLower}">
+                                <i .fa .fa-lg .fa-list>
+                            <a .btn .btn-info href="#{pluralize modelLower}" title="Show #{pluralize $ capitalize modelLower} in App">
+                                <i .fa .fa-lg .fa-eye>
+                            <a .btn .btn-primary href="/admin/#{modelLower}?new" title="New #{capitalize modelLower}">
+                                <i .fa .fa-lg .fa-plus>
+

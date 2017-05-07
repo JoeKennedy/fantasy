@@ -1,0 +1,30 @@
+body
+  padding-top: 70px
+
+.page-header
+  margin-top: 0px
+  h3
+    margin-top: 0px
+
+.admin-action-buttons
+  width: 120px
+
+.vertical-align-middle
+  vertical-align: middle
+
+table.table > tbody > tr.vertical-align-middle > td
+  vertical-align: middle
+
+.progress
+  margin-bottom: 0px
+
+.admin-score-progress
+  width: 10px
+
+/* .table */
+/*   table-layout: fixed */
+
+/* .table td */
+/*   white-space: nowrap */
+/*   overflow: hidden */
+/*   text-overflow: ellipsis */

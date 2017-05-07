@@ -1,0 +1,10 @@
+<thead>
+    <th data-field="series-number" data-sortable="true">
+        Series Number
+    <th>
+
+<tbody>
+    $forall (Entity seriesId series) <- seriesList
+        <tr>
+            <td>#{seriesNumber series}
+            ^{adminActionButtons "series" seriesId $ Just "episode"}

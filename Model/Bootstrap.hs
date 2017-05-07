@@ -12,7 +12,6 @@ import           Yesod.Form.Bootstrap3 ( BootstrapFormLayout (..)
 -------------------
 --- Bootstrap 3 ---
 -------------------
-
 renderBootstrapForm :: (Monad m) => FormRender m a
 renderBootstrapForm = renderBootstrap3 defaultBootstrapForm
 
@@ -40,7 +39,10 @@ hidden :: Text -> FieldSettings site
 hidden name = FieldSettings (SomeMessage ("" :: Text)) Nothing (Just (fieldId name)) Nothing [("class", "hidden")]
 
 inputSm :: FieldSettings site
-inputSm = FieldSettings (SomeMessage ("" :: Text)) Nothing Nothing Nothing [("class", "form-control input-sm")]
+inputSm = inputSmClass ""
+
+inputSmClass :: Text -> FieldSettings site
+inputSmClass klass = FieldSettings (SomeMessage ("" :: Text)) Nothing Nothing Nothing [("class", "form-control input-sm " ++ klass)]
 
 inputSmHidden :: Text -> FieldSettings site
 inputSmHidden text = FieldSettings (SomeMessage text) Nothing Nothing Nothing [("class", "form-control input-sm hidden")]
@@ -68,8 +70,8 @@ updatedByField :: (Applicative f) => UserId -> f UserId
 updatedByField = pure
 
 updatedAtField :: (Applicative (t m), MonadTrans t, MonadIO m) => t m UTCTime
-updatedAtField = lift (liftIO getCurrentTime)
+updatedAtField = lift $ liftIO getCurrentTime
 
 existingElseDefault :: (Applicative f) => a -> Maybe a -> f a
-existingElseDefault defaultValue maybeExistingValue = pure (fromMaybe defaultValue maybeExistingValue)
+existingElseDefault defaultValue maybeExistingValue = pure $ fromMaybe defaultValue maybeExistingValue
 

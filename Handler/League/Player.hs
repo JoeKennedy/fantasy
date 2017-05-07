@@ -163,8 +163,8 @@ playersModal players playersTableType modalType =
         buttonId = "submit_" ++ typeLower
     in  $(widgetFile "league/players_modal")
 
-blurbPanel :: Maybe (Entity User) -> CharacterId -> Entity Blurb -> Widget
-blurbPanel maybeUser characterId (Entity blurbId blurb) = $(widgetFile "blurb_panel")
+blurbPanel :: Maybe (Entity User) -> Entity Blurb -> Widget
+blurbPanel maybeUser (Entity blurbId blurb) = $(widgetFile "blurb_panel")
 
 -------------
 -- Queries --

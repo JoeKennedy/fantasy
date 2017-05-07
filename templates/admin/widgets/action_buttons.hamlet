@@ -1,0 +1,11 @@
+<td .admin-action-buttons .text-right>
+    <div .btn-group .btn-group-xs>
+        <a .btn .btn-default href="/admin/#{modelLower}/#{theId}" title="Edit #{model}">
+            <i .fa .fa-lg .fa-pencil>
+        <button .btn .btn-danger .delete-object type="button" title="Delete #{model}" data-toggle="modal" data-target="#delete#{model}" data-id="#{theId}">
+            <i .fa .fa-lg .fa-times>
+        <a .btn .btn-info href="/#{pluralize modelLower}/#{theId}" title="Show #{model} In App">
+            <i .fa .fa-lg .fa-eye>
+        $maybe subModelLower <- maybeSubModelLower
+            <a .btn .btn-primary href="/admin/#{subModelLower}?#{modelLower}=#{theId}" title="Add New #{capitalize subModelLower}">
+                <i .fa .fa-lg .fa-plus>

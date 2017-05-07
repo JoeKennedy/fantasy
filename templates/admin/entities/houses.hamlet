@@ -1,0 +1,19 @@
+<thead>
+    <th data-field="house-name" data-sortable="true">
+        House
+    <th data-field="house-words" data-sortable="true">
+        Words
+    <th .hidden-xs .hidden-sm data-field="house-description" data-sortable="true">
+        Description
+    <th .hidden-xs data-field="house-character-count" data-sortable="true">
+        Characters
+    <th>
+
+<tbody>
+    $forall (Entity houseId house, E.Value characterCount) <- houses
+        <tr>
+            <td>#{houseName house}
+            <td>#{houseWords house}
+            <td .hidden-xs .hidden-sm>#{houseDescription house}
+            <td .hidden-xs>#{show characterCount}
+            ^{adminActionButtons "house" houseId $ Just "character"}

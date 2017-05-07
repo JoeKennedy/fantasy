@@ -1,0 +1,46 @@
+<div .well>
+    <a href="@{AdminR $ AdminEpisodeR episodeId}">This episode
+    has been finalized at least once (total of
+    #{show $ episodeTimesFinalized episode} times) so the scoring
+    cannot be edited on this page.
+
+<div #score_episode_panel .panel .panel-default>
+    <table .table .table-hover .table-striped>
+        <col .col-xs-2 .character-column />
+        <col .col-xs-1 .action-column />
+        <col .col-xs-2 .receiving-character-column />
+        <col .col-xs-1 .time-column />
+        <col .note-column />
+        <col .close-button />
+
+        <thead>
+            <tr>
+                <th>Character
+                <th>Action
+                <th>Receiving Character
+                <th>
+                    <i .fa .fa-clock-o>
+                <th>Note
+
+        <tbody>
+            $forall (Entity eventId event, _, Entity _ character, maybeReceivingCharacter) <- events
+                <tr .vertical-align-middle>
+                    <td>
+                        <small>#{characterName character}
+                    <td>
+                        <small>#{show $ eventAction event}
+                    <td>
+                        <small>
+                            $maybe Entity _ receivingCharacter <- maybeReceivingCharacter
+                                #{characterName receivingCharacter}
+                            $nothing
+                                -
+                    <td>
+                        <small>#{eventTimeInEpisodeText event}
+                    <td>
+                        <small>
+                            $maybe note <- eventNote event
+                                #{note}
+                    ^{adminActionButtons "event" eventId Nothing}
+
+^{adminDeleteModal "event"}
