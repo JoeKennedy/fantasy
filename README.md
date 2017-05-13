@@ -1,20 +1,17 @@
 ## Haskell Setup
 
-### Install Halcyon
+### Install Stack
 
-Right now I use [Halcyon](https://halcyon.sh/) to manage this repo due to its
-integration with [Haskell On Heroku](https://haskellonheroku.com/). You can find
-Halcyon setup steps in the README of my
-[dotfiles repository](https://github.com/JoeKennedy/dotfiles#haskell-setup), or
-on [Halcyon's website](https://halcyon.sh/tutorial/).
-
-### Set environment variables
-
-Put this in your `.zshrc` or `.bashrc` file if you're using a Mac. Otherwise,
-`halcyon install` will take hours.
+I use Stack to manage this repo due to its integration with the
+[Heroku Buildpack for Stack](https://github.com/mfine/heroku-buildpack-stack).
+Stack setup steps for Yesod can be found on the
+[Yesod book's quick start guide](https://www.yesodweb.com/page/quickstart);
+more general installation steps can be found on
+[Stack's website](https://docs.haskellstack.org/en/stable/README/). Mac users
+can use Homebrew:
 
 ```bash
-export HALCYON_GHC_NO_STRIP=1
+brew install stack
 ```
 
 ## Fantasy App Setup
@@ -46,10 +43,10 @@ cabal install yesod-bin
 
 ### Initial compile
 
-With Halcyon, just `cd` to your local copy of the repo and run:
+With Stack, just `cd` to your local copy of the repo and run:
 
 ```bash
-halcyon build
+stack build
 ```
 
 ### Create database

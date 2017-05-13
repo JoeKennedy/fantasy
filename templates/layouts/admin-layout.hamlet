@@ -39,18 +39,11 @@
             New #{activeItem}
         <h3>#{title}
 
-      $maybe msg <- mmsg
-        <div #message .alert .alert-dismissible .alert-primary .bg-primary>
+      $forall (status, message) <- messages
+        <div #message .alert .alert-dismissible class="#{alertClass status}">
           <button .close type="button" data-dismiss="alert">
             <i .fa .fa-times>
-          #{msg}
-
-      <!-- TODO - upgrade yesod-core to 1.4.20 (or higher) and use these lines -->
-      <!-- $forall (status, message) <- messages -->
-      <!--   <div #message .alert .alert-dismissible class="#{alertClass status}"> -->
-      <!--     <button .close type="button" data-dismiss="alert"> -->
-      <!--       <i .fa .fa-times> -->
-      <!--     #{message} -->
+          #{message}
 
       <ol .breadcrumb>
           $if not (null parents)

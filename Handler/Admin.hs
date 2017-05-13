@@ -42,9 +42,7 @@ readTimeInEpisode timeInEpisode =
 adminLayout :: Text -> Text -> Widget -> Handler Html
 adminLayout activeItem title widget = do
     master <- getYesod
-    mmsg <- getMessage
-    -- TODO - upgrade yesod-core to 1.4.20 (or higher) and use this line
-    -- messages <- getMessages
+    messages <- getMessages
     (title', parents) <- breadcrumbs
     let entityNames = ["Blurb", "Character", "Episode", "Event", "House", "Series", "Species"]
         actions  = map (activeClass activeItem) ["Score"]
@@ -166,17 +164,13 @@ handleFormPost modelLower form maybeEntity = do
     uniqueFailureFields <- case result of
         FormMissing -> return emptyUFFList
         FormFailure _ -> do
-            setMessage failure
-            -- TODO - upgrade yesod-core to >= 1.4.20 and use this line
-            -- addMessage "danger" failure
+            addMessage "danger" failure
             return emptyUFFList
         FormSuccess entity -> do
             uniqueFailureOrEntityId <- runDB $ replacertUnique maybeEntityId entity
             case uniqueFailureOrEntityId of
                 Left uniqueFailure -> do
-                    setMessage failure
-                    -- TODO - upgrade yesod-core to >= 1.4.20 and use this line
-                    -- addMessage "danger" failure
+                    addMessage "danger" failure
                     return $ persistUniqueToFieldNames uniqueFailure
                 Right entityId -> do
                     setMessage success

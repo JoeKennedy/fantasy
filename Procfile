@@ -1,1 +1,1 @@
-web: bin/fantasy
+web: .local/bin/fantasy
