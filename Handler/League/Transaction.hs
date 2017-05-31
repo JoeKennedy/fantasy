@@ -348,18 +348,23 @@ generateTransactionPosition _ _ = return Nothing
 ---------------------------
 -- Process Transactions --
 ---------------------------
--- TODO - Actually make this go in waiver order, which it apparently doesn't
 processClaimRequests :: Handler ()
 processClaimRequests = do
     maybeAdmin <- runDB $ selectFirst [UserIsAdmin ==. True] [Asc UserId]
     let Entity adminUserId _ = fromJust maybeAdmin
     now <- liftIO getCurrentTime
+    teamIds <- runDB $ selectKeysList [] [Asc TeamLeagueId, Asc TeamWaiverOrder]
+    forM_ teamIds $ processTeamClaimRequests adminUserId now
+
+processTeamClaimRequests :: UserId -> UTCTime -> TeamId -> Handler ()
+processTeamClaimRequests adminUserId now teamId = do
     transactionIds <- runDB $ selectKeysList
         [ TransactionStatus ==. Requested
         , TransactionType ==. Claim
+        , TransactionTeamId ==. teamId
         , TransactionProcessableAt <=. now
         ] [Asc TransactionPosition, Asc TransactionId]
-    mapM_ (processMultiPlayerTransaction adminUserId) transactionIds
+    forM_ transactionIds $ processMultiPlayerTransaction adminUserId
 
 cancelAllTransactionRequests :: UserId -> LeagueId -> Handler ()
 cancelAllTransactionRequests adminUserId leagueId = do
