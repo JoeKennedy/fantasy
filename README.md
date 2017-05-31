@@ -24,14 +24,6 @@ First `cd` to the directory that houses your Git and/or Yesod projects, and run
 git clone https://github.com/JoeKennedy/fantasy.git
 ```
 
-### Set up sandbox (optional)
-
-Assuming you want to use your top level sandbox, run the following command
-
-```bash
-ln -sf /app/sandbox/cabal.sandbox.config cabal.sandbox.config
-```
-
 ### Install yesod-bin
 
 In order to run `yesod` commands in your terminal, you'll need to install
@@ -61,7 +53,7 @@ CREATE DATABASE fantasy OWNER fantasy;
 
 ### Set up .env variables
 
-The current (as of 10/23/2016) environment variables necessary to run the app
+The current (as of 05/18/2017) environment variables necessary to run the app
 are:
 
 ```bash
