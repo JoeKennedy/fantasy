@@ -29,16 +29,16 @@
                     <li .list-group-item>
                         <h6 .list-group-item-heading>Regular Season Points
                         <p .list-group-item-text>
-                            #{displayRational $ teamPointsThisRegularSeason team}
-                    $if leagueIsInPostSeason league
+                            #{displayRational $ teamSeasonRegularSeasonPoints teamSeason}
+                    $if seasonIsInPostSeason season
                         <li .list-group-item>
                             <h6 .list-group-item-heading>Postseason Points
                             <p .list-group-item-text>
-                                #{displayRational $ teamPointsThisPostSeason team}
+                                #{displayRational $ teamSeasonPostSeasonPoints teamSeason}
                         <li .list-group-item>
                             <h6 .list-group-item-heading>Postseason Bracket
                             <p .list-group-item-text>
-                                #{toPathPiece $ teamPostSeasonStatus team}
+                                #{toPathPiece $ teamSeasonPostSeasonStatus teamSeason}
 
             <div .col-sm-6 .col-xs-12>
                 <div #transaction_request_accordion .panel-group role="tablist" aria-multiselectable="true">

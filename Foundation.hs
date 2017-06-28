@@ -5,6 +5,7 @@ import Import.NoFoundation
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.))
 import           Database.Persist.Sql                 (ConnectionPool, runSqlPool)
+import           Data.Maybe                           (fromJust)
 import           Facebook                             (Credentials(..))
 import           Network.Mail.Mime.SES
 import           Text.Hamlet                          (hamletFile)
@@ -67,13 +68,13 @@ instance Yesod App where
 
     defaultLayout widget = do
         master <- getYesod
-        maybeUserId <- maybeAuthId
+        maybeUser <- maybeAuth
         mmsg <- getMessage
         (title', parents) <- breadcrumbs
 
         seriesList <- runDB $ selectList [] [Asc SeriesNumber]
 
-        leagues <- getLeaguesByUser maybeUserId
+        leagues <- getLeaguesByUser $ map entityKey maybeUser
 
         -- We break up the default layout into two components:
         -- default-layout is the contents of the body tag, and
@@ -125,7 +126,7 @@ instance Yesod App where
     isAuthorized LeaguesR                          _ = return Authorized
     isAuthorized (LeagueR leagueId)                _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueCancelR leagueId)          _ = requireLeagueManager leagueId
-    isAuthorized (LeagueDraftR leagueId draftYear) _ = requireLeagueManagerAndIncompleteDraft leagueId draftYear
+    isAuthorized (LeagueDraftR leagueId)           _ = requireLeagueManagerAndIncompleteDraft leagueId
     isAuthorized (LeagueTransactionsR leagueId)    _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueAcceptTradeR _ tid)        _ = requireTradeAcceptable tid
     isAuthorized (LeagueDeclineTradeR _ tid)       _ = requireTradeDeclinable tid
@@ -141,7 +142,7 @@ instance Yesod App where
     isAuthorized (LeagueTeamResendR lid tNumber)   _ = requireJoinEmailResendable lid tNumber
 
     isAuthorized (LeagueResultsR leagueId)         _ = requirePublicOrLeagueMember leagueId
-    isAuthorized (LeaguePlayoffsR leagueId)        _ = requireLeagueInPostSeason leagueId
+    isAuthorized (LeaguePlayoffsR leagueId)        _ = requireSeasonInPostSeason leagueId
     isAuthorized (LeagueResultsWeekR lid weekNo)   _ = requireWeekExists lid weekNo
     isAuthorized (LeaguePlayersR leagueId)         _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeaguePlayerR leagueId characId) _ = requirePlayable leagueId characId
@@ -228,15 +229,15 @@ requirePlayable leagueId characterId = do
         then requirePublicOrLeagueMember leagueId
         else return $ Unauthorized "Player is not playable"
 
-requireLeagueInPostSeason :: LeagueId -> Handler AuthResult
-requireLeagueInPostSeason leagueId = do
+requireSeasonInPostSeason :: LeagueId -> Handler AuthResult
+requireSeasonInPostSeason leagueId = do
     publicOrLeagueMember <- requirePublicOrLeagueMember leagueId
     case publicOrLeagueMember of
         Authorized -> do
-            league <- runDB $ get404 leagueId
-            return $ if leagueIsInPostSeason league
+            Entity _ season <- getSelectedSeason leagueId
+            return $ if seasonIsInPostSeason season
                 then Authorized
-                else Unauthorized "League is not in postseason"
+                else Unauthorized "Season is not in postseason"
         _ -> return publicOrLeagueMember
 
 requireJoinEmailResendable :: LeagueId -> Int -> Handler AuthResult
@@ -258,21 +259,24 @@ requireJoinEmailResendable leagueId number = do
 
 requireWeekExists :: LeagueId -> Int -> Handler AuthResult
 requireWeekExists leagueId weekNo = do
-    maybeWeek <- runDB $ getBy $ UniqueWeekLeagueIdWeekNumber leagueId weekNo
+    seasonId <- getSelectedSeasonId leagueId
+    maybeWeek <- runDB $ selectFirst [WeekSeasonId ==. Just seasonId, WeekNumber ==. weekNo] []
+    -- TODO - use the below line once the unique constraint can be added
+    -- maybeWeek <- runDB $ getBy $ UniqueWeekSeasonIdNumber seasonId weekNo
     case maybeWeek of Just _  -> requirePublicOrLeagueMember leagueId
                       Nothing -> return $ Unauthorized "Week does not exist"
 
 requireTradeAcceptable :: TransactionId -> Handler AuthResult
 requireTradeAcceptable transactionId = do
     transaction <- runDB $ get404 transactionId
-    league <- runDB $ get404 $ transactionLeagueId transaction
+    Entity _ season <- getSelectedSeason $ transactionLeagueId transaction
     muid <- maybeAuthId
     case (muid, transactionOtherTeamId transaction) of
         (Nothing, _)     -> return AuthenticationRequired
         (_, Nothing)     -> return $ Unauthorized "Transaction must have another team"
         (_, Just teamId) ->
             if transactionStatus transaction == Requested && transactionType transaction == Trade
-                then if leagueIsAfterTradeDeadline league
+                then if seasonIsAfterTradeDeadline season
                          then return $ Unauthorized "Trades cannot happen after trade deadline"
                          else requireTeamOwner teamId
                 else return $ Unauthorized "Must be a trade transaction with status of requested"
@@ -283,12 +287,12 @@ requireTradeDeclinable = requireTradeAcceptable
 requireTransactionCancelable :: TransactionId -> Handler AuthResult
 requireTransactionCancelable transactionId = do
     transaction <- runDB $ get404 transactionId
-    league <- runDB $ get404 $ transactionLeagueId transaction
+    Entity _ season <- getSelectedSeason $ transactionLeagueId transaction
     let teamId = transactionTeamId transaction
     if transactionStatus transaction == Requested
         then case transactionType transaction of
                  Claim -> requireTeamOwner teamId
-                 Trade -> if leagueIsAfterTradeDeadline league
+                 Trade -> if seasonIsAfterTradeDeadline season
                               then return $ Unauthorized "Must be a trade transaction with status of requested"
                               else requireTeamOwner teamId
                  _ -> return $ Unauthorized "Must be a trade or claim transaction"
@@ -358,23 +362,21 @@ requireLeagueManager leagueId = do
                 then Authorized
                 else Unauthorized "You aren't allowed to manage this league"
 
-requireLeagueManagerAndIncompleteDraft :: LeagueId -> Int -> Handler AuthResult
-requireLeagueManagerAndIncompleteDraft leagueId draftYear
-    | draftYear /= 2016 = return $ Unauthorized "Draft can't happen for that year"
-    | otherwise = do
-        league <- runDB $ get404 leagueId
-        authResult <- requireLeagueManager leagueId
-        return $ case authResult of
-            Authorized -> if leagueIsDraftComplete league
-                              then Unauthorized "Draft already completed"
-                              else Authorized
-            _ -> authResult
+requireLeagueManagerAndIncompleteDraft :: LeagueId -> Handler AuthResult
+requireLeagueManagerAndIncompleteDraft leagueId = do
+    Entity _ season <- getSelectedSeason leagueId
+    authResult <- requireLeagueManager leagueId
+    return $ case authResult of
+        Authorized -> if seasonIsDraftComplete season
+                          then Unauthorized "Draft already completed"
+                          else Authorized
+        _ -> authResult
 
 requirePlayerOwnerAndTransactionsPossible :: LeagueId -> CharacterId -> Handler AuthResult
 requirePlayerOwnerAndTransactionsPossible leagueId characterId = do
-    league <- runDB $ get404 leagueId
+    Entity _ season <- getSelectedSeason leagueId
     muid <- maybeAuthId
-    case (muid, leagueIsDraftComplete league, leagueIsSeasonComplete league) of
+    case (muid, seasonIsDraftComplete season, seasonIsSeasonComplete season) of
         (Nothing, _, _) -> return AuthenticationRequired
         (_, False, _)   -> return $ Unauthorized "Transactions cannot happen before draft occurs"
         (_, _, True)    -> return $ Unauthorized "Transactions cannot happen after season is complete"
@@ -382,9 +384,11 @@ requirePlayerOwnerAndTransactionsPossible leagueId characterId = do
 
 requirePlayerOwner :: LeagueId -> CharacterId -> Handler AuthResult
 requirePlayerOwner leagueId characterId = do
-    Entity _ player <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
+    Entity playerId _ <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
+    seasonId <- getSelectedSeasonId leagueId
+    Entity _ playerSeason <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId playerId seasonId
     let unauthorized = Unauthorized "This player is not on your team"
-    case playerTeamId player of
+    case playerSeasonTeamId playerSeason of
         Nothing  -> return unauthorized
         Just tid -> do
             team <- runDB $ get404 tid
@@ -452,7 +456,7 @@ instance YesodBreadcrumbs App where
         league <- runDB $ get404 leagueId
         return (leagueName league, Just LeaguesR)
     breadcrumb (LeagueCancelR leagueId)         = return ("Cancel", Just $ LeagueR leagueId)
-    breadcrumb (LeagueDraftR leagueId _)        = return ("Draft",        Just $ LeagueR leagueId)
+    breadcrumb (LeagueDraftR leagueId)          = return ("Draft", Just $ LeagueR leagueId)
     breadcrumb (LeagueTransactionsR leagueId)   = return ("Transactions", Just $ LeagueR leagueId)
     breadcrumb (LeagueAcceptTradeR leagueId _)  = return ("Accept Trade", Just $ LeagueTransactionsR leagueId)
     breadcrumb (LeagueDeclineTradeR leagueId _) = return ("Decline Trade", Just $ LeagueTransactionsR leagueId)
@@ -593,9 +597,27 @@ instance YesodAuthPersist App
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
 
+---------------------
+-- Handler Helpers --
+---------------------
 unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = US.fakeHandlerGetLogger appLogger
 
+backgroundHandler :: Handler () -> Handler ()
+backgroundHandler = forkHandler $ $logErrorS "errorHandler" . tshow
+
+
+------------------
+-- User Helpers --
+------------------
+isAdmin :: Maybe (Entity User) -> Bool
+isAdmin (Just (Entity _ user)) = userIsAdmin user
+isAdmin Nothing                = False
+
+
+--------------------
+-- League Helpers --
+--------------------
 getLeaguesByUser :: Maybe UserId -> Handler [Entity League]
 getLeaguesByUser maybeUserId = runDB
     $ E.select
@@ -606,6 +628,56 @@ getLeaguesByUser maybeUserId = runDB
             league ^. LeagueIsActive E.==. E.val True
         E.orderBy [E.asc (league ^. LeagueName)]
         return league
+
+
+--------------------
+-- Season Helpers --
+--------------------
+readCurrentSeason :: LeagueId -> ReaderT SqlBackend Handler (Entity Season)
+readCurrentSeason leagueId = do
+    maybeSeason <- selectFirst [ SeasonLeagueId ==. leagueId
+                               , SeasonIsActive ==. True
+                               ] [Desc SeasonSeriesId]
+    return $ fromJust maybeSeason
+
+readCurrentSeasonId :: LeagueId -> ReaderT SqlBackend Handler SeasonId
+readCurrentSeasonId leagueId = do
+    currentSeasonEntity <- readCurrentSeason leagueId
+    return $ entityKey currentSeasonEntity
+
+getCurrentSeasonId :: LeagueId -> Handler SeasonId
+getCurrentSeasonId leagueId = runDB $ readCurrentSeasonId leagueId
+
+getSelectedSeason :: LeagueId -> Handler (Entity Season)
+getSelectedSeason leagueId = do
+    maybeSelectedSeasonId <- lookupSession "selectedSeasonId"
+    case maybeSelectedSeasonId of
+        Nothing -> setSelectedSeason leagueId Nothing
+        Just selectedSeasonIdText ->
+            case (fromPathPiece selectedSeasonIdText :: Maybe SeasonId) of
+                Nothing -> setSelectedSeason leagueId Nothing
+                Just selectedSeasonId -> do
+                    selectedSeason <- runDB $ get404 selectedSeasonId
+                    if seasonLeagueId selectedSeason == leagueId
+                        then return $ Entity selectedSeasonId selectedSeason
+                        else setSelectedSeason leagueId Nothing
+
+getSelectedSeasonId :: LeagueId -> Handler SeasonId
+getSelectedSeasonId leagueId = do
+    selectedSeasonEntity <- getSelectedSeason leagueId
+    return $ entityKey selectedSeasonEntity
+
+setSelectedSeason :: LeagueId -> Maybe SeasonId -> Handler (Entity Season)
+setSelectedSeason leagueId maybeSeasonId = do
+    seasonEntity <- case maybeSeasonId of
+        Nothing -> runDB $ readCurrentSeason leagueId
+        Just seasonId -> do
+            season <- runDB $ get404 seasonId
+            return $ Entity seasonId season
+    setSession "selectedSessionId" $ toPathPiece $ entityKey seasonEntity
+    return seasonEntity
+
+
 
 -- Note: Some functionality previously present in the scaffolding has been
 -- moved to documentation in the Wiki. Following are some hopefully helpful

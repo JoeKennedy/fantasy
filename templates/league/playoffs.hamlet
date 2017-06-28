@@ -11,10 +11,11 @@
                             <th>Name
                             <th .text-right>Points
                     <tbody>
-                        $forall (rank, Entity _ team) <- teamsWithRank
+                        $forall (rank, Entity _ team, Entity _ teamSeason) <- teamsWithRank
                             <tr>
                                 <td>#{rank}
                                 <td>
                                     <a href="@{LeagueTeamR leagueId $ teamNumber team}">
                                         House #{teamName team}
-                                <td .text-right>#{displayRational $ teamPointsThisPostSeason team}
+                                <td .text-right>
+                                    #{displayRational $ teamSeasonPostSeasonPoints teamSeason}

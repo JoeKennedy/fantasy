@@ -2,7 +2,6 @@ module Handler.Series where
 
 import Import
 
-import Handler.Common  (groupByFirst)
 import Handler.Episode (getEpisodes)
 
 import Text.Blaze (toMarkup)

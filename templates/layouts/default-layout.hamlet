@@ -28,7 +28,7 @@
           <a href=@{LeaguesR}>Leagues
 
       <ul .nav .navbar-nav .navbar-right>
-        $maybe _ <- maybeUserId
+        $maybe _ <- maybeUser
           <li .dropdown .dropdown-hover>
             <a href="#" role=button aria-haspopup="true" aria-expanded="false">
               <i .fa .fa-user .fa-lg .fa-fw>
@@ -47,11 +47,14 @@
       <div .nav .navbar-nav .navbar-right>
         <a .btn .btn-primary .navbar-btn href="@{SetupLeagueR SetupNewLeagueR}">Create A League!
 
-      <ul .nav .navbar-nav .navbar-right .visible-lg>
-        <li>
+      <ul .nav .navbar-nav .navbar-right .visible-md .visible-lg>
+        <li .visible-lg>
           <a href=@{FAQR}>How To Play
-        <li>
+        <li .visible-lg>
           <a href="https://smigoversensays.com/game-of-thrones-fantasy/">Blog
+        $if isAdmin maybeUser
+          <li .visible-md .visible-lg>
+            <a href="@{AdminR AdminDashboardR}">Admin
 
 <div .container>
   $maybe msg <- mmsg
@@ -87,3 +90,6 @@
         <a href=@{FAQR}>How To Play
       <li>
         <a href="https://smigoversensays.com/game-of-thrones-fantasy/">Blog
+      $if isAdmin maybeUser
+        <li .hidden-xs>
+          <a href="@{AdminR AdminDashboardR}">Admin

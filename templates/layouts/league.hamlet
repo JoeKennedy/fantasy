@@ -68,9 +68,20 @@
                 <li>
                   <a href="@{LeagueR leagueId}">#{leagueName league}
 
-      $if canEnterDraftResults maybeUserId league
+      $if length seasons > 1
+        <div .btn-group .navbar-right>
+          <button .btn .btn-primary .navbar-btn .dropdown-toggle type="button" data-toggle="dropdown">
+            #{seasonYear selectedSeason} Season
+            <i .fa .fa-caret-down>
+          <ul .dropdown-menu>
+            $forall Entity seasonId season <- seasons
+              $if seasonId /= selectedSeasonId
+                <li>
+                  <a href="#">#{seasonYear season}
+
+      $if canEnterDraftResults maybeUserId league selectedSeason
         <div .nav .navbar-nav .navbar-right>
-          <a .btn .btn-primary .navbar-btn href="@{LeagueDraftR leagueId 2016}">
+          <a .btn .btn-primary .navbar-btn href="@{LeagueDraftR leagueId}">
             Enter Draft Results!
 
 <div .league-container>

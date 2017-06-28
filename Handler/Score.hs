@@ -3,6 +3,34 @@ module Handler.Score where
 import Import
 
 import qualified Database.Persist.Sql as S (fromSqlKey)
+import           Data.Maybe                (fromJust)
+
+import qualified Database.Esqueleto as E
+import           Database.Esqueleto ((^.))
+
+-------------
+-- Queries --
+-------------
+getGamesForTeam :: SeasonId -> TeamId -> Handler [(Entity Game, Entity Week)]
+getGamesForTeam seasonId teamId = runDB
+    $ E.select
+    $ E.from $ \(game `E.InnerJoin` week) -> do
+        E.on $ game ^. GameWeekId E.==. week ^. WeekId
+        E.where_ $ game ^. GameTeamId E.==. E.val teamId
+            E.&&. week ^. WeekSeasonId E.==. E.val (Just seasonId)
+        E.orderBy [E.asc (week ^. WeekNumber)]
+        return (game, week)
+
+getPerformancesForPlayer :: SeasonId -> PlayerId -> Handler [(Entity Performance, Entity Week)]
+getPerformancesForPlayer seasonId playerId = runDB
+    $ E.select
+    $ E.from $ \(performance `E.InnerJoin` week) -> do
+        E.on $ performance ^. PerformanceWeekId E.==. week ^. WeekId
+        E.where_ $ performance ^. PerformancePlayerId E.==. E.val playerId
+            E.&&. week ^. WeekSeasonId E.==. E.val (Just seasonId)
+        E.orderBy [E.asc (week ^. WeekNumber)]
+        return (performance, week)
+
 
 --------------------
 -- Finalize Weeks --
@@ -13,7 +41,7 @@ finalizeWeek episodeId userId now (Entity leagueId _league) = do
     calculatePointsThisSeason week userId now
     calculateNextWeekCumulativePoints week now
     determineWaiverOrder week userId now
-    moveLeagueToPostSeason week userId now
+    moveSeasonToPostSeason week userId now
     markWeekAsScored (Entity weekId week) now
     -- TODO - Implement the below function and un-comment the below line
     -- emailTeamOwners episode -- Email only if league draft is complete
@@ -23,47 +51,56 @@ markWeekAsScored (Entity weekId week) now = if weekIsScored week then return () 
     runDB $ update weekId [WeekIsScored =. True, WeekUpdatedAt =. now]
 
 determineWaiverOrder :: Week -> UserId -> UTCTime -> Handler ()
-determineWaiverOrder week userId now = do
+determineWaiverOrder week userId now = runDB $ do
     -- order teams by points (in regular or postseason) and make that the waiver order
-    teams <- runDB $ selectList [TeamLeagueId ==. weekLeagueId week]
-                                [if not (weekIsPostSeason week)
-                                     then Asc TeamPointsThisRegularSeason
-                                     else Asc TeamPointsThisPostSeason
-                                        , Asc TeamPointsThisRegularSeason
-                                ]
-    mapM_ (updateWaiverOrder userId now) $ rank teams
+    let seasonId = fromJust $ weekSeasonId week
+        conditions = if weekIsPostSeason week
+                         then [ Asc  TeamSeasonPostSeasonStatus
+                              , Asc  TeamSeasonPostSeasonPoints
+                              , Asc  TeamSeasonRegularSeasonPoints]
+                         else [ Asc  TeamSeasonRegularSeasonPoints
+                              , Desc TeamSeasonDraftOrder]
+    teamSeasonIds <- selectKeysList [TeamSeasonSeasonId ==. seasonId] conditions
+    mapM_ (updateWaiverOrder userId now) $ rank teamSeasonIds
 
-updateWaiverOrder :: UserId -> UTCTime -> (Int, Entity Team) -> Handler ()
-updateWaiverOrder userId now (waiverOrder, Entity teamId _) = do
-    runDB $ update teamId [ TeamWaiverOrder =. waiverOrder
-                          , TeamUpdatedBy =. userId
-                          , TeamUpdatedAt =. now ]
+updateWaiverOrder :: UserId -> UTCTime -> (Int, TeamSeasonId) -> ReaderT SqlBackend Handler ()
+updateWaiverOrder userId now (waiverOrder, teamSeasonId) = do
+    update teamSeasonId [ TeamSeasonWaiverOrder =. waiverOrder
+                        , TeamSeasonUpdatedBy =. userId
+                        , TeamSeasonUpdatedAt =. now ]
 
-moveLeagueToPostSeason :: Week -> UserId -> UTCTime -> Handler ()
-moveLeagueToPostSeason week userId now = do
+moveSeasonToPostSeason :: Week -> UserId -> UTCTime -> Handler ()
+moveSeasonToPostSeason week userId now = do
     -- move league to postseason if this week is the last week of regular season
     lastRegularSeasonWeek <- isLastRegularSeasonWeek week
     if not lastRegularSeasonWeek then return () else runDB $ do
-        let leagueId = weekLeagueId week
+        let (leagueId, seasonId) = (weekLeagueId week, weekSeasonId week)
         -- first, split teams into playoffs and consolation
-        teamIds <- selectKeysList [TeamLeagueId ==. leagueId]
-                                  [Desc TeamPointsThisRegularSeason]
-        Entity _ generalSettings <- getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+        teamSeasonIds <- selectKeysList [TeamSeasonSeasonId ==. fromJust seasonId]
+                                        [Desc TeamSeasonRegularSeasonPoints]
+        -- TODO - get rid of the below two lines
+        maybeGeneralSettings <- selectFirst [ GeneralSettingsLeagueId ==. leagueId
+                                            , GeneralSettingsSeasonId ==. seasonId
+                                            ] []
+        let Entity _ generalSettings = fromJust maybeGeneralSettings
+        -- TODO - use the below line once the unique constraint can be added
+        -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId 
         let teamsInPlayoffs = generalSettingsNumberOfTeamsInPlayoffs generalSettings
-            (playoffTeamIds, consolationTeamIds) = splitAt teamsInPlayoffs teamIds
-        mapM_ (moveTeamToPostSeason Playoff userId now) playoffTeamIds
-        mapM_ (moveTeamToPostSeason Consolation userId now) consolationTeamIds
+            (playoffTSIds, consolationTSIds) = splitAt teamsInPlayoffs teamSeasonIds
+        mapM_ (moveTeamSeasonToPostSeason Playoff userId now) playoffTSIds
+        mapM_ (moveTeamSeasonToPostSeason Consolation userId now) consolationTSIds
 
         -- then, set league to being in postseason
-        update leagueId [ LeagueIsInPostSeason =. True
-                        , LeagueUpdatedBy =. userId
-                        , LeagueUpdatedAt =. now ]
+        update (fromJust seasonId) [ SeasonIsInPostSeason =. True
+                        , SeasonUpdatedBy =. userId
+                        , SeasonUpdatedAt =. now ]
 
-moveTeamToPostSeason :: PostSeasonStatus -> UserId -> UTCTime -> TeamId -> ReaderT SqlBackend Handler ()
-moveTeamToPostSeason postSeasonStatus userId now teamId =
-    update teamId [ TeamPostSeasonStatus =. postSeasonStatus
-                  , TeamUpdatedBy =. userId
-                  , TeamUpdatedAt =. now ]
+moveTeamSeasonToPostSeason :: PostSeasonStatus -> UserId -> UTCTime ->
+                              TeamSeasonId -> ReaderT SqlBackend Handler ()
+moveTeamSeasonToPostSeason postSeasonStatus userId now teamSeasonId =
+    update teamSeasonId [ TeamSeasonPostSeasonStatus =. postSeasonStatus
+                        , TeamSeasonUpdatedBy =. userId
+                        , TeamSeasonUpdatedAt =. now ]
 
 
 ------------------
@@ -83,15 +120,15 @@ upsertPlays eventEntity = do
 upsertPlay :: Entity Event -> LeagueId -> Handler ()
 upsertPlay (Entity eventId event) leagueId = do
     let episodeId = eventEpisodeId event
-    Entity weekId _ <- runDB $ getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
+    Entity weekId week <- runDB $ getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
     maybePlayEntity <- runDB $ getBy $ UniquePlayWeekIdEventId weekId eventId
     case maybePlayEntity of
-        Nothing -> createPlay leagueId weekId $ Entity eventId event
-        Just playEntity -> updatePlay event playEntity
+        Nothing -> createPlay leagueId (Entity weekId week) $ Entity eventId event
+        Just playEntity -> updatePlay week event playEntity
 
-createPlay :: LeagueId -> WeekId -> Entity Event -> Handler ()
-createPlay leagueId weekId (Entity eventId event) = do
-    (aPoints, wPoints, aRecPnts, wRecPnts, playerId, mRecPlayerId) <- calculatePointsAndPlayers leagueId weekId event
+createPlay :: LeagueId -> Entity Week -> Entity Event -> Handler ()
+createPlay leagueId (Entity weekId week) (Entity eventId event) = do
+    (aPoints, wPoints, aRecPnts, wRecPnts, playerId, mRecPlayerId) <- calculatePointsAndPlayers leagueId (Entity weekId week) event
     now <- liftIO getCurrentTime
 
     let play = Play { playLeagueId     = leagueId
@@ -113,10 +150,10 @@ createPlay leagueId weekId (Entity eventId event) = do
     runDB $ insert_ play
     updatePointsFromPlay play False
 
-updatePlay :: Event -> Entity Play -> Handler ()
-updatePlay event (Entity playId play) = do
+updatePlay :: Week -> Event -> Entity Play -> Handler ()
+updatePlay week event (Entity playId play) = do
     let (leagueId, weekId) = (playLeagueId play, playWeekId play)
-    (aPoints, wPoints, aRecPnts, wRecPnts, playerId, mRecPlayerId) <- calculatePointsAndPlayers leagueId weekId event
+    (aPoints, wPoints, aRecPnts, wRecPnts, playerId, mRecPlayerId) <- calculatePointsAndPlayers leagueId (Entity weekId week) event
     now <- liftIO getCurrentTime
     updatePointsFromPlay play True
 
@@ -138,9 +175,9 @@ updatePlay event (Entity playId play) = do
 ----------------------
 -- Calculate Points --
 ----------------------
-calculatePointsAndPlayers :: LeagueId -> WeekId -> Event ->
+calculatePointsAndPlayers :: LeagueId -> Entity Week -> Event ->
                              Handler (Rational, Rational, Rational, Rational, PlayerId, Maybe PlayerId)
-calculatePointsAndPlayers leagueId weekId event = runDB $ do
+calculatePointsAndPlayers leagueId (Entity weekId week) event = runDB $ do
     let (charId, recCharId) = (eventCharacterId event, eventReceivingCharacterId event)
     Entity playerId _ <- getBy404 $ UniquePlayerLeagueIdCharacterId leagueId charId
     mRecPlayer <- mapM (getBy404 . UniquePlayerLeagueIdCharacterId leagueId) recCharId
@@ -149,7 +186,14 @@ calculatePointsAndPlayers leagueId weekId event = runDB $ do
     Entity _ performance <- getBy404 $ UniquePerformanceWeekIdPlayerId weekId playerId
     mRecPerformance <- mapM (getBy404 . UniquePerformanceWeekIdPlayerId weekId) recPlayerId
 
-    Entity _ scoringSettings <- getBy404 $ UniqueScoringSettingsLeagueIdAction leagueId $ eventAction event
+    -- TODO - get rid of the below two lines
+    maybeScoringSettings <- selectFirst [ ScoringSettingsLeagueId ==. leagueId
+                                        , ScoringSettingsSeasonId ==. weekSeasonId week
+                                        , ScoringSettingsAction   ==. eventAction event
+                                        ] []
+    let Entity _ scoringSettings = fromJust maybeScoringSettings
+    -- TODO - use the below line once the unique constraint can be added
+    -- Entity _ scoringSettings <- getBy404 $ UniqueScoringSettingsSeasonIdAction (weekSeasonId week) $ eventAction event
 
     let cumulative = performanceCappedCumulativePoints performance
         cumulativeRec = fromMaybe 0 $ map performanceCappedCumulativePoints $ map entityVal mRecPerformance
@@ -219,44 +263,46 @@ addToGamePoints performance weekId points now =
 
 calculatePointsThisSeason :: Week -> UserId -> UTCTime -> Handler ()
 calculatePointsThisSeason week userId now = do
-    let leagueId = weekLeagueId week
-    postSeasonWeekIds <- runDB $ selectKeysList [ WeekLeagueId ==. leagueId
-                                                , WeekIsPostSeason ==. True
-                                                ] [Asc WeekNumber]
-    teamIds <- runDB $ selectKeysList [TeamLeagueId ==. leagueId] []
-    forM_ teamIds $ calculateTeamPointsThisSeason postSeasonWeekIds userId now
-    playerIds <- runDB $ selectKeysList [PlayerLeagueId ==. leagueId] []
-    forM_ playerIds $ calculatePlayerPointsThisSeason postSeasonWeekIds userId now
+    let seasonId = fromJust $ weekSeasonId week
+    teamSeasons <- runDB $ selectList [TeamSeasonSeasonId ==. seasonId] []
+    forM_ teamSeasons $ calculateTeamSeasonPoints userId now
+    playerSeasons <- runDB $ selectList [PlayerSeasonSeasonId ==. seasonId] []
+    forM_ playerSeasons $ calculatePlayerSeasonPoints userId now
 
-calculateTeamPointsThisSeason :: [WeekId] -> UserId -> UTCTime -> TeamId -> Handler ()
-calculateTeamPointsThisSeason postSeasonWeekIds userId now teamId = runDB $ do
-    games <- selectList [GameTeamId ==. teamId] []
-    let (postSeason, regularSeason) = break isPostSeason games
-    update teamId [ TeamPointsThisSeason =. totalPoints games
-                  , TeamPointsThisRegularSeason =. totalPoints regularSeason
-                  , TeamPointsThisPostSeason =. totalPoints postSeason
-                  , TeamUpdatedBy =. userId
-                  , TeamUpdatedAt =. now ]
-    where isPostSeason game = elem (gameWeekId $ entityVal game) postSeasonWeekIds
-          totalPoints gameList = sum $ map (gamePoints . entityVal) gameList
+calculateTeamSeasonPoints :: UserId -> UTCTime -> Entity TeamSeason -> Handler ()
+calculateTeamSeasonPoints userId now (Entity teamSeasonId teamSeason) = do
+    let seasonId = teamSeasonSeasonId teamSeason
+    games <- getGamesForTeam seasonId $ teamSeasonTeamId teamSeason
+    let (postSeason, regularSeason) = partition isPostSeason games
+    runDB $ update teamSeasonId [ TeamSeasonTotalPoints =. totalPoints games
+                                , TeamSeasonRegularSeasonPoints =. totalPoints regularSeason
+                                , TeamSeasonPostSeasonPoints =. totalPoints postSeason
+                                , TeamSeasonUpdatedBy =. userId
+                                , TeamSeasonUpdatedAt =. now ]
+    where isPostSeason (_, Entity _ week) = weekIsPostSeason week
+          totalPoints gameWeekList = sum $ map (gamePoints . entityVal . fst) gameWeekList
 
-calculatePlayerPointsThisSeason :: [WeekId] -> UserId -> UTCTime -> PlayerId -> Handler ()
-calculatePlayerPointsThisSeason postSeasonWeekIds userId now playerId = runDB $ do
-    performances <- selectList [PerformancePlayerId ==. playerId] []
+calculatePlayerSeasonPoints :: UserId -> UTCTime -> Entity PlayerSeason -> Handler ()
+calculatePlayerSeasonPoints userId now (Entity playerSeasonId playerSeason) = do
+    let seasonId = playerSeasonSeasonId playerSeason
+    performances <- getPerformancesForPlayer seasonId $ playerSeasonPlayerId playerSeason
     let (postSeason, regularSeason) = break isPostSeason performances
         pointsThisSeason = totalPoints performances
-    update playerId [ PlayerPointsThisSeason =. pointsThisSeason
-                    , PlayerPointsThisPostSeason =. totalPoints postSeason
-                    , PlayerPointsThisRegularSeason =. totalPoints regularSeason
-                    , PlayerUpdatedBy =. userId
-                    , PlayerUpdatedAt =. now ]
-    where isPostSeason performance = elem (performanceWeekId $ entityVal performance) postSeasonWeekIds
-          totalPoints performanceList = sum $ map (performancePoints . entityVal) performanceList
+    runDB $ update playerSeasonId [ PlayerSeasonTotalPoints =. pointsThisSeason
+                                  , PlayerSeasonPostSeasonPoints =. totalPoints postSeason
+                                  , PlayerSeasonRegularSeasonPoints =. totalPoints regularSeason
+                                  , PlayerSeasonUpdatedBy =. userId
+                                  , PlayerSeasonUpdatedAt =. now ]
+    where isPostSeason (_, Entity _ week) = weekIsPostSeason week
+          totalPoints performanceWeekList = sum $ map (performancePoints . entityVal . fst) performanceWeekList
 
 calculateNextWeekCumulativePoints :: Week -> UTCTime -> Handler ()
 calculateNextWeekCumulativePoints week now = do
-    let (nextWeekNumber, leagueId) = (weekNumber week + 1, weekLeagueId week)
-    nextWeek <- runDB $ getBy $ UniqueWeekLeagueIdWeekNumber leagueId nextWeekNumber
+    let (nextWeekNumber, seasonId) = (weekNumber week + 1, weekSeasonId week)
+    -- TODO remove the below line
+    nextWeek <- runDB $ selectFirst [WeekSeasonId ==. seasonId, WeekNumber ==. nextWeekNumber] []
+    -- TODO - use the below line once the unique constraint can be added
+    -- nextWeek <- runDB $ getBy $ UniqueWeekSeasonIdNumber seasonId nextWeekNumber
     for_ nextWeek $ calculateWeekCumulativePoints now
 
 calculateWeekCumulativePoints :: UTCTime -> Entity Week -> Handler ()
@@ -297,7 +343,13 @@ userName (Entity userId user) =
 
 isLastRegularSeasonWeek :: Week -> Handler Bool
 isLastRegularSeasonWeek week = do
-    let leagueId = weekLeagueId week
-    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+    let (leagueId, seasonId) = (weekLeagueId week, weekSeasonId week)
+    -- TODO - get rid of the below two lines
+    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
+                                                , GeneralSettingsSeasonId ==. seasonId
+                                                ] []
+    let Entity _ generalSettings = fromJust maybeGeneralSettings
+    -- TODO - use the below line once the unique constraint can be added
+    -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId 
     return $ weekNumber week == generalSettingsRegularSeasonLength generalSettings
 

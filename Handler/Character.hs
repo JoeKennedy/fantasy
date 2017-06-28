@@ -3,12 +3,12 @@ module Handler.Character where
 import Import
 
 import Handler.Event         (getCharacterEvents)
-import Handler.Common        (isAdmin)
 import Handler.League.Player (blurbPanel)
 import Handler.League.Week   (createPerformance)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
+import           Data.Maybe (fromJust)
 import           Text.Blaze (toMarkup)
 
 -----------
@@ -22,12 +22,10 @@ type FullCharacter = (Entity Character, Entity Species, Maybe (Entity House), En
 ------------
 getCharactersR :: Handler Html
 getCharactersR = do
-    maybeUser  <- maybeAuth
     characters <- getCharacters True
-    unplayable <- getCharacters False
     defaultLayout $ do
-      setTitle "Character list"
-      $(widgetFile "characters")
+        setTitle "Character list"
+        $(widgetFile "characters")
 
 getCharacterR :: CharacterId -> Handler Html
 getCharacterR characterId = do
@@ -39,8 +37,8 @@ getCharacterR characterId = do
     events     <- getCharacterEvents characterId
     rookieSeries <- runDB $ get404 $ characterRookieSeriesId character
     defaultLayout $ do
-      setTitle $ toMarkup $ characterName character
-      $(widgetFile "character")
+        setTitle $ toMarkup $ characterName character
+        $(widgetFile "character")
 
 
 -------------
@@ -105,7 +103,9 @@ createCharacterPerformanceForWeek characterId (Entity weekId week) = do
     let leagueId = weekLeagueId week
     previousWeekIds <- runDB $ selectKeysList [WeekNumber <. weekNumber week] []
     playerEntity <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
-    createPerformance leagueId weekId previousWeekIds playerEntity
+    let (playerId, seasonId) = (entityKey playerEntity, fromJust $ weekSeasonId week)
+    playerSeasonEntity <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId playerId seasonId
+    createPerformance leagueId weekId previousWeekIds playerSeasonEntity
 
 
 -------------

@@ -3,5 +3,5 @@
         #{leagueName league}
         <small>Draft
 
-<form method="post" action=@{LeagueDraftR leagueId 2016} enctype=#{enctype}>
+<form method="post" action=@{LeagueDraftR leagueId} enctype=#{enctype}>
     ^{widget}

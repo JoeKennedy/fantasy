@@ -5,8 +5,8 @@
         Status
     <th .hidden-xs data-field="character-species" data-sortable="true" data-sorter="linkSorter">
         Species
-    <th .hidden-sm .hidden-xs data-field="character-points" data-sortable="true">
-        Season 5 Points
+    <th .hidden-sm .hidden-xs data-field="character-is-playable" data-sortable="true">
+        Playable?
     <th .hidden-sm .hidden-xs data-field="character-season" data-sortable="true" data-sorter="linkSorter">
         Rookie Season
     <th .hidden-sm .hidden-xs data-field="character-episodes" data-sortable="true">
@@ -21,7 +21,7 @@
             <td>#{characterName character}
             <td>#{toPathPiece $ characterStatus character}
             <td .hidden-xs>#{speciesName species}
-            <td .hidden-sm .hidden-xs>#{characterPointsLastSeason character}
+            <td .hidden-sm .hidden-xs>#{characterIsPlayable character}
             <td .hidden-sm .hidden-xs>#{seriesNumber series}
             <td .hidden-sm .hidden-xs>#{characterEpisodesAppearedIn character}
             <td>

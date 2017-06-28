@@ -14,7 +14,7 @@
                 <h1 .panel-title>Trade Proposals
             ^{transactionsTable tradeProposals Nothing False}
 
-        $if leagueIsDraftComplete league && (not (null draftTransactions))
+        $if seasonIsDraftComplete season && (not (null draftTransactions))
             <div .panel .panel-default>
                 <div .panel-heading>
                     <h1 .panel-title>Draft Results

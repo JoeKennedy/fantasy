@@ -7,7 +7,7 @@
             <li .list-group-item>
                 <h6 .list-group-item-heading>Lord Commander
                 <p .list-group-item-text>
-                    $maybe Entity _ creatorTeam <- maybeCreatorTeam
+                    $maybe (Entity _ creatorTeam, _) <- maybeCreatorTeam
                         #{teamOwnerName creatorTeam}
                     $nothing
                         Unknown
@@ -31,7 +31,7 @@
                 <h5 .text-center>Houses
             <table .table .table-hover .table-striped>
                 <tbody>
-                    $forall (rank, Entity _ team) <- rank teams
+                    $forall (rank, Entity _ team, Entity _ teamSeason) <- rank2 teams
                         <tr>
                             <td>#{rank}
                             <td>
@@ -39,5 +39,5 @@
                                     House #{teamName team}
                             <td .text-right .hidden-sm>#{teamOwnerName team}
                             <td .text-right>
-                                #{displayRational $ teamPointsThisRegularSeason team}
+                                #{displayRational $ teamSeasonRegularSeasonPoints teamSeason}
 

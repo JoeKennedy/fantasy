@@ -41,7 +41,16 @@
 /seasons/#Int/episodes                      SeriesEpisodesR      GET
 /seasons/#Int/episodes/#Int                 SeriesEpisodeR       GET
 
-/leagues/                 LeaguesR      GET
+/leagues/ LeaguesR GET
+
+/leagues/setup SetupLeagueR:
+    /new     SetupNewLeagueR       GET POST
+    /general SetupGeneralSettingsR GET POST
+    /scoring SetupScoringSettingsR GET POST
+    /draft   SetupDraftSettingsR   GET POST
+    /team    SetupTeamsSettingsR   GET POST
+    /confirm SetupConfirmSettingsR GET POST
+
 /leagues/#LeagueId        LeagueR       GET
 /leagues/#LeagueId/cancel LeagueCancelR POST
 
@@ -62,7 +71,7 @@
 /leagues/#LeagueId/playoffs     LeaguePlayoffsR    GET
 /leagues/#LeagueId/results/#Int LeagueResultsWeekR GET
 
-/leagues/#LeagueId/draft/#Int               LeagueDraftR             GET POST
+!/leagues/#LeagueId/draft                   LeagueDraftR             GET POST
 /leagues/#LeagueId/transactions             LeagueTransactionsR      GET
 /leagues/#LeagueId/accept/#TransactionId    LeagueAcceptTradeR       POST
 /leagues/#LeagueId/decline/#TransactionId   LeagueDeclineTradeR      POST
@@ -76,13 +85,5 @@
     /scoring LeagueScoringSettingsR GET POST
     /draft   LeagueDraftSettingsR   GET POST
     /teams   LeagueTeamsSettingsR   GET POST
-
-/leagues/setup SetupLeagueR:
-    /new     SetupNewLeagueR       GET POST
-    /general SetupGeneralSettingsR GET POST
-    /scoring SetupScoringSettingsR GET POST
-    /draft   SetupDraftSettingsR   GET POST
-    /team    SetupTeamsSettingsR   GET POST
-    /confirm SetupConfirmSettingsR GET POST
 
 / HomeR GET

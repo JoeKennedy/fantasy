@@ -1,11 +1,12 @@
 module Handler.League where
 
 import Import
-import Handler.Common             (backgroundHandler, extractKeyMaybe, extractValueMaybe)
-import Handler.League.Setup
+
 import Handler.League.Layout
-import Handler.League.Week        (createWeekData_)
+import Handler.League.Season      (createLeagueSeason)
+import Handler.League.Setup
 import Handler.League.Transaction (cancelAllTrades, cancelAllTransactionRequests)
+import Handler.League.Week        (createWeekData_)
 import Handler.Score              (finalizeWeek, createPlay)
 
 import Data.Maybe                   (fromJust)
@@ -63,8 +64,9 @@ getLeaguesR = do
 getLeagueR :: LeagueId -> Handler Html
 getLeagueR leagueId = do
     league <- runDB $ get404 leagueId
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisRegularSeason]
-    let maybeCreatorTeam = find (\(Entity _ t) -> teamOwnerId t == Just (leagueCreatedBy league)) teams
+    seasonId <- getSelectedSeasonId leagueId
+    teams <- getTeamsOrderBy seasonId False TeamSeasonRegularSeasonPoints
+    let maybeCreatorTeam = find (\(Entity _ t, _) -> teamOwnerId t == Just (leagueCreatedBy league)) teams
     leagueLayout leagueId "League" $(widgetFile "league/league")
 
 postLeagueCancelR :: LeagueId -> Handler ()
@@ -86,12 +88,12 @@ getSetupNewLeagueR :: Handler Html
 getSetupNewLeagueR = do
     userId <- requireAuthId
     maybeLeague <- leagueBeingSetUp userId
-    (widget, enctype) <- generateFormPost $ leagueForm userId $ extractValueMaybe maybeLeague
+    (widget, enctype) <- generateFormPost $ leagueForm userId $ map entityVal maybeLeague
     defaultLayout $ do
         let title = "Create A League!" :: Html
             action = SetupLeagueR SetupNewLeagueR
-            lastCompletedStep = fromMaybe 0 (leagueLastCompletedStep <$> extractValueMaybe maybeLeague)
-            maybeLeagueId = extractKeyMaybe maybeLeague
+            lastCompletedStep = fromMaybe 0 (leagueLastCompletedStep <$> map entityVal maybeLeague)
+            maybeLeagueId = map entityKey maybeLeague
         setTitle title
         $(widgetFile "layouts/league-setup-layout")
 
@@ -99,7 +101,7 @@ postSetupNewLeagueR :: Handler Html
 postSetupNewLeagueR = do
     userId <- requireAuthId
     maybeLeague <- leagueBeingSetUp userId
-    ((result, widget), enctype) <- runFormPost $ leagueForm userId $ extractValueMaybe maybeLeague
+    ((result, widget), enctype) <- runFormPost $ leagueForm userId $ map entityVal maybeLeague
     case result of
         FormSuccess league -> do
             case maybeLeague of Just (Entity lId _) -> runDB $ replace lId league
@@ -108,8 +110,8 @@ postSetupNewLeagueR = do
         _ -> defaultLayout $ do
             let title = "Create A League!" :: Html
                 action = SetupLeagueR SetupNewLeagueR
-                lastCompletedStep = fromMaybe 0 (leagueLastCompletedStep <$> extractValueMaybe maybeLeague)
-                maybeLeagueId = extractKeyMaybe maybeLeague
+                lastCompletedStep = fromMaybe 0 (leagueLastCompletedStep <$> map entityVal maybeLeague)
+                maybeLeagueId = map entityKey maybeLeague
             setTitle title
             $(widgetFile "layouts/league-setup-layout")
 
@@ -158,17 +160,22 @@ createLeague league = do
         maybeSeries <- runDB $ selectFirst [] [Desc SeriesNumber]
         case maybeSeries of
             Nothing -> return ()
-            Just (Entity seriesId _) -> do
-                episodes <- runDB $ selectList [ EpisodeSeriesId ==. seriesId
+            Just seriesEntity -> do
+                episodes <- runDB $ selectList [ EpisodeSeriesId ==. entityKey seriesEntity
                                                , EpisodeStatus !=. YetToAir
                                                ] [Asc EpisodeId]
                 mapM_ (backfillWeekData leagueId userId) episodes
+                -- TODO - when the below function changes, create the season
+                -- stuff as part of this, rather than after the fact.
+                createLeagueSeason seriesEntity leagueEntity
 
 createGeneralSettings :: Entity League -> ReaderT SqlBackend Handler ()
 createGeneralSettings (Entity leagueId league) = do
     let teamsCount = leagueTeamsCount league
     insert_ $ GeneralSettings
         { generalSettingsLeagueId = leagueId
+        -- TODO - make this not Nothing
+        , generalSettingsSeasonId = Nothing
         , generalSettingsNumberOfStarters = fst $ defaultRosterSize teamsCount
         , generalSettingsRosterSize = snd $ defaultRosterSize teamsCount
         , generalSettingsRegularSeasonLength = fst $ defaultSeasonLength teamsCount
@@ -188,6 +195,8 @@ createScoringSettingsRow (Entity leagueId league) action =
             defaultScoringAttributes action $ leagueScoringType league
     in  insert_ $ ScoringSettings
             { scoringSettingsLeagueId = leagueId
+            -- TODO - make this not Nothing
+            , scoringSettingsSeasonId = Nothing
             , scoringSettingsAction = action
             , scoringSettingsIsUsed = isUsed
             , scoringSettingsPoints = points
@@ -281,41 +290,53 @@ leagueListGroupItem Nothing scoringType
 --------------------
 -- Trade Deadline --
 --------------------
-determineIfTradeDeadlineHasPassed :: Int -> LeagueId -> Handler ()
-determineIfTradeDeadlineHasPassed weekNo leagueId = do
-    league <- runDB $ get404 leagueId
-    if leagueIsAfterTradeDeadline league then return () else do
-        isBeforeTradeDeadline <- weekNumberBeforeTradeDeadline leagueId weekNo
+determineIfTradeDeadlineHasPassed :: Episode -> LeagueId -> Handler ()
+determineIfTradeDeadlineHasPassed episode leagueId = do
+    Entity seasonId season <- getSelectedSeason leagueId
+    if seasonIsAfterTradeDeadline season then return () else do
+        isBeforeTradeDeadline <- weekNumberBeforeTradeDeadline leagueId episode
         if isBeforeTradeDeadline then return () else do
             maybeAdmin <- runDB $ selectFirst [UserIsAdmin ==. True] [Asc UserId]
             let Entity adminUserId _ = fromJust maybeAdmin
             now <- liftIO getCurrentTime
-            runDB $ update leagueId [ LeagueIsAfterTradeDeadline =. True
-                                    , LeagueUpdatedBy =. adminUserId
-                                    , LeagueUpdatedAt =. now
+            runDB $ update seasonId [ SeasonIsAfterTradeDeadline =. True
+                                    , SeasonUpdatedBy =. adminUserId
+                                    , SeasonUpdatedAt =. now
                                     ]
-            cancelAllTrades adminUserId leagueId
+            cancelAllTrades adminUserId seasonId
 
-weekNumberBeforeTradeDeadline :: LeagueId -> Int -> Handler Bool
-weekNumberBeforeTradeDeadline leagueId weekNo = do
-    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+weekNumberBeforeTradeDeadline :: LeagueId -> Episode -> Handler Bool
+weekNumberBeforeTradeDeadline leagueId episode = runDB $ do
+    let (weekNo, seriesId) = (episodeNumber episode, episodeSeriesId episode)
+    Entity seasonId _ <- getBy404 $ UniqueSeasonLeagueIdSeriesId leagueId seriesId
+    -- TODO - get rid of the below two lines
+    maybeGeneralSettings <- selectFirst [ GeneralSettingsLeagueId ==. leagueId
+                                        , GeneralSettingsSeasonId ==. Just seasonId
+                                        ] []
+    let Entity _ generalSettings = fromJust maybeGeneralSettings
+    -- TODO - use the below line once the unique constraint can be added
+    -- Entity _ generalSettings <- getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
     return $ weekNo < generalSettingsTradeDeadlineWeek generalSettings
 
 
 ---------------------
 -- Complete Season --
 ---------------------
-completeSeason :: Int -> LeagueId -> Handler ()
-completeSeason weekNo leagueId = do
-    if weekNo /= 7 then return () else do
+determineIfSeasonIsComplete :: Episode -> LeagueId -> Handler ()
+determineIfSeasonIsComplete episode leagueId = do
+    -- TODO - figure out a way not to hardcode 7. Probably I should add a field
+    -- to episode that's "isSeriesFinale" or something similar
+    if episodeNumber episode /= 7 then return () else do
         maybeAdmin <- runDB $ selectFirst [UserIsAdmin ==. True] [Asc UserId]
         let Entity adminUserId _ = fromJust maybeAdmin
+        let seriesId = episodeSeriesId episode
+        Entity seasonId _ <- runDB $ getBy404 $ UniqueSeasonLeagueIdSeriesId leagueId seriesId
         now <- liftIO getCurrentTime
-        runDB $ update leagueId [ LeagueIsSeasonComplete =. True
-                                , LeagueUpdatedBy =. adminUserId
-                                , LeagueUpdatedAt =. now
+        runDB $ update seasonId [ SeasonIsSeasonComplete =. True
+                                , SeasonUpdatedBy =. adminUserId
+                                , SeasonUpdatedAt =. now
                                 ]
-        cancelAllTransactionRequests adminUserId leagueId
+        cancelAllTransactionRequests adminUserId seasonId
 
 
 ------------------------
@@ -327,7 +348,7 @@ backfillWeekData leagueId userId (Entity episodeId episode) = do
     now <- liftIO getCurrentTime
     league <- runDB $ get404 leagueId
     events <- runDB $ selectList [EventEpisodeId ==. episodeId] [Asc EventTimeInEpisode]
-    Entity weekId _ <- runDB $ getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
-    forM_ events $ createPlay leagueId weekId
+    weekEntity <- runDB $ getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
+    forM_ events $ createPlay leagueId weekEntity
     finalizeWeek episodeId userId now $ Entity leagueId league
 

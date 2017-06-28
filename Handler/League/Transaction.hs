@@ -3,8 +3,6 @@ module Handler.League.Transaction where
 import Import
 
 import Handler.League.Layout
-import Handler.Common        (groupByFirstOfFour, groupByFirstOfSix,
-                              intToOrdinal, quintupleToTuple)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -50,38 +48,64 @@ draftForm draftSettings generalSettings teams playersForSelect extra = do
 ------------
 -- Routes --
 ------------
-getLeagueDraftR :: LeagueId -> Int -> Handler Html
-getLeagueDraftR leagueId _year = do
+getLeagueDraftR :: LeagueId -> Handler Html
+getLeagueDraftR leagueId = do
     league <- runDB $ get404 leagueId
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamDraftOrder]
-    if foldr (\(Entity _ t) acc -> teamIsConfirmed t && acc) True teams
+    seasonId <- getSelectedSeasonId leagueId
+    teams <- getTeamsOrderBy seasonId True TeamSeasonDraftOrder
+    if foldr (\(Entity _ t, _) acc -> teamIsConfirmed t && acc) True teams
         then do
-            Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
-            Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
+            -- TODO - get rid of the below two lines
+            maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
+                                                        , GeneralSettingsSeasonId ==. Just seasonId
+                                                        ] []
+            let Entity _ generalSettings = fromJust maybeGeneralSettings
+            -- TODO - use the below line once the unique constraint can be added
+            -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
+            -- TODO - get rid of the below two lines
+            maybeDraftSettings <- runDB $ selectFirst [ DraftSettingsLeagueId ==. leagueId
+                                                      , DraftSettingsSeasonId ==. Just seasonId
+                                                      ] []
+            let Entity _ draftSettings = fromJust maybeDraftSettings
+            -- TODO - use the below line once the unique constraint can be added
+            -- Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueIdSeasonId leagueId seasonId
             playersAndCharacters <- getPlayersAndCharacters leagueId
             let playersForSelect =
                     map (\(Entity pid _, Entity _ c) -> (characterName c, pid)) playersAndCharacters
-            (widget, enctype) <- generateFormPost $ draftForm draftSettings generalSettings teams playersForSelect
+            (widget, enctype) <- generateFormPost $ draftForm draftSettings generalSettings (map fst teams) playersForSelect
             leagueLayout leagueId "Transactions" $(widgetFile "league/draft")
         else leagueLayout leagueId "Transactions" $(widgetFile "league/no_draft")
 
-postLeagueDraftR :: LeagueId -> Int -> Handler Html
-postLeagueDraftR leagueId _year = do
+postLeagueDraftR :: LeagueId -> Handler Html
+postLeagueDraftR leagueId = do
     userId <- requireAuthId
     league <- runDB $ get404 leagueId
-    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
-    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueId leagueId
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamDraftOrder]
+    seasonId <- getSelectedSeasonId leagueId
+    -- TODO - get rid of the below two lines
+    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
+                                                , GeneralSettingsSeasonId ==. Just seasonId
+                                                ] []
+    let Entity _ generalSettings = fromJust maybeGeneralSettings
+    -- TODO - use the below line once the unique constraint can be added
+    -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
+    -- TODO - get rid of the below two lines
+    maybeDraftSettings <- runDB $ selectFirst [ DraftSettingsLeagueId ==. leagueId
+                                              , DraftSettingsSeasonId ==. Just seasonId
+                                              ] []
+    let Entity _ draftSettings = fromJust maybeDraftSettings
+    -- TODO - use the below line once the unique constraint can be added
+    -- Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueIdSeasonId leagueId seasonId
+    teams <- getTeamsOrderBy seasonId True TeamSeasonDraftOrder
     playersAndCharacters <- getPlayersAndCharacters leagueId
     let playersForSelect =
             map (\(Entity pid _, Entity _ c) -> (characterName c, pid)) playersAndCharacters
-    ((result, widget), enctype) <- runFormPost $ draftForm draftSettings generalSettings teams playersForSelect
+    ((result, widget), enctype) <- runFormPost $ draftForm draftSettings generalSettings (map fst teams) playersForSelect
     case result of
         FormSuccess draftPicks -> do
             now <- liftIO getCurrentTime
-            forM_ draftPicks (insertDraftPick leagueId userId)
-            runDB $ update leagueId [LeagueIsDraftComplete =. True, LeagueUpdatedBy =. userId,
-                                     LeagueUpdatedAt =. now, LeagueDraftCompletedAt =. Just now]
+            forM_ draftPicks (insertDraftPick leagueId seasonId userId)
+            runDB $ update seasonId [SeasonIsDraftComplete =. True, SeasonUpdatedBy =. userId,
+                                     SeasonUpdatedAt =. now, SeasonDraftCompletedAt =. Just now]
             setMessage "Successfully completed your draft! Be sure to let the other members of your league know."
             redirect $ LeagueTransactionsR leagueId
         _ -> leagueLayout leagueId "Draft" $(widgetFile "league/draft")
@@ -92,12 +116,14 @@ getLeagueTransactionsR leagueId = do
     transactions <- getSuccessfulTransactions leagueId Nothing Nothing
     tradeProposals <- getRequestedTransactions leagueId Nothing Trade
     draftTransactions <- getSuccessfulTransactions leagueId Nothing $ Just Draft
+    Entity _ season <- getSelectedSeason leagueId
     leagueLayout leagueId "Transactions" $(widgetFile "league/transactions")
 
 postLeagueAcceptTradeR :: LeagueId -> TransactionId -> Handler ()
 postLeagueAcceptTradeR _ transactionId = do
     userId <- requireAuthId
-    processMultiPlayerTransaction userId transactionId
+    transaction <- runDB $ get404 transactionId
+    processMultiPlayerTransaction userId $ Entity transactionId transaction
     setMessage $ toMarkup ("Trade accepted!" :: Text)
 
 postLeagueDeclineTradeR :: LeagueId -> TransactionId -> Handler ()
@@ -266,11 +292,11 @@ getPlayersAndCharacters leagueId = runDB
 -------------------------
 -- Create Transactions --
 -------------------------
-createTransaction :: Player -> Maybe (Entity Team) -> TransactionType -> Handler (Entity Transaction)
-createTransaction player maybeDraftTeam transactionType = do
+createTransaction :: PlayerSeason -> Maybe (Entity Team) -> TransactionType -> Handler (Entity Transaction)
+createTransaction playerSeason maybeDraftTeam transactionType = do
     userId <- requireAuthId
     now <- liftIO getCurrentTime
-    let (leagueId, maybeOtherTeamId) = (playerLeagueId player, playerTeamId player)
+    let leagueId = playerSeasonLeagueId playerSeason
     processableAt <- if transactionType == Claim then claimProcessableAt leagueId now else return now
     maybeTeam <- case maybeDraftTeam of
         Just draftTeam -> return $ Just draftTeam
@@ -282,11 +308,12 @@ createTransaction player maybeDraftTeam transactionType = do
             position <- generateTransactionPosition teamId transactionType
             let transaction = Transaction
                     { transactionLeagueId = teamLeagueId team
+                    , transactionSeasonId = Just $ playerSeasonSeasonId playerSeason
                     , transactionType = transactionType
                     , transactionStatus = Requested
                     , transactionFailureReason = Nothing
                     , transactionTeamId = teamId
-                    , transactionOtherTeamId = maybeOtherTeamId
+                    , transactionOtherTeamId = playerSeasonTeamId playerSeason
                     , transactionPosition  = position
                     , transactionCreatedBy = userId
                     , transactionCreatedAt = now
@@ -298,13 +325,13 @@ createTransaction player maybeDraftTeam transactionType = do
             transactionId <- runDB $ insert transaction
             return $ Entity transactionId transaction
 
-createTransactionPlayer :: Entity Transaction -> Entity Player -> Maybe TeamId -> Handler TransactionPlayerId
-createTransactionPlayer (Entity transactionId transaction) (Entity playerId player) maybeNewTeamId =
+createTransactionPlayer :: Entity Transaction -> PlayerSeason -> Maybe TeamId -> Handler TransactionPlayerId
+createTransactionPlayer (Entity transactionId transaction) playerSeason maybeNewTeamId =
     runDB $ insert TransactionPlayer
         { transactionPlayerLeagueId      = transactionLeagueId transaction
         , transactionPlayerTransactionId = transactionId
-        , transactionPlayerPlayerId      = playerId
-        , transactionPlayerOldTeamId     = playerTeamId player
+        , transactionPlayerPlayerId      = playerSeasonPlayerId playerSeason
+        , transactionPlayerOldTeamId     = playerSeasonTeamId playerSeason
         , transactionPlayerNewTeamId     = maybeNewTeamId
         , transactionPlayerCreatedBy     = transactionCreatedBy transaction
         , transactionPlayerCreatedAt     = transactionCreatedAt transaction
@@ -312,28 +339,24 @@ createTransactionPlayer (Entity transactionId transaction) (Entity playerId play
         , transactionPlayerUpdatedAt     = transactionUpdatedAt transaction
         }
 
-draftTransaction :: Entity Player -> Entity Team -> Handler TransactionId
-draftTransaction (Entity playerId player) team = do
-    (Entity transactionId transaction) <- createTransaction player (Just team) Draft
-    _ <- createTransactionPlayer (Entity transactionId transaction)
-         (Entity playerId player) $ playerTeamId player
-    return transactionId
+draftTransaction :: PlayerSeason -> Entity Team -> Handler TransactionId
+draftTransaction playerSeason team = do
+    transactionEntity <- createTransaction playerSeason (Just team) Draft
+    _ <- createTransactionPlayer transactionEntity playerSeason $ playerSeasonTeamId playerSeason
+    return $ entityKey transactionEntity
 
-singlePlayerTransaction :: Entity Player -> TransactionType -> Handler TransactionId
-singlePlayerTransaction (Entity playerId player) transactionType = do
-    (Entity transactionId transaction) <- createTransaction player Nothing transactionType
-    _ <- createTransactionPlayer (Entity transactionId transaction)
-         (Entity playerId player) $ playerTeamId player
-    return transactionId
+singlePlayerTransaction :: PlayerSeason -> TransactionType -> Handler TransactionId
+singlePlayerTransaction playerSeason transactionType = do
+    transactionEntity <- createTransaction playerSeason Nothing transactionType
+    _ <- createTransactionPlayer transactionEntity playerSeason $ playerSeasonTeamId playerSeason
+    return $ entityKey transactionEntity
 
-twoPlayerTransaction :: Entity Player -> Entity Player -> TransactionType -> Handler TransactionId
-twoPlayerTransaction (Entity player1Id player1) (Entity player2Id player2) transactionType = do
-    (Entity transactionId transaction) <- createTransaction player1 Nothing transactionType
-    _ <- createTransactionPlayer (Entity transactionId transaction)
-         (Entity player1Id player1) $ playerTeamId player2
-    _ <- createTransactionPlayer (Entity transactionId transaction)
-         (Entity player2Id player2) $ playerTeamId player1
-    return transactionId
+twoPlayerTransaction :: PlayerSeason -> PlayerSeason -> TransactionType -> Handler TransactionId
+twoPlayerTransaction player1Season player2Season transactionType = do
+    transactionEntity <- createTransaction player1Season Nothing transactionType
+    _ <- createTransactionPlayer transactionEntity player1Season $ playerSeasonTeamId player2Season
+    _ <- createTransactionPlayer transactionEntity player2Season $ playerSeasonTeamId player1Season
+    return $ entityKey transactionEntity
 
 generateTransactionPosition :: TeamId -> TransactionType -> Handler (Maybe Int)
 generateTransactionPosition teamId Claim = do
@@ -353,22 +376,23 @@ processClaimRequests = do
     maybeAdmin <- runDB $ selectFirst [UserIsAdmin ==. True] [Asc UserId]
     let Entity adminUserId _ = fromJust maybeAdmin
     now <- liftIO getCurrentTime
-    teamIds <- runDB $ selectKeysList [] [Asc TeamLeagueId, Asc TeamWaiverOrder]
+    teamSeasons <- runDB $ selectList [] [Asc TeamSeasonLeagueId, Asc TeamSeasonWaiverOrder]
+    let teamIds = map (teamSeasonTeamId . entityVal) teamSeasons
     forM_ teamIds $ processTeamClaimRequests adminUserId now
 
 processTeamClaimRequests :: UserId -> UTCTime -> TeamId -> Handler ()
 processTeamClaimRequests adminUserId now teamId = do
-    transactionIds <- runDB $ selectKeysList
+    transactions <- runDB $ selectList
         [ TransactionStatus ==. Requested
         , TransactionType ==. Claim
         , TransactionTeamId ==. teamId
         , TransactionProcessableAt <=. now
         ] [Asc TransactionPosition, Asc TransactionId]
-    forM_ transactionIds $ processMultiPlayerTransaction adminUserId
+    forM_ transactions $ processMultiPlayerTransaction adminUserId
 
-cancelAllTransactionRequests :: UserId -> LeagueId -> Handler ()
-cancelAllTransactionRequests adminUserId leagueId = do
-    transactionIds <- runDB $ selectKeysList [ TransactionLeagueId ==. leagueId
+cancelAllTransactionRequests :: UserId -> SeasonId -> Handler ()
+cancelAllTransactionRequests adminUserId seasonId = do
+    transactionIds <- runDB $ selectKeysList [ TransactionSeasonId ==. Just seasonId
                                              , TransactionStatus ==. Requested
                                              ] []
     mapM_ (cancelTransaction adminUserId) transactionIds
@@ -377,9 +401,9 @@ cancelTransaction :: UserId -> TransactionId -> Handler ()
 cancelTransaction adminUserId transactionId =
     failTransactionWithUserId_ transactionId adminUserId "Season is complete"
 
-cancelAllTrades :: UserId -> LeagueId -> Handler ()
-cancelAllTrades adminUserId leagueId = do
-    transactionIds <- runDB $ selectKeysList [ TransactionLeagueId ==. leagueId
+cancelAllTrades :: UserId -> SeasonId -> Handler ()
+cancelAllTrades adminUserId seasonId = do
+    transactionIds <- runDB $ selectKeysList [ TransactionSeasonId ==. Just seasonId
                                              , TransactionStatus ==. Requested
                                              , TransactionType ==. Trade
                                              ] []
@@ -389,14 +413,15 @@ cancelTrade :: UserId -> TransactionId -> Handler ()
 cancelTrade adminUserId transactionId =
     failTransactionWithUserId_ transactionId adminUserId "Trade deadline has passed"
 
-processMultiPlayerTransaction :: UserId -> TransactionId -> Handler ()
-processMultiPlayerTransaction userId transactionId = do
+processMultiPlayerTransaction :: UserId -> Entity Transaction -> Handler ()
+processMultiPlayerTransaction userId (Entity transactionId transaction) = do
+    let seasonId = fromJust $ transactionSeasonId transaction
     transactionPlayers <- runDB $ selectList [TransactionPlayerTransactionId ==. transactionId] []
-    transactionPlayersWithPlayer <- mapM joinWithPlayer transactionPlayers
-    let areTransactionPlayersValid = map isTransactionPlayerValid transactionPlayersWithPlayer 
+    transactionPlayersWithPlayerSeason <- mapM (joinWithPlayerSeason seasonId) transactionPlayers
+    let areTransactionPlayersValid = map isTransactionPlayerValid transactionPlayersWithPlayerSeason 
     if foldr (&&) True areTransactionPlayersValid
         then do
-            mapM_ (movePlayerToNewTeam userId) transactionPlayersWithPlayer
+            mapM_ (movePlayerToNewTeam userId) transactionPlayersWithPlayerSeason
             succeedTransactionWithUserId transactionId userId
         else failTransactionWithUserId_ transactionId userId
                                         "One or more players not on expected team"
@@ -438,36 +463,42 @@ completeTransaction transactionId maybeUserId maybeFailureReason = do
 -----------------------------
 --- Auto Fail Transactions --
 -----------------------------
-autoFailDraftTransaction :: LeagueId -> TransactionId -> Player -> Handler Bool
-autoFailDraftTransaction leagueId transactionId player
-    | playerTeamId player /= Nothing = 
+autoFailDraftTransaction :: LeagueId -> TransactionId -> Player -> PlayerSeason -> Handler Bool
+autoFailDraftTransaction leagueId transactionId player playerSeason
+    | playerSeasonTeamId playerSeason /= Nothing = 
         failTransaction transactionId "Player must not be on a team"
     | otherwise = autoFailSinglePlayerTransaction leagueId transactionId player
 
-autoFailStartTransaction :: LeagueId -> TransactionId -> Player -> Handler Bool
-autoFailStartTransaction leagueId transactionId player
-    | playerIsStarter player = failTransaction transactionId "Player is already starting"
-    | isNothing $ playerTeamId player = 
+autoFailStartTransaction :: LeagueId -> TransactionId -> Player -> PlayerSeason -> Handler Bool
+autoFailStartTransaction leagueId transactionId player playerSeason
+    | playerSeasonIsStarter playerSeason =
+        failTransaction transactionId "Player is already starting"
+    | isNothing $ playerSeasonTeamId playerSeason = 
         failTransaction transactionId "Player must be on a team"
     | otherwise = autoFailSinglePlayerTransaction leagueId transactionId player
 
-autoFailBenchTransaction :: LeagueId -> TransactionId -> Player -> Handler Bool
-autoFailBenchTransaction leagueId transactionId player
-    | not $ playerIsStarter player = failTransaction transactionId "Player is already benched"
-    | isNothing $ playerTeamId player = 
+autoFailBenchTransaction :: LeagueId -> TransactionId -> Player -> PlayerSeason -> Handler Bool
+autoFailBenchTransaction leagueId transactionId player playerSeason
+    | not $ playerSeasonIsStarter playerSeason =
+        failTransaction transactionId "Player is already benched"
+    | isNothing $ playerSeasonTeamId playerSeason = 
         failTransaction transactionId "Player must be on a team"
     | otherwise = autoFailSinglePlayerTransaction leagueId transactionId player
 
-autoFailClaimTransaction :: LeagueId -> TransactionId -> Player -> Player -> Handler Bool
-autoFailClaimTransaction leagueId transactionId playerToAdd playerToDrop
-    | playerTeamId playerToAdd /= Nothing =
+autoFailClaimTransaction :: LeagueId -> TransactionId -> Player -> PlayerSeason -> Player -> PlayerSeason -> Handler Bool
+autoFailClaimTransaction leagueId transactionId playerToAdd playerToAddSeason playerToDrop playerToDropSeason
+    | playerSeasonTeamId playerToAddSeason /= Nothing =
         failTransaction transactionId "Desired player must not be on a team"
+    | playerSeasonTeamId playerToAddSeason == playerSeasonTeamId playerToDropSeason =
+        failTransaction transactionId "Players must not be on the same team"
     | otherwise = autoFailMultiPlayerTransaction leagueId transactionId playerToAdd playerToDrop
 
-autoFailTradeTransaction :: LeagueId -> TransactionId -> Player -> Player -> Handler Bool
-autoFailTradeTransaction leagueId transactionId playerToTake playerToGive
-    | playerTeamId playerToTake == Nothing =
+autoFailTradeTransaction :: LeagueId -> TransactionId -> Player -> PlayerSeason -> Player -> PlayerSeason -> Handler Bool
+autoFailTradeTransaction leagueId transactionId playerToTake playerToTakeSeason playerToGive playerToGiveSeason
+    | playerSeasonTeamId playerToTakeSeason == Nothing =
         failTransaction transactionId "Desired player must be on a team"
+    | playerSeasonTeamId playerToTakeSeason == playerSeasonTeamId playerToGiveSeason =
+        failTransaction transactionId "Players must not be on the same team"
     | otherwise = autoFailMultiPlayerTransaction leagueId transactionId playerToTake playerToGive
 
 autoFailSinglePlayerTransaction :: LeagueId -> TransactionId -> Player -> Handler Bool
@@ -483,8 +514,6 @@ autoFailMultiPlayerTransaction leagueId transactionId player1 player2
         failTransaction transactionId "Players must be in the same league"
     | leagueId /= playerLeagueId player2 =
         failTransaction transactionId "Desired player must be in this league"
-    | playerTeamId player1 == playerTeamId player2 =
-        failTransaction transactionId "Players must not be on the same team"
     | not $ playerIsPlayable player1 = failTransaction transactionId "Your player must be playable"
     | not $ playerIsPlayable player2 = failTransaction transactionId "Desired player must be playable"
     | otherwise = autoFailSinglePlayerTransaction leagueId transactionId player2
@@ -493,68 +522,86 @@ autoFailMultiPlayerTransaction leagueId transactionId player1 player2
 ---------------------
 -- Generic Helpers --
 ---------------------
-insertDraftPick :: LeagueId -> UserId -> DraftPick -> Handler ()
-insertDraftPick leagueId userId draftPick = do
+insertDraftPick :: LeagueId -> SeasonId -> UserId -> DraftPick -> Handler ()
+insertDraftPick leagueId seasonId userId draftPick = do
     let (playerId, teamId) = (draftPickPlayerId draftPick, draftPickTeamId draftPick)
     player <- runDB $ get404 playerId
     team <- runDB $ get404 teamId
-    transactionId <- draftTransaction (Entity playerId player) (Entity teamId team)
-    didAutoFail <- autoFailDraftTransaction leagueId transactionId player
+    Entity playerSeasonId playerSeason <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId playerId seasonId
+    transactionId <- draftTransaction playerSeason (Entity teamId team)
+    didAutoFail <- autoFailDraftTransaction leagueId transactionId player playerSeason
     if didAutoFail then return () else do
         now <- liftIO getCurrentTime
-        Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
-        let startPlayer = teamStartersCount team < generalSettingsNumberOfStarters generalSettings
-        runDB $ update playerId [ PlayerIsStarter =. startPlayer
-                                , PlayerTeamId =. Just teamId
-                                , PlayerUpdatedBy =. userId
-                                , PlayerUpdatedAt =. now
-                                ]
-        let teamUpdates = [TeamPlayersCount +=. 1, TeamUpdatedBy =. userId, TeamUpdatedAt =. now]
-        let fullUpdates = if startPlayer then (TeamStartersCount +=. 1) : teamUpdates else teamUpdates
-        runDB $ update teamId fullUpdates
+        -- TODO - get rid of the below two lines
+        maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
+                                                    , GeneralSettingsSeasonId ==. Just seasonId
+                                                    ] []
+        let Entity _ generalSettings = fromJust maybeGeneralSettings
+        -- TODO - use the below line once the unique constraint can be added
+        -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
+        Entity teamSeasonId teamSeason <- runDB $ getBy404 $ UniqueTeamSeasonTeamIdSeasonId teamId seasonId
+        let startPlayer = teamSeasonStartersCount teamSeason < generalSettingsNumberOfStarters generalSettings
+        runDB $ update playerSeasonId [ PlayerSeasonIsStarter =. startPlayer
+                                      , PlayerSeasonTeamId =. Just teamId
+                                      , PlayerSeasonUpdatedBy =. userId
+                                      , PlayerSeasonUpdatedAt =. now
+                                      ]
+        let teamUpdates = [TeamSeasonPlayersCount +=. 1, TeamSeasonUpdatedBy =. userId, TeamSeasonUpdatedAt =. now]
+        let fullUpdates = if startPlayer then (TeamSeasonStartersCount +=. 1) : teamUpdates else teamUpdates
+        runDB $ update teamSeasonId fullUpdates
         succeedTransaction transactionId
 
-movePlayerToNewTeam :: UserId -> (Entity TransactionPlayer, Entity Player) -> Handler ()
-movePlayerToNewTeam adminUserId (Entity _ transactionPlayer, Entity playerId _) = do
+movePlayerToNewTeam :: UserId -> (Entity TransactionPlayer, Entity PlayerSeason) -> Handler ()
+movePlayerToNewTeam adminUserId (Entity _ transactionPlayer, Entity playerSeasonId playerSeason) = do
     now <- liftIO getCurrentTime
-    runDB $ update playerId [ PlayerIsStarter =. False
-                            , PlayerTeamId =. transactionPlayerNewTeamId transactionPlayer
-                            , PlayerUpdatedAt =. now
-                            , PlayerUpdatedBy =. adminUserId
-                            ]
+    let seasonId = playerSeasonSeasonId playerSeason
+    runDB $ update playerSeasonId [ PlayerSeasonIsStarter =. False
+                                  , PlayerSeasonTeamId =. transactionPlayerNewTeamId transactionPlayer
+                                  , PlayerSeasonUpdatedAt =. now
+                                  , PlayerSeasonUpdatedBy =. adminUserId
+                                  ]
     case transactionPlayerNewTeamId transactionPlayer of
-        Just newTeamId -> updateTeamStartersCount newTeamId now adminUserId
+        Just newTeamId -> updateTeamSeasonStartersCount newTeamId seasonId now adminUserId
         Nothing -> return ()
     case transactionPlayerOldTeamId transactionPlayer of
-        Just oldTeamId -> updateTeamStartersCount oldTeamId now adminUserId
+        Just oldTeamId -> updateTeamSeasonStartersCount oldTeamId seasonId now adminUserId
         Nothing -> return ()
 
-isTransactionPlayerValid :: (Entity TransactionPlayer, Entity Player) -> Bool
-isTransactionPlayerValid (Entity _ transactionPlayer, Entity _ player) =
-    playerTeamId player == transactionPlayerOldTeamId transactionPlayer
+isTransactionPlayerValid :: (Entity TransactionPlayer, Entity PlayerSeason) -> Bool
+isTransactionPlayerValid (Entity _ transactionPlayer, Entity _ playerSeason) =
+    playerSeasonTeamId playerSeason == transactionPlayerOldTeamId transactionPlayer
 
-joinWithPlayer :: Entity TransactionPlayer -> Handler (Entity TransactionPlayer, Entity Player)
-joinWithPlayer (Entity transactionPlayerId transactionPlayer) = do
+joinWithPlayerSeason :: SeasonId -> Entity TransactionPlayer -> Handler (Entity TransactionPlayer, Entity PlayerSeason)
+joinWithPlayerSeason seasonId (Entity transactionPlayerId transactionPlayer) = do
     let playerId = transactionPlayerPlayerId transactionPlayer
-    player <- runDB $ get404 playerId
-    return (Entity transactionPlayerId transactionPlayer, Entity playerId player)
+    playerSeasonEntity <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId playerId seasonId
+    return (Entity transactionPlayerId transactionPlayer, playerSeasonEntity)
 
 claimProcessableAt :: LeagueId -> UTCTime -> Handler UTCTime
 claimProcessableAt leagueId utcTime = do
     Entity seriesId _ <- runDB $ getBy404 $ UniqueSeriesNumber 6
     Entity _ episode <- runDB $ getBy404 $ UniqueEpisodeNumberSeries 1 seriesId
     if utcTime < episodeAirTime episode then return utcTime else do
-        Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
+        seasonId <- getCurrentSeasonId leagueId
+        -- TODO - get rid of the below two lines
+        maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
+                                                    , GeneralSettingsSeasonId ==. Just seasonId
+                                                    ] []
+        let Entity _ generalSettings = fromJust maybeGeneralSettings
+        -- TODO - use the below line once the unique constraint can be added
+        -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
         let daysToAdd = min 0 $ generalSettingsWaiverPeriodInDays generalSettings - dayOfWeek utcTime
         return $ if daysToAdd == 0 then utcTime else addXDays daysToAdd utcTime
 
-updateTeamStartersCount :: TeamId -> UTCTime -> UserId -> Handler ()
-updateTeamStartersCount teamId utcTime userId = runDB $ do
-    startersCount <- count [PlayerTeamId ==. Just teamId, PlayerIsStarter ==. True]
-    update teamId [ TeamStartersCount =. startersCount
-                  , TeamUpdatedAt =. utcTime
-                  , TeamUpdatedBy =. userId
-                  ]
+updateTeamSeasonStartersCount :: TeamId -> SeasonId -> UTCTime -> UserId -> Handler ()
+updateTeamSeasonStartersCount teamId seasonId utcTime userId = runDB $ do
+    startersCount <- count [ PlayerSeasonTeamId ==. Just teamId
+                           , PlayerSeasonIsStarter ==. True]
+    updateWhere [ TeamSeasonTeamId ==. teamId, TeamSeasonSeasonId ==. seasonId ]
+                [ TeamSeasonStartersCount =. startersCount
+                , TeamSeasonUpdatedAt =. utcTime
+                , TeamSeasonUpdatedBy =. userId
+                ]
 
 repositionClaimRequests :: TeamId -> Handler ()
 repositionClaimRequests teamId = do

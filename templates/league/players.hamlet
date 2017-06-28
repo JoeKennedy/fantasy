@@ -10,18 +10,18 @@
                 <a href="#free_agents" aria-controls="free_agents" role="tab" data-toggle="pill">
                     Free Agents
                     <span .badge .pull-right>#{length freeAgents}
-            $if leagueIsDraftComplete league
+            $if seasonIsDraftComplete season
                 <li role="presentation">
                     <a href="#on_rosters" aria-controls="on_rosters" role="tab" data-toggle="pill">
                         On Rosters
                         <span .badge .pull-right>#{length onRosters}
-            $forall (Entity teamId team, _) <- teamsAndPlayers
+            $forall (Entity teamId team, players) <- teamsAndPlayers
                 <li role="presentation">
                     $with tid <- toPathPiece teamId
                         <a href="#team_#{tid}" aria-controls="team_#{tid}" role="tab" data-toggle="pill">
                             House #{teamName team}
-                            <span .badge .pull-right>#{teamPlayersCount team}
-            $if leagueIsDraftComplete league
+                            <span .badge .pull-right>#{length players}
+            $if seasonIsDraftComplete season
                 <li role="presentation">
                     <a href="#all_players" aria-controls="all_players" role="tab" data-toggle="pill">
                         All Characters

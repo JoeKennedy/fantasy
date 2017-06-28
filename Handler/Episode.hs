@@ -2,9 +2,8 @@ module Handler.Episode where
 
 import Import
 
-import Handler.Common      (backgroundHandler)
 import Handler.Event       (getEpisodeEvents, incrementCharacterAppearances)
-import Handler.League      (completeSeason, determineIfTradeDeadlineHasPassed)
+import Handler.League      (determineIfSeasonIsComplete, determineIfTradeDeadlineHasPassed)
 import Handler.League.Week (createWeekData_)
 import Handler.Score       (finalizeWeek, upsertPlays)
 
@@ -131,11 +130,8 @@ airEpisode = do
             runDB $ update episodeId [EpisodeStatus =. Airing]
             leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
             mapM_ (createWeekData_ $ Entity episodeId episode) leagueIds
-            -- TODO - try to figure out a way not to hard-code the episode
-            -- number to 10
-            let episodeNo = episodeNumber episode
-            if episodeNumber episode == 7 then mapM_ (completeSeason episodeNo) leagueIds else return ()
-            mapM_ (determineIfTradeDeadlineHasPassed episodeNo) leagueIds
+            mapM_ (determineIfSeasonIsComplete episode) leagueIds
+            mapM_ (determineIfTradeDeadlineHasPassed episode) leagueIds
 
 
 -------------

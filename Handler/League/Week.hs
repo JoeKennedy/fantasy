@@ -5,6 +5,7 @@ import Import
 import Handler.League.Layout
 import Handler.Score         (calculateCumulativePoints)
 
+import           Data.Maybe         (fromJust)
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
 
@@ -21,19 +22,24 @@ type FullPlay = ( Entity Play, Entity Week, Entity Event, Entity Player
 ------------
 getLeagueResultsR :: LeagueId -> Handler Html
 getLeagueResultsR leagueId = do
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId]
-                                [Desc TeamPointsThisRegularSeason, Desc TeamDraftOrder]
+    seasonId <- getSelectedSeasonId leagueId
+    teams <- getTeamsOrderBy seasonId False TeamSeasonRegularSeasonPoints
     leagueResultsLayout leagueId "Standings" $(widgetFile "league/results")
 
 getLeaguePlayoffsR :: LeagueId -> Handler Html
 getLeaguePlayoffsR leagueId = do
     (playoffTs, consolationTs) <- getPlayoffTeams leagueId
-    let groupedTeams = [(Playoff, rank playoffTs), (Consolation, rank consolationTs)]
+    let groupedTeams = [(Playoff, rank2 playoffTs), (Consolation, rank2 consolationTs)]
     leagueResultsLayout leagueId "Playoffs" $(widgetFile "league/playoffs")
 
 getLeagueResultsWeekR :: LeagueId -> Int -> Handler Html
 getLeagueResultsWeekR leagueId weekNo = do
-    Entity weekId week <- runDB $ getBy404 $ UniqueWeekLeagueIdWeekNumber leagueId weekNo
+    seasonId <- getSelectedSeasonId leagueId
+    -- TODO - get rid of the following two lines
+    maybeWeek <- runDB $ selectFirst [WeekSeasonId ==. Just seasonId, WeekNumber ==. weekNo] []
+    let Entity weekId week = fromJust maybeWeek
+    -- TODO - use the below line once the unique constraint can be added
+    -- Entity weekId week <- runDB $ getBy404 $ UniqueWeekSeasonIdNumber seasonId weekNo
     games <- getGamesForWeek weekId
     performances <- getPerformancesForWeek weekId
     plays <- getPlaysForWeek weekId
@@ -52,15 +58,6 @@ getGamesForWeek weekId = runDB
         E.where_ $ game ^. GameWeekId E.==. E.val weekId
         E.orderBy [E.desc (game ^. GamePoints)]
         return (game, team)
-
-getGamesForTeam :: TeamId -> Handler [(Entity Game, Entity Week)]
-getGamesForTeam teamId = runDB
-    $ E.select
-    $ E.from $ \(game `E.InnerJoin` week) -> do
-        E.on $ game ^. GameWeekId E.==. week ^. WeekId
-        E.where_ $ game ^. GameTeamId E.==. E.val teamId
-        E.orderBy [E.asc (week ^. WeekNumber)]
-        return (game, week)
 
 -- returns all performances of players that appeared in the episode
 -- TODO - add a playsCount column to performances and use that
@@ -90,7 +87,7 @@ getPerformancesForGame (Entity _ game) = runDB
         E.on $ performance ^. PerformanceWeekId E.==. week ^. WeekId
         E.where_ $ performance ^. PerformanceWeekId E.==. E.val (gameWeekId game)
              E.&&. performance ^. PerformanceTeamId E.==. E.just (E.val $ gameTeamId game)
-        E.orderBy [E.desc (player ^. PlayerIsStarter), E.asc (character ^. CharacterName)]
+        E.orderBy [E.desc (performance ^. PerformanceIsStarter), E.asc (character ^. CharacterName)]
         return (performance, week, player, team, character)
 
 getPerformancesForPlayer :: PlayerId -> Handler [(Entity Performance, Entity Week, Maybe (Entity Team))]
@@ -147,6 +144,7 @@ leagueResultsLayout :: LeagueId -> Text -> Widget -> Handler Html
 leagueResultsLayout leagueId activePill widget = do
     league <- runDB $ get404 leagueId
     weeks  <- runDB $ selectList [WeekLeagueId ==. leagueId] [Asc WeekNumber]
+    Entity _ season <- getSelectedSeason leagueId
     leagueLayout leagueId "Results" $(widgetFile "layouts/results")
 
 
@@ -160,16 +158,20 @@ createWeekData (Entity episodeId episode) leagueId = do
     case alreadyCreatedWeek of
         Just (Entity weekId _) -> return weekId
         Nothing -> do
-            let weekNo = episodeNumber episode
-            weekId <- createWeek leagueId episodeId weekNo
+            let seriesId = episodeSeriesId episode
+            seasonEntity <- runDB $ getBy404 $ UniqueSeasonLeagueIdSeriesId leagueId seriesId
+            let seasonId = entityKey seasonEntity
+            weekId <- createWeek leagueId seasonEntity $ Entity episodeId episode
             -- then, for the week:
             teamIds <- runDB $ selectKeysList [TeamLeagueId ==. leagueId] []
             -- create game for each team in league
             mapM_ (createGame leagueId weekId) teamIds
             -- create performance for each player in league
-            previousWeekIds <- runDB $ selectKeysList [WeekNumber <. weekNo] []
-            players <- runDB $ selectList [PlayerLeagueId ==. leagueId] []
-            mapM_ (createPerformance leagueId weekId previousWeekIds) players
+            previousWeekIds <- runDB $ selectKeysList [ WeekNumber <. episodeNumber episode
+                                                      , WeekSeasonId ==. Just seasonId
+                                                      ] []
+            playerSeasons <- runDB $ selectList [PlayerSeasonSeasonId ==. seasonId] []
+            mapM_ (createPerformance leagueId weekId previousWeekIds) playerSeasons
 
             return weekId
 
@@ -178,15 +180,15 @@ createWeekData_ episodeEntity leagueId = do
     _ <- createWeekData episodeEntity leagueId
     return ()
 
-createWeek :: LeagueId -> EpisodeId -> Int -> Handler WeekId
-createWeek leagueId episodeId episodeNo = runDB $ do
+createWeek :: LeagueId -> Entity Season -> Entity Episode -> Handler WeekId
+createWeek leagueId (Entity seasonId season) (Entity episodeId episode) = runDB $ do
     now <- liftIO getCurrentTime
-    league <- get404 leagueId
     insert $ Week { weekLeagueId     = leagueId
                   , weekEpisodeId    = episodeId
-                  , weekNumber       = episodeNo
+                  , weekSeasonId     = Just seasonId
+                  , weekNumber       = episodeNumber episode
                   , weekIsScored     = False
-                  , weekIsPostSeason = leagueIsInPostSeason league
+                  , weekIsPostSeason = seasonIsInPostSeason season
                   , weekCreatedAt    = now
                   , weekUpdatedAt    = now
                   }
@@ -202,9 +204,10 @@ createGame leagueId weekId teamId = do
                            , gameUpdatedAt = now
                            }
 
-createPerformance :: LeagueId -> WeekId -> [WeekId] -> Entity Player -> Handler ()
-createPerformance leagueId weekId previousWeekIds (Entity playerId player) = do
+createPerformance :: LeagueId -> WeekId -> [WeekId] -> Entity PlayerSeason -> Handler ()
+createPerformance leagueId weekId previousWeekIds (Entity _ playerSeason) = do
     now <- liftIO getCurrentTime
+    let playerId = playerSeasonPlayerId playerSeason
     maybePerformance <- runDB $ getBy $ UniquePerformanceWeekIdPlayerId weekId playerId
     (cumulativePoints, cappedCumulativePoints) <- calculateCumulativePoints previousWeekIds playerId
     case maybePerformance of
@@ -213,8 +216,8 @@ createPerformance leagueId weekId previousWeekIds (Entity playerId player) = do
             { performanceLeagueId  = leagueId
             , performanceWeekId    = weekId
             , performancePlayerId  = playerId
-            , performanceTeamId    = playerTeamId player
-            , performanceIsStarter = playerIsStarter player
+            , performanceTeamId    = playerSeasonTeamId playerSeason
+            , performanceIsStarter = playerSeasonIsStarter playerSeason
             , performancePoints    = 0
             , performanceCumulativePoints = cumulativePoints
             , performanceCappedCumulativePoints = cappedCumulativePoints
@@ -222,10 +225,12 @@ createPerformance leagueId weekId previousWeekIds (Entity playerId player) = do
             , performanceUpdatedAt = now
             }
 
+
 -------------
 -- Helpers --
 -------------
-getPlayoffTeams :: LeagueId -> Handler ([Entity Team], [Entity Team])
+getPlayoffTeams :: LeagueId -> Handler ([(Entity Team, Entity TeamSeason)], [(Entity Team, Entity TeamSeason)])
 getPlayoffTeams leagueId = do
-    teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Desc TeamPointsThisPostSeason]
-    return $ partition (\(Entity _ t) -> teamPostSeasonStatus t == Playoff) teams
+    seasonId <- getSelectedSeasonId leagueId
+    teams <- getTeamsOrderBy seasonId False TeamSeasonPostSeasonPoints
+    return $ partition (\(_, Entity _ ts) -> teamSeasonPostSeasonStatus ts == Playoff) teams

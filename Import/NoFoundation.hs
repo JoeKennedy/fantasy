@@ -6,6 +6,7 @@ import ClassyPrelude.Yesod   as Import
 import Model                 as Import
 import Model.Action          as Import
 import Model.Bootstrap       as Import
+import Model.Groupings       as Import
 import Model.LeagueSettings  as Import
 import Model.Numeric         as Import
 import Model.Time            as Import

@@ -1,2 +1,0 @@
-<div #event_form_wrapper>
-    ^{embeddedForm action enctype widget}

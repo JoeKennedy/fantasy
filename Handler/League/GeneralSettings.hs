@@ -4,11 +4,13 @@ import Import
 import Handler.League.Setup
 import Handler.League.Layout
 
+import Data.Maybe (fromJust)
+
 ----------
 -- Form --
 ----------
-generalSettingsForm :: Int -> UserId -> GeneralSettings -> Form GeneralSettings
-generalSettingsForm teamsCount currentUserId generalSettings extra = do
+generalSettingsForm :: Int -> UserId -> SeasonId -> GeneralSettings -> Form GeneralSettings
+generalSettingsForm teamsCount currentUserId seasonId generalSettings extra = do
     (startersRes, startersView) <- mreq (selectFieldList $ toOptions $ possibleNumbersOfStarters teamsCount)
         (fieldName "Maximum number of starters") (Just $ generalSettingsNumberOfStarters generalSettings)
     (rosterSizeRes, rosterSizeView) <- mreq (selectFieldList $ toOptions $ possibleRosterSizes teamsCount)
@@ -27,6 +29,7 @@ generalSettingsForm teamsCount currentUserId generalSettings extra = do
     now <- liftIO getCurrentTime
     let generalSettingsResult = GeneralSettings
             <$> pure (generalSettingsLeagueId generalSettings)
+            <*> pure (Just seasonId)
             <*> startersRes
             <*> rosterSizeRes
             <*> regSeasonLengthRes
@@ -48,8 +51,15 @@ getSetupGeneralSettingsR = do
     userId <- requireAuthId
     let action = SetupLeagueR SetupGeneralSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
-    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
-    (widget, enctype) <- generateFormPost $ generalSettingsForm (leagueTeamsCount league) userId generalSettings
+    seasonId <- getSelectedSeasonId leagueId
+    -- TODO - get rid of the below two lines
+    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
+                                                , GeneralSettingsSeasonId ==. Just seasonId
+                                                ] []
+    let Entity _ generalSettings = fromJust maybeGeneralSettings
+    -- TODO - use the below line once the unique constraint can be added
+    -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
+    (widget, enctype) <- generateFormPost $ generalSettingsForm (leagueTeamsCount league) userId seasonId generalSettings
     defaultLayout $ do
         setTitle $ leagueSetupStepTitle league action
         let maybeLeagueId = Just leagueId
@@ -60,8 +70,15 @@ postSetupGeneralSettingsR = do
     userId <- requireAuthId
     let action = SetupLeagueR SetupGeneralSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
-    Entity generalSettingsId generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
-    ((result, widget), enctype) <- runFormPost $ generalSettingsForm (leagueTeamsCount league) userId generalSettings
+    seasonId <- getSelectedSeasonId leagueId
+    -- TODO - get rid of the below two lines
+    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
+                                                , GeneralSettingsSeasonId ==. Just seasonId
+                                                ] []
+    let Entity generalSettingsId generalSettings = fromJust maybeGeneralSettings
+    -- TODO - use the below line once the unique constraint can be added
+    -- Entity generalSettingsId generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
+    ((result, widget), enctype) <- runFormPost $ generalSettingsForm (leagueTeamsCount league) userId seasonId generalSettings
     case result of
         FormSuccess generalSettings' -> do
             runDB $ replace generalSettingsId generalSettings'
@@ -76,8 +93,15 @@ getLeagueGeneralSettingsR :: LeagueId -> Handler Html
 getLeagueGeneralSettingsR leagueId = do
     userId <- requireAuthId
     league <- runDB $ get404 leagueId
-    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
-    (widget, enctype) <- generateFormPost $ generalSettingsForm (leagueTeamsCount league) userId generalSettings
+    seasonId <- getSelectedSeasonId leagueId
+    -- TODO - get rid of the below two lines
+    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
+                                                , GeneralSettingsSeasonId ==. Just seasonId
+                                                ] []
+    let Entity _ generalSettings = fromJust maybeGeneralSettings
+    -- TODO - use the below line once the unique constraint can be added
+    -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
+    (widget, enctype) <- generateFormPost $ generalSettingsForm (leagueTeamsCount league) userId seasonId generalSettings
     let action = LeagueSettingsR leagueId LeagueGeneralSettingsR
     leagueSettingsLayout leagueId action enctype widget "General"
 
@@ -85,8 +109,15 @@ postLeagueGeneralSettingsR :: LeagueId -> Handler Html
 postLeagueGeneralSettingsR leagueId = do
     userId <- requireAuthId
     league <- runDB $ get404 leagueId
-    Entity generalSettingsId generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueId leagueId
-    ((result, widget), enctype) <- runFormPost $ generalSettingsForm (leagueTeamsCount league) userId generalSettings
+    seasonId <- getSelectedSeasonId leagueId
+    -- TODO - get rid of the below two lines
+    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
+                                                , GeneralSettingsSeasonId ==. Just seasonId
+                                                ] []
+    let Entity generalSettingsId generalSettings = fromJust maybeGeneralSettings
+    -- TODO - use the below line once the unique constraint can be added
+    -- Entity generalSettingsId generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
+    ((result, widget), enctype) <- runFormPost $ generalSettingsForm (leagueTeamsCount league) userId seasonId generalSettings
     let action = LeagueSettingsR leagueId LeagueGeneralSettingsR
     case result of
         FormSuccess generalSettings' -> do

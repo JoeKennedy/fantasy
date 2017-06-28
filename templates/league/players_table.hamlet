@@ -27,7 +27,7 @@
                     <th data-field="player-action">
 
             <tbody>
-                $forall (num, Entity _ player, maybeTeam, Entity characterId character, Entity _ rookieSeries, button) <- subTablePlayers
+                $forall (num, Entity _ player, Entity _ playerSeason, maybeTeam, Entity characterId character, Entity _ rookieSeries, button) <- subTablePlayers
                     <tr .vertical-align-middle>
                         $if hasRadioButton playersTableType
                             $with cid <- toPathPiece characterId
@@ -69,7 +69,7 @@
                         <td .hidden-sm .hidden-xs>
                             #{characterPointsLastSeason character}
                         <td>
-                            #{displayRational $ playerPointsThisSeason player}
+                            #{displayRational $ playerSeasonTotalPoints playerSeason}
                         <td .text-right .player-action>
                             $if showActionButton playersTableType
                                 ^{button}

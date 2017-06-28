@@ -4,7 +4,7 @@
         <small>Results
 
 <ul #league_results_nav .nav .nav-pills .league-nav-pills>
-    $if leagueIsInPostSeason league
+    $if seasonIsInPostSeason season
         <li role="presentation">
             <a href="@{LeaguePlayoffsR leagueId}">Playoffs
     <li role="presentation">

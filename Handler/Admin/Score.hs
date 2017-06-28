@@ -5,7 +5,6 @@ import Import
 import Handler.Admin
 import Handler.Admin.Episode (eventTimeInEpisodeText)
 import Handler.Admin.Record
-import Handler.Common        (groupByFirst)
 import Handler.Episode       (getEpisodes)
 import Handler.Event         (getEpisodeEvents)
 

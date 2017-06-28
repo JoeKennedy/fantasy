@@ -54,6 +54,7 @@
                         <th>Episode
                         <th>Time In Episode
                         <th>Event
+                        <th>Note
 
                     <tbody>
                         $forall (Entity _ event, Entity _ episode, Entity _ series, Entity _ actingCharacter, maybeReceivingCharacter) <- events
@@ -64,34 +65,25 @@
                                 <td>
                                     $if (eventCharacterId event) == characterId
                                         $with (actionBefore, actionAfter) <- actionToSplitString (eventAction event)
+                                            #{capitalize actionBefore}
+                                            $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
+                                                $if characterIsPlayable receivingCharacter
+                                                    <a href=@{CharacterR receivingCharacterId}>
+                                                        \ #{characterName receivingCharacter}
+                                                $else
+                                                    \ #{characterName receivingCharacter}
+                                                \ #{actionAfter}
+
+                                    $else
+                                        $with actionString <- reverseActionString (eventAction event)
+                                            #{capitalize actionString} #
                                             $if characterIsPlayable actingCharacter
                                                 <a href=@{CharacterR (eventCharacterId event)}>
                                                     #{characterName actingCharacter}
                                             $else
                                                 #{characterName actingCharacter}
-                                            #{actionBefore}
-                                            $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
-                                                $if isAdmin maybeUser
-                                                    <a href=@{CharacterR receivingCharacterId}>
-                                                        #{characterName receivingCharacter}
-                                                $else
-                                                    #{characterName receivingCharacter}
-                                                #{actionAfter}
-                                            $maybe note <- eventNote event
-                                                \ #{note}
 
-                                    $else
-                                        $with actionString <- reverseActionString (eventAction event)
-                                            $maybe (Entity receivingCharacterId receivingCharacter) <- maybeReceivingCharacter
-                                                $if characterIsPlayable receivingCharacter
-                                                    <a href=@{CharacterR receivingCharacterId}>
-                                                        #{characterName receivingCharacter}
-                                                $else
-                                                    #{characterName receivingCharacter}
-                                                #{actionString}
-                                                $if characterIsPlayable actingCharacter
-                                                    <a href=@{CharacterR (eventCharacterId event)}>
-                                                        #{characterName actingCharacter}
-                                                $else
-                                                    #{characterName actingCharacter}
+                                <td>
+                                    $maybe note <- eventNote event
+                                        \ #{note}
 

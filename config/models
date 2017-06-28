@@ -65,11 +65,13 @@ Blurb
 
 Series
     number Int
+    year Int default=2016
     createdBy UserId default=2
     createdAt UTCTime default=now()
     updatedBy UserId default=2
     updatedAt UTCTime default=now()
     UniqueSeriesNumber number
+    -- UniqueSeriesYear year
     deriving Eq Ord Show
 
 Episode
@@ -123,8 +125,40 @@ League
     draftCompletedAt UTCTime Maybe
     UniqueLeagueName name
 
+Season
+    leagueId LeagueId
+    seriesId SeriesId
+    year Int default=2016
+    isActive Bool default=true
+    isDraftComplete Bool default=false
+    isInPostSeason Bool default=false
+    isAfterTradeDeadline Bool default=false
+    isSeasonComplete Bool default=false
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    draftCompletedAt UTCTime Maybe
+    UniqueSeasonLeagueIdSeriesId leagueId seriesId
+    UniqueSeasonLeagueIdYear leagueId year
+
+Week
+    leagueId LeagueId
+    episodeId EpisodeId
+    seasonId SeasonId Maybe
+    number Int
+    isScored Bool default=false
+    isPostSeason Bool default=false
+    createdAt UTCTime
+    updatedAt UTCTime
+    UniqueWeekLeagueIdEpisodeId leagueId episodeId
+    -- UniqueWeekSeasonIdEpisodeId seasonId episodeId
+    -- UniqueWeekLeagueIdSeasonIdEpisodeId leagueId seasonId episodeId
+    -- UniqueWeekSeasonIdNumber seasonId number
+
 GeneralSettings
     leagueId LeagueId
+    seasonId SeasonId Maybe
     numberOfStarters Int
     rosterSize Int
     regularSeasonLength Int
@@ -136,10 +170,12 @@ GeneralSettings
     createdAt UTCTime
     updatedBy UserId
     updatedAt UTCTime
-    UniqueGeneralSettingsLeagueId leagueId
+    -- UniqueGeneralSettingsSeasonId seasonId
+    -- UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId
 
 ScoringSettings
     leagueId LeagueId
+    seasonId SeasonId Maybe
     action Action
     isUsed Bool
     points Int
@@ -150,10 +186,12 @@ ScoringSettings
     createdAt UTCTime
     updatedBy UserId
     updatedAt UTCTime
-    UniqueScoringSettingsLeagueIdAction leagueId action
+    -- UniqueScoringSettingsSeasonIdAction seasonId action
+    -- UniqueScoringSettingsLeagueIdSeasonIdAction leagueId seasonId action
 
 DraftSettings
     leagueId LeagueId
+    seasonId SeasonId Maybe
     draftType DraftType
     draftOrder DraftOrder
     draftOrderType DraftOrderType
@@ -167,7 +205,8 @@ DraftSettings
     createdAt UTCTime
     updatedBy UserId
     updatedAt UTCTime
-    UniqueDraftSettingsLeagueId leagueId
+    -- UniqueDraftSettingsSeasonId seasonId
+    -- UniqueDraftSettingsLeagueIdSeasonId leagueId seasonId
 
 Team
     leagueId LeagueId
@@ -218,8 +257,44 @@ Player
     updatedAt UTCTime
     UniquePlayerLeagueIdCharacterId leagueId characterId
 
+TeamSeason
+    leagueId LeagueId
+    teamId TeamId
+    seasonId SeasonId
+    playersCount Int
+    startersCount Int
+    draftOrder Int
+    waiverOrder Int
+    totalPoints Rational
+    regularSeasonPoints Rational
+    postSeasonPoints Rational
+    postSeasonStatus PostSeasonStatus default='Regular'
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    UniqueTeamSeasonTeamIdSeasonId teamId seasonId
+    UniqueTeamSeasonLeagueIdTeamIdSeasonId leagueId teamId seasonId
+
+PlayerSeason
+    leagueId LeagueId
+    playerId PlayerId
+    seasonId SeasonId
+    teamId TeamId Maybe
+    isStarter Bool default=false
+    totalPoints Rational
+    regularSeasonPoints Rational
+    postSeasonPoints Rational
+    createdBy UserId
+    createdAt UTCTime
+    updatedBy UserId
+    updatedAt UTCTime
+    UniquePlayerSeasonPlayerIdSeasonId playerId seasonId
+    UniquePlayerSeasonLeagueIdPlayerIdSeasonId leagueId playerId seasonId
+
 Transaction
     leagueId LeagueId
+    seasonId SeasonId Maybe
     type TransactionType
     status TransactionStatus
     failureReason Text Maybe
@@ -245,17 +320,6 @@ TransactionPlayer
     updatedBy UserId
     updatedAt UTCTime
     UniqueTransactionPlayerTransactionIdPlayerId transactionId playerId
-
-Week
-    leagueId LeagueId
-    episodeId EpisodeId
-    number Int
-    isScored Bool default=false
-    isPostSeason Bool default=false
-    createdAt UTCTime
-    updatedAt UTCTime
-    UniqueWeekLeagueIdEpisodeId leagueId episodeId
-    UniqueWeekLeagueIdWeekNumber leagueId number
 
 Game
     leagueId LeagueId

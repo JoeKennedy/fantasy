@@ -16,7 +16,7 @@
                         <th .col-sm-1 .hidden-xs data-field="team-abbreviation" data-sortable="true" data-sorter="linkSorter">Abbreviation
                         <th .col-sm-3 data-field="team-owner" data-sortable="true">Owner
                         <th .col-sm-1 .hidden-xs data-field="team-waiver-draft" data-sortable="true">
-                            $if leagueIsDraftComplete league
+                            $if seasonIsDraftComplete season
                                 Waiver
                             $else
                                 Draft
@@ -24,7 +24,7 @@
                         <th .col-sm-1 .hidden-xs data-field="team-status" data-sortable="true">Status
 
                 <tbody>
-                    $forall (rank, Entity _ team, joinEmailResendable) <- fullTeams
+                    $forall (rank, Entity _ team, Entity _ teamSeason, joinEmailResendable) <- fullTeams
                         <tr>
                             <td>#{rank}
                             <td>
@@ -35,11 +35,11 @@
                                     #{teamAbbreviation team}
                             <td>#{teamOwnerName team}
                             <td .hidden-xs>
-                                $if leagueIsDraftComplete league
-                                    #{teamWaiverOrder team}
+                                $if seasonIsDraftComplete season
+                                    #{teamSeasonWaiverOrder teamSeason}
                                 $else
-                                    #{teamDraftOrder team}
-                            <td>#{displayRational $ teamPointsThisRegularSeason team}
+                                    #{teamSeasonDraftOrder teamSeason}
+                            <td>#{displayRational $ teamSeasonRegularSeasonPoints teamSeason}
                             <td .hidden-xs>
                                 $if teamIsConfirmed team
                                     Joined

@@ -2,12 +2,12 @@ module Handler.Admin.Record where
 
 import Import
 
--- import Handler.Common    (backgroundHandler)
-import Handler.Character (createCharacterPerformances,
-                          createCharacterPerformancesIfNecessary)
-import Handler.Episode   (finalizeEpisode)
-import Handler.Event     (updateEventRelations)
-import Handler.League    (createPlayer)
+import Handler.Character     (createCharacterPerformances,
+                              createCharacterPerformancesIfNecessary)
+import Handler.Episode       (finalizeEpisode)
+import Handler.Event         (updateEventRelations)
+import Handler.League        (createPlayer)
+import Handler.League.Season (createSeries6Seasons)
 import Handler.Score
 
 ----------------
@@ -90,6 +90,9 @@ instance AdminRecord House where
     updatedAt = houseUpdatedAt
 
 instance AdminRecord Series where
+    -- Trigger the below function on the update of a series
+    -- TODO - instead, on create, create all the new seasons
+    afterUpdate _ _ = createSeries6Seasons
     createdBy = seriesCreatedBy
     createdAt = seriesCreatedAt
     updatedBy = seriesUpdatedBy
