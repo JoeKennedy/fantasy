@@ -155,7 +155,10 @@ instance Yesod App where
     isAuthorized (LeagueSettingsR leagueId _)   True = requireLeagueManager leagueId
     isAuthorized (LeagueSettingsR leagueId _)  False = requirePublicOrLeagueMember leagueId
 
-    isAuthorized (SetupLeagueR _) _ = requireLoggedIn
+    -- isAuthorized (SetupLeagueR _) _ = requireLoggedIn
+    -- Temporarily disable settings up new leagues
+    -- TODO - RE-ENABLE THIS ASAP!
+    isAuthorized (SetupLeagueR _) _ = return $ Unauthorized "Creating new leagues is temporarily disabled. Sorry for the inconvenience. It will be enabled before the start of Season 7."
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
