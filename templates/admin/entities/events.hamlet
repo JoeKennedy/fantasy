@@ -2,7 +2,7 @@
     <th data-field="event-episode" data-sortable="true">
         Episode
     <th data-field="event-time" data-sortable="true">
-        Time In Episode
+        <i .fa .fa-clock-o>
     <th data-field="event-character" data-sortable="true">
         Character
     <th data-field="event-action" data-sortable="true">

@@ -2,63 +2,66 @@
 
 <div .well>
     $if null events
-        Due to developer laziness, you'll need to create an event for
-        <a href="@{AdminR $ AdminEpisodeR episodeId}">this episode
+        Due to developer laziness, you'll need to
+        <a href=@{AdminR AdminEventsR}?episode=#{toPathPiece episodeId}>create an event
+        for
+        <a href=@{AdminR $ AdminEpisodeR episodeId}>this episode
         before being able to fully utilize this page. Sorry!
     $else
-        <a href="@{AdminR $ AdminEpisodeR episodeId}">This episode
+        <a href=@{AdminR $ AdminEpisodeR episodeId}>This episode
         has not been finalized and thus can be scored on this page. Score away,
         my friend!
 
-<div #score_episode_panel .panel .panel-default>
-    <table .table .table-hover .table-striped>
-        <col .admin-score-progress />
-        <col .col-xs-2 .character-column />
-        <col .col-xs-1 .action-column />
-        <col .col-xs-2 .receiving-character-column />
-        <col .col-xs-1 .time-column />
-        <col .note-column />
-        <col .close-button />
+$if not (null events)
+    <div #score_episode_panel .panel .panel-default>
+        <table .table .table-hover .table-striped>
+            <col .admin-score-progress />
+            <col .col-xs-2 .character-column />
+            <col .col-xs-1 .action-column />
+            <col .col-xs-2 .receiving-character-column />
+            <col .col-xs-1 .time-column />
+            <col .note-column />
+            <col .close-button />
 
-        <thead>
-            <tr>
-                <th>
-                <th>Character
-                <th>Action
-                <th>Receiving Character
-                <th>
-                    <i .fa .fa-clock-o>
-                <th>Note
-                <th>
+            <thead>
+                <tr>
+                    <th>
+                    <th>Character
+                    <th>Action
+                    <th>Receiving Character
+                    <th>
+                        <i .fa .fa-clock-o>
+                    <th>Note
+                    <th>
 
-        <tfoot>
-            <tr>
-                <td colspan="7" .text-right>
-                    <div .input-group style="width: 200px;">
-                        <input #event_rows_to_add .form-control type="number" value="1" />
-                        <div .input-group-btn>
-                            <button #add_event_rows .btn .btn-primary type="button">
-                                <i .fa .fa-plus>
-                                Add Events
+            <tfoot>
+                <tr>
+                    <td colspan="7" .text-right>
+                        <div .input-group style="width: 200px;">
+                            <input #event_rows_to_add .form-control type="number" value="1" />
+                            <div .input-group-btn>
+                                <button #add_event_rows .btn .btn-primary type="button">
+                                    <i .fa .fa-plus>
+                                    Add Events
 
-        <tbody>
-            $forall (Entity eventId _, charField, actionField, recCharField, noteField, timeField) <- forms
-                <tr .vertical-align-middle>
-                    <td .text-center>
-                        <input .event-id type="hidden" value="#{toPathPiece eventId}"/>
-                        <i .success-icon .fa .fa-lg .fa-check .text-success>
-                    <td>^{fvInput $ snd charField}
-                    <td>^{fvInput $ snd actionField}
-                    <td>^{fvInput $ snd recCharField}
-                    <td>^{fvInput $ snd timeField}
-                    <td>^{fvInput $ snd noteField}
-                    <td .admin-action-buttons .text-right>
-                        <div .btn-group .btn-group-sm>
-                            <a .btn .btn-default .edit-event href="/admin/event/#{toPathPiece eventId}" title="Edit Event">
-                                <i .fa .fa-pencil>
-                            <button .btn .btn-primary .copy-event type="button" title="Copy Event">
-                                <i .fa .fa-files-o>
-                            <button .btn .btn-danger .delete-event type="button" title="Delete Event">
-                                <i .fa .fa-close>
+            <tbody>
+                $forall (Entity eventId _, charField, actionField, recCharField, noteField, timeField) <- forms
+                    <tr .vertical-align-middle>
+                        <td .text-center>
+                            <input .event-id type="hidden" value="#{toPathPiece eventId}"/>
+                            <i .success-icon .fa .fa-lg .fa-check .text-success>
+                        <td>^{fvInput $ snd charField}
+                        <td>^{fvInput $ snd actionField}
+                        <td>^{fvInput $ snd recCharField}
+                        <td>^{fvInput $ snd timeField}
+                        <td>^{fvInput $ snd noteField}
+                        <td .admin-action-buttons .text-right>
+                            <div .btn-group .btn-group-sm>
+                                <a .btn .btn-default .edit-event href=@{AdminR $ AdminEventR eventId} title="Edit Event">
+                                    <i .fa .fa-pencil>
+                                <button .btn .btn-primary .copy-event type="button" title="Copy Event">
+                                    <i .fa .fa-files-o>
+                                <button .btn .btn-danger .delete-event type="button" title="Delete Event">
+                                    <i .fa .fa-close>
 
-^{adminDeleteModal "event"}
+    ^{adminDeleteModal "event"}

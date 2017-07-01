@@ -155,10 +155,7 @@ instance Yesod App where
     isAuthorized (LeagueSettingsR leagueId _)   True = requireLeagueManager leagueId
     isAuthorized (LeagueSettingsR leagueId _)  False = requirePublicOrLeagueMember leagueId
 
-    -- isAuthorized (SetupLeagueR _) _ = requireLoggedIn
-    -- Temporarily disable settings up new leagues
-    -- TODO - RE-ENABLE THIS ASAP!
-    isAuthorized (SetupLeagueR _) _ = return $ Unauthorized "Creating new leagues is temporarily disabled. Sorry for the inconvenience. It will be enabled before the start of Season 7."
+    isAuthorized (SetupLeagueR _) _ = requireLoggedIn
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -263,9 +260,7 @@ requireJoinEmailResendable leagueId number = do
 requireWeekExists :: LeagueId -> Int -> Handler AuthResult
 requireWeekExists leagueId weekNo = do
     seasonId <- getSelectedSeasonId leagueId
-    maybeWeek <- runDB $ selectFirst [WeekSeasonId ==. Just seasonId, WeekNumber ==. weekNo] []
-    -- TODO - use the below line once the unique constraint can be added
-    -- maybeWeek <- runDB $ getBy $ UniqueWeekSeasonIdNumber seasonId weekNo
+    maybeWeek <- runDB $ getBy $ UniqueWeekSeasonIdNumber seasonId weekNo
     case maybeWeek of Just _  -> requirePublicOrLeagueMember leagueId
                       Nothing -> return $ Unauthorized "Week does not exist"
 

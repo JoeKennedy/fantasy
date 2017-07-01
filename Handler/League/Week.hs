@@ -3,9 +3,7 @@ module Handler.League.Week where
 import Import
 
 import Handler.League.Layout
-import Handler.Score         (calculateCumulativePoints)
 
-import           Data.Maybe         (fromJust)
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
 
@@ -35,11 +33,7 @@ getLeaguePlayoffsR leagueId = do
 getLeagueResultsWeekR :: LeagueId -> Int -> Handler Html
 getLeagueResultsWeekR leagueId weekNo = do
     seasonId <- getSelectedSeasonId leagueId
-    -- TODO - get rid of the following two lines
-    maybeWeek <- runDB $ selectFirst [WeekSeasonId ==. Just seasonId, WeekNumber ==. weekNo] []
-    let Entity weekId week = fromJust maybeWeek
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity weekId week <- runDB $ getBy404 $ UniqueWeekSeasonIdNumber seasonId weekNo
+    Entity weekId week <- runDB $ getBy404 $ UniqueWeekSeasonIdNumber seasonId weekNo
     games <- getGamesForWeek weekId
     performances <- getPerformancesForWeek weekId
     plays <- getPlaysForWeek weekId
@@ -146,84 +140,6 @@ leagueResultsLayout leagueId activePill widget = do
     weeks  <- runDB $ selectList [WeekLeagueId ==. leagueId] [Asc WeekNumber]
     Entity _ season <- getSelectedSeason leagueId
     leagueLayout leagueId "Results" $(widgetFile "layouts/results")
-
-
---------------
--- Creators --
---------------
-createWeekData :: Entity Episode -> LeagueId -> Handler WeekId
-createWeekData (Entity episodeId episode) leagueId = do
-    -- create week if week not already created for episode
-    alreadyCreatedWeek <- runDB $ getBy $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
-    case alreadyCreatedWeek of
-        Just (Entity weekId _) -> return weekId
-        Nothing -> do
-            let seriesId = episodeSeriesId episode
-            seasonEntity <- runDB $ getBy404 $ UniqueSeasonLeagueIdSeriesId leagueId seriesId
-            let seasonId = entityKey seasonEntity
-            weekId <- createWeek leagueId seasonEntity $ Entity episodeId episode
-            -- then, for the week:
-            teamIds <- runDB $ selectKeysList [TeamLeagueId ==. leagueId] []
-            -- create game for each team in league
-            mapM_ (createGame leagueId weekId) teamIds
-            -- create performance for each player in league
-            previousWeekIds <- runDB $ selectKeysList [ WeekNumber <. episodeNumber episode
-                                                      , WeekSeasonId ==. Just seasonId
-                                                      ] []
-            playerSeasons <- runDB $ selectList [PlayerSeasonSeasonId ==. seasonId] []
-            mapM_ (createPerformance leagueId weekId previousWeekIds) playerSeasons
-
-            return weekId
-
-createWeekData_ :: Entity Episode -> LeagueId -> Handler ()
-createWeekData_ episodeEntity leagueId = do
-    _ <- createWeekData episodeEntity leagueId
-    return ()
-
-createWeek :: LeagueId -> Entity Season -> Entity Episode -> Handler WeekId
-createWeek leagueId (Entity seasonId season) (Entity episodeId episode) = runDB $ do
-    now <- liftIO getCurrentTime
-    insert $ Week { weekLeagueId     = leagueId
-                  , weekEpisodeId    = episodeId
-                  , weekSeasonId     = Just seasonId
-                  , weekNumber       = episodeNumber episode
-                  , weekIsScored     = False
-                  , weekIsPostSeason = seasonIsInPostSeason season
-                  , weekCreatedAt    = now
-                  , weekUpdatedAt    = now
-                  }
-
-createGame :: LeagueId -> WeekId -> TeamId -> Handler ()
-createGame leagueId weekId teamId = do
-    now <- liftIO getCurrentTime
-    runDB $ insert_ $ Game { gameLeagueId  = leagueId
-                           , gameWeekId    = weekId
-                           , gameTeamId    = teamId
-                           , gamePoints    = 0
-                           , gameCreatedAt = now
-                           , gameUpdatedAt = now
-                           }
-
-createPerformance :: LeagueId -> WeekId -> [WeekId] -> Entity PlayerSeason -> Handler ()
-createPerformance leagueId weekId previousWeekIds (Entity _ playerSeason) = do
-    now <- liftIO getCurrentTime
-    let playerId = playerSeasonPlayerId playerSeason
-    maybePerformance <- runDB $ getBy $ UniquePerformanceWeekIdPlayerId weekId playerId
-    (cumulativePoints, cappedCumulativePoints) <- calculateCumulativePoints previousWeekIds playerId
-    case maybePerformance of
-        Just _ -> return ()
-        Nothing -> runDB $ insert_ $ Performance
-            { performanceLeagueId  = leagueId
-            , performanceWeekId    = weekId
-            , performancePlayerId  = playerId
-            , performanceTeamId    = playerSeasonTeamId playerSeason
-            , performanceIsStarter = playerSeasonIsStarter playerSeason
-            , performancePoints    = 0
-            , performanceCumulativePoints = cumulativePoints
-            , performanceCappedCumulativePoints = cappedCumulativePoints
-            , performanceCreatedAt = now
-            , performanceUpdatedAt = now
-            }
 
 
 -------------

@@ -4,11 +4,10 @@ import Import
 
 import Handler.Event         (getCharacterEvents)
 import Handler.League.Player (blurbPanel)
-import Handler.League.Week   (createPerformance)
+import Handler.League.Season (createPerformance)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
-import           Data.Maybe (fromJust)
 import           Text.Blaze (toMarkup)
 
 -----------
@@ -103,7 +102,7 @@ createCharacterPerformanceForWeek characterId (Entity weekId week) = do
     let leagueId = weekLeagueId week
     previousWeekIds <- runDB $ selectKeysList [WeekNumber <. weekNumber week] []
     playerEntity <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
-    let (playerId, seasonId) = (entityKey playerEntity, fromJust $ weekSeasonId week)
+    let (playerId, seasonId) = (entityKey playerEntity, weekSeasonId week)
     playerSeasonEntity <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId playerId seasonId
     createPerformance leagueId weekId previousWeekIds playerSeasonEntity
 

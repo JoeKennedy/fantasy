@@ -1,10 +1,16 @@
 <thead>
     <th data-field="series-number" data-sortable="true">
         Series Number
+    <th data-field="series-year" data-sortable="true">
+        Year
+    <th data-field="series-total-episodes" data-sortable="true">
+        Total Episodes
     <th>
 
 <tbody>
     $forall (Entity seriesId series) <- seriesList
         <tr>
             <td>#{seriesNumber series}
+            <td>#{seriesYear series}
+            <td>#{seriesTotalEpisodes series}
             ^{adminActionButtons "series" seriesId $ Just "episode"}

@@ -82,7 +82,7 @@ getAdminScoreR = do
 getAdminScoreEpisodeR :: EpisodeId -> Handler Html
 getAdminScoreEpisodeR episodeId = do
     episode <- runDB $ get404 episodeId
-    if episodeTimesFinalized episode == 0
+    if episodeTimesFinalized episode /= 0 || episodeAreEventsComplete episode
         then do
             events <- getEpisodeEvents episodeId
             adminLayout "Score" "Score" $(widgetFile "admin/scored_episode")

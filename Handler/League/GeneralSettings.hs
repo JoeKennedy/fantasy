@@ -4,8 +4,6 @@ import Import
 import Handler.League.Setup
 import Handler.League.Layout
 
-import Data.Maybe (fromJust)
-
 ----------
 -- Form --
 ----------
@@ -29,7 +27,7 @@ generalSettingsForm teamsCount currentUserId seasonId generalSettings extra = do
     now <- liftIO getCurrentTime
     let generalSettingsResult = GeneralSettings
             <$> pure (generalSettingsLeagueId generalSettings)
-            <*> pure (Just seasonId)
+            <*> pure seasonId
             <*> startersRes
             <*> rosterSizeRes
             <*> regSeasonLengthRes
@@ -52,13 +50,7 @@ getSetupGeneralSettingsR = do
     let action = SetupLeagueR SetupGeneralSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     seasonId <- getSelectedSeasonId leagueId
-    -- TODO - get rid of the below two lines
-    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
-                                                , GeneralSettingsSeasonId ==. Just seasonId
-                                                ] []
-    let Entity _ generalSettings = fromJust maybeGeneralSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
+    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId 
     (widget, enctype) <- generateFormPost $ generalSettingsForm (leagueTeamsCount league) userId seasonId generalSettings
     defaultLayout $ do
         setTitle $ leagueSetupStepTitle league action
@@ -71,13 +63,7 @@ postSetupGeneralSettingsR = do
     let action = SetupLeagueR SetupGeneralSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     seasonId <- getSelectedSeasonId leagueId
-    -- TODO - get rid of the below two lines
-    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
-                                                , GeneralSettingsSeasonId ==. Just seasonId
-                                                ] []
-    let Entity generalSettingsId generalSettings = fromJust maybeGeneralSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity generalSettingsId generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
+    Entity generalSettingsId generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
     ((result, widget), enctype) <- runFormPost $ generalSettingsForm (leagueTeamsCount league) userId seasonId generalSettings
     case result of
         FormSuccess generalSettings' -> do
@@ -94,13 +80,7 @@ getLeagueGeneralSettingsR leagueId = do
     userId <- requireAuthId
     league <- runDB $ get404 leagueId
     seasonId <- getSelectedSeasonId leagueId
-    -- TODO - get rid of the below two lines
-    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
-                                                , GeneralSettingsSeasonId ==. Just seasonId
-                                                ] []
-    let Entity _ generalSettings = fromJust maybeGeneralSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
+    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
     (widget, enctype) <- generateFormPost $ generalSettingsForm (leagueTeamsCount league) userId seasonId generalSettings
     let action = LeagueSettingsR leagueId LeagueGeneralSettingsR
     leagueSettingsLayout leagueId action enctype widget "General"
@@ -110,13 +90,7 @@ postLeagueGeneralSettingsR leagueId = do
     userId <- requireAuthId
     league <- runDB $ get404 leagueId
     seasonId <- getSelectedSeasonId leagueId
-    -- TODO - get rid of the below two lines
-    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
-                                                , GeneralSettingsSeasonId ==. Just seasonId
-                                                ] []
-    let Entity generalSettingsId generalSettings = fromJust maybeGeneralSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity generalSettingsId generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId 
+    Entity generalSettingsId generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
     ((result, widget), enctype) <- runFormPost $ generalSettingsForm (leagueTeamsCount league) userId seasonId generalSettings
     let action = LeagueSettingsR leagueId LeagueGeneralSettingsR
     case result of

@@ -12,6 +12,7 @@ seriesForm :: UserId -> Maybe Series -> Form Series
 seriesForm userId series = renderBootstrapForm $ Series
     <$> areq intField (fieldName "Number") (seriesNumber <$> series)
     <*> areq intField (fieldName "Year") (seriesYear <$> series)
+    <*> areq intField (fieldName "Total Episodes") (seriesTotalEpisodes <$> series)
     <*> createdByField userId (seriesCreatedBy <$> series)
     <*> createdAtField (seriesCreatedAt <$> series)
     <*> updatedByField userId

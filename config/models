@@ -66,12 +66,13 @@ Blurb
 Series
     number Int
     year Int default=2016
+    totalEpisodes Int default=10
     createdBy UserId default=2
     createdAt UTCTime default=now()
     updatedBy UserId default=2
     updatedAt UTCTime default=now()
     UniqueSeriesNumber number
-    -- UniqueSeriesYear year
+    UniqueSeriesYear year
     deriving Eq Ord Show
 
 Episode
@@ -145,20 +146,19 @@ Season
 Week
     leagueId LeagueId
     episodeId EpisodeId
-    seasonId SeasonId Maybe
+    seasonId SeasonId
     number Int
     isScored Bool default=false
     isPostSeason Bool default=false
     createdAt UTCTime
     updatedAt UTCTime
     UniqueWeekLeagueIdEpisodeId leagueId episodeId
-    -- UniqueWeekSeasonIdEpisodeId seasonId episodeId
-    -- UniqueWeekLeagueIdSeasonIdEpisodeId leagueId seasonId episodeId
-    -- UniqueWeekSeasonIdNumber seasonId number
+    UniqueWeekSeasonIdEpisodeId seasonId episodeId
+    UniqueWeekSeasonIdNumber seasonId number
 
 GeneralSettings
     leagueId LeagueId
-    seasonId SeasonId Maybe
+    seasonId SeasonId
     numberOfStarters Int
     rosterSize Int
     regularSeasonLength Int
@@ -170,12 +170,11 @@ GeneralSettings
     createdAt UTCTime
     updatedBy UserId
     updatedAt UTCTime
-    -- UniqueGeneralSettingsSeasonId seasonId
-    -- UniqueGeneralSettingsLeagueIdSeasonId leagueId seasonId
+    UniqueGeneralSettingsSeasonId seasonId
 
 ScoringSettings
     leagueId LeagueId
-    seasonId SeasonId Maybe
+    seasonId SeasonId
     action Action
     isUsed Bool
     points Int
@@ -186,12 +185,11 @@ ScoringSettings
     createdAt UTCTime
     updatedBy UserId
     updatedAt UTCTime
-    -- UniqueScoringSettingsSeasonIdAction seasonId action
-    -- UniqueScoringSettingsLeagueIdSeasonIdAction leagueId seasonId action
+    UniqueScoringSettingsSeasonIdAction seasonId action
 
 DraftSettings
     leagueId LeagueId
-    seasonId SeasonId Maybe
+    seasonId SeasonId
     draftType DraftType
     draftOrder DraftOrder
     draftOrderType DraftOrderType
@@ -205,8 +203,7 @@ DraftSettings
     createdAt UTCTime
     updatedBy UserId
     updatedAt UTCTime
-    -- UniqueDraftSettingsSeasonId seasonId
-    -- UniqueDraftSettingsLeagueIdSeasonId leagueId seasonId
+    UniqueDraftSettingsSeasonId seasonId
 
 Team
     leagueId LeagueId
@@ -294,7 +291,7 @@ PlayerSeason
 
 Transaction
     leagueId LeagueId
-    seasonId SeasonId Maybe
+    seasonId SeasonId
     type TransactionType
     status TransactionStatus
     failureReason Text Maybe

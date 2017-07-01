@@ -5,8 +5,6 @@ import Import
 import Handler.League.Setup
 import Handler.League.Layout
 
-import Data.Maybe (fromJust)
-
 ----------
 -- Form --
 ----------
@@ -35,7 +33,7 @@ draftSettingsForm currentUserId leagueId seasonId draftSettings extra = do
     now <- liftIO getCurrentTime
     let draftSettingsResult = DraftSettings
             <$> pure leagueId
-            <*> pure (Just seasonId)
+            <*> pure seasonId
             <*> draftTypeRes
             <*> draftOrderRes
             <*> draftOrderTypeRes
@@ -61,12 +59,7 @@ getSetupDraftSettingsR = do
     let action = SetupLeagueR SetupDraftSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     seasonId <- getSelectedSeasonId leagueId
-    -- TODO - get rid of the below line
-    maybeDraftSettings <- runDB $ selectFirst [ DraftSettingsLeagueId ==. leagueId
-                                              , DraftSettingsSeasonId ==. Just seasonId
-                                              ] []
-    -- TODO - use the below line once the unique constraint can be added
-    -- maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsLeagueIdSeasonId leagueId seasonId
+    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId seasonId
     (widget, enctype) <- generateFormPost $ draftSettingsForm userId leagueId seasonId $ map entityVal maybeDraftSettings
     defaultLayout $ do
         setTitle $ leagueSetupStepTitle league action
@@ -79,12 +72,7 @@ postSetupDraftSettingsR = do
     let action = SetupLeagueR SetupDraftSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     seasonId <- getSelectedSeasonId leagueId
-    -- TODO - remove the below line
-    maybeDraftSettings <- runDB $ selectFirst [ DraftSettingsLeagueId ==. leagueId
-                                              , DraftSettingsSeasonId ==. Just seasonId
-                                              ] []
-    -- TODO - use the below line once the unique constraint can be added
-    -- maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsLeagueIdSeasonId leagueId seasonId
+    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId seasonId
     ((result, widget), enctype) <- runFormPost $ draftSettingsForm userId leagueId seasonId $ map entityVal maybeDraftSettings
     case result of
         FormSuccess draftSettings -> do
@@ -101,12 +89,7 @@ getLeagueDraftSettingsR :: LeagueId -> Handler Html
 getLeagueDraftSettingsR leagueId = do
     userId <- requireAuthId
     seasonId <- getSelectedSeasonId leagueId
-    maybeDraftSettings <- runDB $ selectFirst [ DraftSettingsLeagueId ==. leagueId
-                                              , DraftSettingsSeasonId ==. Just seasonId
-                                              ] []
-    let draftSettings = fromJust maybeDraftSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueIdSeasonId leagueId seasonId
+    draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
     (widget, enctype) <- generateFormPost $ draftSettingsForm userId leagueId seasonId $ Just $ entityVal draftSettings
     let action = LeagueSettingsR leagueId LeagueDraftSettingsR
     leagueSettingsLayout leagueId action enctype widget "Draft"
@@ -115,12 +98,7 @@ postLeagueDraftSettingsR :: LeagueId -> Handler Html
 postLeagueDraftSettingsR leagueId = do
     userId <- requireAuthId
     seasonId <- getSelectedSeasonId leagueId
-    maybeDraftSettings <- runDB $ selectFirst [ DraftSettingsLeagueId ==. leagueId
-                                              , DraftSettingsSeasonId ==. Just seasonId
-                                              ] []
-    let Entity draftSettingsId draftSettings = fromJust maybeDraftSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity draftSettingsId draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsLeagueIdSeasonId leagueId seasonId
+    Entity draftSettingsId draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
     ((result, widget), enctype) <- runFormPost $ draftSettingsForm userId leagueId seasonId $ Just draftSettings
     let action = LeagueSettingsR leagueId LeagueDraftSettingsR
     case result of

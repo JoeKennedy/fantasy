@@ -20,9 +20,14 @@ leagueLayout leagueId activeTab widget = do
     leagues <- getLeaguesByUser maybeUserId
     Entity selectedSeasonId selectedSeason <- getSelectedSeason leagueId
     seasons <- runDB $ selectList [SeasonLeagueId ==. leagueId] [Desc SeasonId]
+    let settingsRoute = case maybeTeam of
+            Just (Entity _ team) -> LeagueTeamSettingsR leagueId $ teamNumber team
+            Nothing -> LeagueSettingsR leagueId LeagueEditSettingsR
     defaultLayout $ do
         setTitle $ toMarkup $ leagueLayoutTitle league activeTab
         $(widgetFile "layouts/league")
+        where activeClass :: Text -> Text 
+              activeClass tabName = if tabName == activeTab then "active" else ""
 
 leagueLayoutTitle :: League -> Text -> Text
 leagueLayoutTitle league subtitle = leagueName league ++ " | " ++ subtitle
@@ -68,7 +73,9 @@ isLeagueManager Nothing _ = False
 
 canEnterDraftResults :: Maybe UserId -> League -> Season -> Bool
 canEnterDraftResults maybeUserId league season =
-    isLeagueManager maybeUserId league && (not $ seasonIsDraftComplete season)
+    isLeagueManager maybeUserId league &&
+        (not $ seasonIsDraftComplete season) &&
+        (not $ seasonIsSeasonComplete season)
 
 isTeamOwner :: Maybe UserId -> Maybe Team -> Bool
 isTeamOwner (Just userId) (Just team) = Just userId == teamOwnerId team

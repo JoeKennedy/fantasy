@@ -14,7 +14,6 @@ import Handler.League.Week        (FullPerformance, getPerformancesForGame)
 import Handler.Score              (getGamesForTeam)
 
 import Data.List  ((!!))
-import Data.Maybe (fromJust)
 import Text.Blaze (toMarkup)
 
 ----------
@@ -90,13 +89,7 @@ getSetupTeamsSettingsR = do
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamNumber]
     Entity seasonId season <- getSelectedSeason leagueId
-    -- TODO - get rid of the below two lines
-    maybeDraftSettings <- runDB $ selectFirst [ DraftSettingsLeagueId ==. leagueId
-                                              , DraftSettingsSeasonId ==. Just seasonId
-                                              ] []
-    let Entity _ draftSettings = fromJust maybeDraftSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
+    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
     (widget, enctype) <- generateFormPost $ teamSettingsForm userId league season draftSettings $ map entityVal teams
     defaultLayout $ do
         setTitle $ leagueSetupStepTitle league action
@@ -110,13 +103,7 @@ postSetupTeamsSettingsR = do
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamNumber]
     Entity seasonId season <- getSelectedSeason leagueId
-    -- TODO - get rid of the below two lines
-    maybeDraftSettings <- runDB $ selectFirst [ DraftSettingsLeagueId ==. leagueId
-                                              , DraftSettingsSeasonId ==. Just seasonId
-                                              ] []
-    let Entity _ draftSettings = fromJust maybeDraftSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
+    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
     ((result, widget), enctype) <- runFormPost $ teamSettingsForm userId league season draftSettings $ map entityVal teams
     case result of
         FormSuccess teams' -> do
@@ -149,16 +136,10 @@ getLeagueTeamR leagueId number = do
     joinEmailResendable <- isJoinEmailResendable maybeUserId league $ Entity teamId team
     teamPlayers <- getTeamPlayers seasonId $ Just teamId
     players <- playersWithButtons leagueId season teamPlayers
-    -- TODO - get rid of the below two lines
-    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
-                                                , GeneralSettingsSeasonId ==. Just seasonId
-                                                ] []
-    let Entity _ generalSettings = fromJust maybeGeneralSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId 
-    transactions <- getSuccessfulTransactions leagueId (Just teamId) Nothing
-    tradeProposals <- getRequestedTransactions leagueId (Just teamId) Trade
-    waiverClaims <- getRequestedTransactions leagueId (Just teamId) Claim
+    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId 
+    transactions <- getSuccessfulTransactions seasonId (Just teamId) Nothing
+    tradeProposals <- getRequestedTransactions seasonId (Just teamId) Trade
+    waiverClaims <- getRequestedTransactions seasonId (Just teamId) Claim
     currentTeamPlayers <- getTeamPlayers seasonId maybeUserTeamId
     myPlayers <- playersWithButtons leagueId season currentTeamPlayers
     weeks <- runDB $ selectList [WeekLeagueId ==. leagueId] [Asc WeekNumber]
@@ -266,13 +247,7 @@ editTeamSettings leagueId maybeTeamNumber pillName = do
     league <- runDB $ get404 leagueId
     teams <- getTeamsForSettings leagueId maybeTeamNumber
     Entity seasonId season <- getSelectedSeason leagueId
-    -- TODO - get rid of the below two lines
-    maybeDraftSettings <- runDB $ selectFirst [ DraftSettingsLeagueId ==. leagueId
-                                              , DraftSettingsSeasonId ==. Just seasonId
-                                              ] []
-    let Entity _ draftSettings = fromJust maybeDraftSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
+    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
     (widget, enctype) <- generateFormPost $ teamSettingsForm userId league season draftSettings $ map entityVal teams
     let action = teamSettingsAction leagueId maybeTeamNumber
     leagueSettingsLayout leagueId action enctype widget pillName
@@ -283,13 +258,7 @@ updateTeamSettings leagueId maybeTeamNumber pillName = do
     league <- runDB $ get404 leagueId
     teams <- getTeamsForSettings leagueId maybeTeamNumber
     Entity seasonId season <- getSelectedSeason leagueId
-    -- TODO - get rid of the below two lines
-    maybeDraftSettings <- runDB $ selectFirst [ DraftSettingsLeagueId ==. leagueId
-                                              , DraftSettingsSeasonId ==. Just seasonId
-                                              ] []
-    let Entity _ draftSettings = fromJust maybeDraftSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
+    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
     ((result, widget), enctype) <- runFormPost $ teamSettingsForm userId league season draftSettings $ map entityVal teams
     let action = teamSettingsAction leagueId maybeTeamNumber
     case result of

@@ -2,10 +2,10 @@ module Handler.Episode where
 
 import Import
 
-import Handler.Event       (getEpisodeEvents, incrementCharacterAppearances)
-import Handler.League      (determineIfSeasonIsComplete, determineIfTradeDeadlineHasPassed)
-import Handler.League.Week (createWeekData_)
-import Handler.Score       (finalizeWeek, upsertPlays)
+import Handler.Event         (getEpisodeEvents, incrementCharacterAppearances)
+import Handler.League        (determineIfSeasonIsComplete, determineIfTradeDeadlineHasPassed)
+import Handler.League.Season (createWeekData_)
+import Handler.Score         (finalizeWeek, upsertPlays)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.))
@@ -58,9 +58,8 @@ finalizeEpisode episodeId = do
     backgroundHandler $ do
         incrementEpisodeTimesFinalized episodeId userId now
         upsertEpisodeAppearanceEvents episodeId userId now
-
-        leagues <- runDB $ selectList [LeagueIsActive ==. True] [Asc LeagueId]
-        forM_ leagues $ finalizeWeek episodeId userId now
+        leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
+        forM_ leagueIds $ finalizeWeek episodeId userId
 
 incrementEpisodeTimesFinalized :: EpisodeId -> UserId -> UTCTime -> Handler ()
 incrementEpisodeTimesFinalized episodeId userId now =

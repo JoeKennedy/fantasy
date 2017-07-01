@@ -35,13 +35,7 @@ getLeaguePlayersR leagueId = do
     league <- runDB $ get404 leagueId
     maybeTeamId <- maybeAuthTeamId leagueId
     Entity seasonId season <- getSelectedSeason leagueId
-    -- TODO - get rid of the below two lines
-    maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
-                                                , GeneralSettingsSeasonId ==. Just seasonId
-                                                ] []
-    let Entity _ generalSettings = fromJust maybeGeneralSettings
-    -- TODO - use the below line once the unique constraint can be added
-    -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
+    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
     leaguePlayers <- getPlayers seasonId
     allPlayers <- playersWithButtons leagueId season leaguePlayers
     currentTeamPlayers <- getTeamPlayers seasonId maybeTeamId
@@ -79,13 +73,7 @@ postLeaguePlayerStartR leagueId characterId = do
     transactionId <- singlePlayerTransaction playerSeason Start
     didAutoFail <- autoFailStartTransaction leagueId transactionId player playerSeason
     if didAutoFail then return () else do
-        -- TODO - get rid of the below two lines
-        maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
-                                                    , GeneralSettingsSeasonId ==. Just seasonId
-                                                    ] []
-        let Entity _ generalSettings = fromJust maybeGeneralSettings
-        -- TODO - use the below line once the unique constraint can be added
-        -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
+        Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
         let teamId = fromJust $ playerSeasonTeamId playerSeason
         Entity _ teamSeason <- runDB $ getBy404 $ UniqueTeamSeasonTeamIdSeasonId teamId seasonId
         character <- runDB $ get404 characterId
@@ -116,13 +104,7 @@ postLeaguePlayerBenchR leagueId characterId = do
     if didAutoFail then return () else do
         now <- liftIO getCurrentTime
         userId <- requireAuthId
-        -- TODO - get rid of the below two lines
-        maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
-                                                    , GeneralSettingsSeasonId ==. Just seasonId
-                                                    ] []
-        let Entity _ generalSettings = fromJust maybeGeneralSettings
-        -- TODO - use the below line once the unique constraint can be added
-        -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
+        Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
         runDB $ update playerSeasonId [ PlayerSeasonIsStarter =. True
                                       , PlayerSeasonUpdatedAt =. now
                                       , PlayerSeasonUpdatedBy =. userId ]
@@ -150,13 +132,7 @@ postLeaguePlayerClaimR leagueId characterIdToAdd characterIdToDrop = do
     didAutoFail <- autoFailClaimTransaction leagueId transactionId playerToAdd playerToAddSeason playerToDrop playerToDropSeason
     if didAutoFail then return () else do
         transaction <- runDB $ get404 transactionId
-        -- TODO - get rid of the below two lines
-        maybeGeneralSettings <- runDB $ selectFirst [ GeneralSettingsLeagueId ==. leagueId
-                                                    , GeneralSettingsSeasonId ==. Just seasonId
-                                                    ] []
-        let Entity _ generalSettings = fromJust maybeGeneralSettings
-        -- TODO - use the below line once the unique constraint can be added
-        -- Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
+        Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
         let day = if transactionCreatedAt transaction == transactionProcessableAt transaction
                       then ""
                       else " " ++ (dayOfWeekToText $ generalSettingsWaiverPeriodInDays generalSettings + 1)
@@ -212,7 +188,6 @@ blurbPanel maybeUser (Entity blurbId blurb) = $(widgetFile "blurb_panel")
 -------------
 -- Queries --
 -------------
--- TODO - FIX THESE QUERIES
 getPlayers :: SeasonId -> Handler [FullPlayer]
 getPlayers seasonId = runDB
     $ E.select

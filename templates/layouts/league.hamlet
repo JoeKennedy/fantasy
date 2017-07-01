@@ -10,63 +10,62 @@
 
     <div #league_navbar .collapse .navbar-collapse>
       <ul .nav .navbar-nav .navbar-left>
-        <li>
-          <a .tab-name href="@{LeagueR leagueId}">League
-        <li>
-          $maybe Entity _ team <- maybeTeam
-            <a .tab-name href="@{LeagueTeamR leagueId $ teamNumber team}">My House
-        <li>
-          <a .tab-name href="@{LeaguePlayersR leagueId}">Characters
-        <li>
-          <a .tab-name href="@{LeagueResultsR leagueId}">Results
-        <li>
-          <a .tab-name href="@{LeagueTransactionsR leagueId}">Transactions
+        <li class=#{activeClass "League"}>
+          <a .tab-name href=@{LeagueR leagueId}>League
+        $maybe Entity _ team <- maybeTeam
+          <li class=#{activeClass "My House"}>
+            <a .tab-name href=@{LeagueTeamR leagueId $ teamNumber team}>
+              My House
+        <li class=#{activeClass "Characters"}>
+          <a .tab-name href=@{LeaguePlayersR leagueId}>
+            Characters
+        <li class=#{activeClass "Results"}>
+          <a .tab-name href=@{LeagueResultsR leagueId}>
+            Results
+        <li class=#{activeClass "Transactions"}>
+          <a .tab-name href=@{LeagueTransactionsR leagueId}>
+            Transactions
 
         $maybe _ <- maybeUserId
-          <li .dropdown .dropdown-hover>
-            $maybe Entity _ team <- maybeTeam
-              <a .tab-name href="@{LeagueTeamSettingsR leagueId $ teamNumber team}">
-                Settings
-                <span .fa .fa-caret-down>
-            $nothing
-              <a .tab-name href="@{LeagueSettingsR leagueId LeagueEditSettingsR}">
-                Settings
-                <span .fa .fa-caret-down>
+          <li .dropdown .dropdown-hover class=#{activeClass "Settings"}>
+            <a .tab-name href=@{settingsRoute}>
+              Settings
+              <span .fa .fa-caret-down>
             <ul .dropdown-menu>
               $maybe Entity _ team <- maybeTeam
                 <li>
-                  <a href="@{LeagueTeamSettingsR leagueId $ teamNumber team}">My House
+                  <a href=@{LeagueTeamSettingsR leagueId $ teamNumber team}>My House
                 <li .divider role="separator">
               <li>
-                <a href="@{LeagueSettingsR leagueId LeagueEditSettingsR}">League
+                <a href=@{LeagueSettingsR leagueId LeagueEditSettingsR}>League
               <li>
-                <a href="@{LeagueSettingsR leagueId LeagueGeneralSettingsR}">General
+                <a href=@{LeagueSettingsR leagueId LeagueGeneralSettingsR}>General
               <li>
-                <a href="@{LeagueSettingsR leagueId LeagueScoringSettingsR}">Scoring
+                <a href=@{LeagueSettingsR leagueId LeagueScoringSettingsR}>Scoring
               <li>
-                <a href="@{LeagueSettingsR leagueId LeagueDraftSettingsR}">Draft
+                <a href=@{LeagueSettingsR leagueId LeagueDraftSettingsR}>Draft
               <li>
-                <a href="@{LeagueSettingsR leagueId LeagueTeamsSettingsR}">Houses
+                <a href=@{LeagueSettingsR leagueId LeagueTeamsSettingsR}>Houses
 
-        <li .dropdown .dropdown-hover>
-          <a .tab-name href="@{LeagueTeamsR leagueId}">
+        <li .dropdown .dropdown-hover class=#{activeClass "Houses"}>
+          <a .tab-name href=@{LeagueTeamsR leagueId}>
             Houses
             <span .fa .fa-caret-down>
           <ul .dropdown-menu>
             $forall Entity _ team <- teams
               <li>
-                <a href="@{LeagueTeamR leagueId $ teamNumber team}">#{teamName team}
+                <a href=@{LeagueTeamR leagueId $ teamNumber team}>#{teamName team}
 
       <ul .nav .navbar-nav .navbar-right>
         <li .dropdown .dropdown-hover>
           $if not (null leagues)
-            <a href="#">
+            <a href=#">
               All My Leagues
               <span .fa .fa-caret-down>
             <ul .dropdown-menu>
               $forall Entity leagueId league <- leagues
                 <li>
-                  <a href="@{LeagueR leagueId}">#{leagueName league}
+                  <a href=@{LeagueR leagueId}>#{leagueName league}
 
       $if length seasons > 1
         <div .btn-group .navbar-right>
@@ -77,11 +76,11 @@
             $forall Entity seasonId season <- seasons
               $if seasonId /= selectedSeasonId
                 <li>
-                  <a href="#">#{seasonYear season}
+                  <a href=#">#{seasonYear season}
 
       $if canEnterDraftResults maybeUserId league selectedSeason
         <div .nav .navbar-nav .navbar-right>
-          <a .btn .btn-primary .navbar-btn href="@{LeagueDraftR leagueId}">
+          <a .btn .btn-primary .navbar-btn href=@{LeagueDraftR leagueId}>
             Enter Draft Results!
 
 <div .league-container>
