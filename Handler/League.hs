@@ -3,11 +3,9 @@ module Handler.League where
 import Import
 
 import Handler.League.Layout
-import Handler.League.Season      (createLeagueSeason)
+import Handler.League.Season (createLeagueSeason)
 import Handler.League.Setup
-import Handler.League.Transaction (cancelAllTrades, cancelAllTransactionRequests)
 
-import Data.Maybe        (fromJust)
 import Network.Mail.Mime
 import System.Random     (newStdGen)
 
@@ -77,6 +75,11 @@ postLeagueCancelR leagueId = do
                             , LeagueUpdatedBy =. userId
                             , LeagueUpdatedAt =. now
                             ]
+    runDB $ updateWhere [ SeasonLeagueId ==. leagueId ]
+                        [ SeasonIsActive  =. False
+                        , SeasonUpdatedBy =. userId
+                        , SeasonUpdatedAt =. now
+                        ]
     setMessage "Your league has been successfully canceled"
 
 getSetupNewLeagueR :: Handler Html
@@ -158,49 +161,4 @@ leagueListGroupItem Nothing scoringType
     | isDisabledScoringType scoringType =
         [whamlet|<div .list-group-item .disabled>^{scoringTypeWidget scoringType}|]
     | otherwise = [whamlet|<a .list-group-item href="#">^{scoringTypeWidget scoringType}|]
-
-
---------------------
--- Trade Deadline --
---------------------
-determineIfTradeDeadlineHasPassed :: Episode -> LeagueId -> Handler ()
-determineIfTradeDeadlineHasPassed episode leagueId = do
-    Entity seasonId season <- getSelectedSeason leagueId
-    if seasonIsAfterTradeDeadline season then return () else do
-        isBeforeTradeDeadline <- weekNumberBeforeTradeDeadline leagueId episode
-        if isBeforeTradeDeadline then return () else do
-            maybeAdmin <- runDB $ selectFirst [UserIsAdmin ==. True] [Asc UserId]
-            let Entity adminUserId _ = fromJust maybeAdmin
-            now <- liftIO getCurrentTime
-            runDB $ update seasonId [ SeasonIsAfterTradeDeadline =. True
-                                    , SeasonUpdatedBy =. adminUserId
-                                    , SeasonUpdatedAt =. now
-                                    ]
-            cancelAllTrades adminUserId seasonId
-
-weekNumberBeforeTradeDeadline :: LeagueId -> Episode -> Handler Bool
-weekNumberBeforeTradeDeadline leagueId episode = runDB $ do
-    let (weekNo, seriesId) = (episodeNumber episode, episodeSeriesId episode)
-    Entity seasonId _ <- getBy404 $ UniqueSeasonLeagueIdSeriesId leagueId seriesId
-    Entity _ generalSettings <- getBy404 $ UniqueGeneralSettingsSeasonId seasonId
-    return $ weekNo < generalSettingsTradeDeadlineWeek generalSettings
-
-
----------------------
--- Complete Season --
----------------------
-determineIfSeasonIsComplete :: Episode -> LeagueId -> Handler ()
-determineIfSeasonIsComplete episode leagueId = do
-    series <- runDB $ get404 $ episodeSeriesId episode
-    if episodeNumber episode /= seriesTotalEpisodes series then return () else do
-        maybeAdmin <- runDB $ selectFirst [UserIsAdmin ==. True] [Asc UserId]
-        let Entity adminUserId _ = fromJust maybeAdmin
-        let seriesId = episodeSeriesId episode
-        Entity seasonId _ <- runDB $ getBy404 $ UniqueSeasonLeagueIdSeriesId leagueId seriesId
-        now <- liftIO getCurrentTime
-        runDB $ update seasonId [ SeasonIsSeasonComplete =. True
-                                , SeasonUpdatedBy =. adminUserId
-                                , SeasonUpdatedAt =. now
-                                ]
-        cancelAllTransactionRequests adminUserId seasonId
 

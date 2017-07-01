@@ -3,7 +3,6 @@ module Handler.Episode where
 import Import
 
 import Handler.Event         (getEpisodeEvents, incrementCharacterAppearances)
-import Handler.League        (determineIfSeasonIsComplete, determineIfTradeDeadlineHasPassed)
 import Handler.League.Season (createWeekData_)
 import Handler.Score         (finalizeWeek, upsertPlays)
 
@@ -127,10 +126,8 @@ airEpisode = do
         Nothing -> return ()
         Just (Entity episodeId episode) -> do
             runDB $ update episodeId [EpisodeStatus =. Airing]
-            leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
-            mapM_ (createWeekData_ $ Entity episodeId episode) leagueIds
-            mapM_ (determineIfSeasonIsComplete episode) leagueIds
-            mapM_ (determineIfTradeDeadlineHasPassed episode) leagueIds
+            seasons <- runDB $ selectList [SeasonIsActive ==. True] [Asc SeasonId]
+            mapM_ (createWeekData_ $ Entity episodeId episode) seasons
 
 
 -------------

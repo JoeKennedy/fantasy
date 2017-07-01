@@ -52,7 +52,7 @@ finalizeWeek episodeId userId leagueId = do
     calculateNextWeekCumulativePoints week
     determineWaiverOrder week userId
     moveSeasonToPostSeason week userId
-    markWeekAsScored (Entity weekId week)
+    markWeekAsScored $ Entity weekId week
     -- TODO - Implement the below function and un-comment the below line
     -- emailTeamOwners episode -- Email only if league draft is complete
 
@@ -347,6 +347,6 @@ userName (Entity userId user) =
 isLastRegularSeasonWeek :: Week -> Handler Bool
 isLastRegularSeasonWeek week = do
     let seasonId = weekSeasonId week
-    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId 
+    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
     return $ weekNumber week == generalSettingsRegularSeasonLength generalSettings
 
