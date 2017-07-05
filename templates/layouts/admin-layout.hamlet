@@ -40,7 +40,7 @@
         <h3>#{title}
 
       $forall (status, message) <- messages
-        <div #message .alert .alert-dismissible class="#{alertClass status}">
+        <div #admin_message .alert .alert-dismissible class=#{alertClass status}>
           <button .close type="button" data-dismiss="alert">
             <i .fa .fa-times>
           #{message}

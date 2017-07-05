@@ -19,6 +19,9 @@ possibleTeamCounts = [4..12]
 toOptions :: (Show a) => [a] -> [(Text, a)]
 toOptions valuesList = map (\value -> (pack $ show value, value)) valuesList
 
+totalWeeksError :: a
+totalWeeksError = error "Total weeks must be 7 or 10"
+
 ----------------------
 -- General Settings --
 ----------------------
@@ -32,17 +35,23 @@ possibleNumbersOfStarters teamsCount = [1..fst $ maxRosterSize teamsCount]
 possibleRosterSizes :: Int -> [Int]
 possibleRosterSizes teamsCount = [2..snd $ maxRosterSize teamsCount]
 
-possibleRegularSeasonLengths :: [Int]
-possibleRegularSeasonLengths = [7..10]
+possibleRegularSeasonLengths :: Int -> [Int]
+possibleRegularSeasonLengths 10 = [7..10]
+possibleRegularSeasonLengths  7 = [5..7]
+possibleRegularSeasonLengths  _ = totalWeeksError
 
-possiblePlayoffLengths :: [Int]
-possiblePlayoffLengths = [0..3]
+possiblePlayoffLengths :: Int -> [Int]
+possiblePlayoffLengths 10 = [0..3]
+possiblePlayoffLengths  7 = [0..7]
+possiblePlayoffLengths  _ = totalWeeksError
 
 possibleNumbersOfTeamsInPlayoffs :: Int -> [Int]
 possibleNumbersOfTeamsInPlayoffs teamsCount = [2..teamsCount]
 
-possibleTradeDeadlineWeeks :: [Int]
-possibleTradeDeadlineWeeks = [7..10]
+possibleTradeDeadlineWeeks :: Int -> [Int]
+possibleTradeDeadlineWeeks 10 = [7..10]
+possibleTradeDeadlineWeeks  7 = [5..7]
+possibleTradeDeadlineWeeks  _ = totalWeeksError
 
 possibleWaiverPeriodsInDays :: [Int]
 possibleWaiverPeriodsInDays = [0..3]
@@ -64,23 +73,27 @@ defaultRosterSize 11 = (2, 3) -- 1 on bench, 33 total on teams
 defaultRosterSize 12 = (2, 3) -- 1 on bench, 36 total on teams
 defaultRosterSize _  = error "This roster size is not allowed"
 
--- takes in number of teams
+-- takes in total number of weeks in season and number of teams
 -- returns (regular season length, playoff length)
-defaultSeasonLength :: Int -> (Int, Int)
-defaultSeasonLength teamsCount
+defaultSeasonLength :: Int -> Int -> (Int, Int)
+defaultSeasonLength 10 teamsCount
     | teamsCount < 6  = (9, 1)
     | teamsCount < 11 = (8, 2)
     | otherwise       = (7, 3)
+defaultSeasonLength 7 _ = (7, 0)
+defaultSeasonLength _ _ = totalWeeksError
 
--- takes in number of teams
+-- takes in total number of weeks in season and number of teams
 -- returns number of teams that make the playoffs
-defaultNumberOfTeamsInPlayoffs :: Int -> Int
-defaultNumberOfTeamsInPlayoffs teamsCount = teamsCount `quot` 2
+defaultNumberOfTeamsInPlayoffs :: Int -> Int -> Int
+defaultNumberOfTeamsInPlayoffs 10 teamsCount = teamsCount `quot` 2
+defaultNumberOfTeamsInPlayoffs 7 _ = 0
+defaultNumberOfTeamsInPlayoffs _ _ = totalWeeksError
 
--- takes in number of teams
+-- takes in total number of weeks in season and number of teams
 -- returns last week of regular season
-defaultTradeDeadlineWeek :: Int -> Int
-defaultTradeDeadlineWeek teamsCount = fst $ defaultSeasonLength teamsCount
+defaultTradeDeadlineWeek :: Int -> Int -> Int
+defaultTradeDeadlineWeek totalWeeks teamsCount = fst $ defaultSeasonLength totalWeeks teamsCount
 
 defaultWaiverPeriodInDays :: Int
 defaultWaiverPeriodInDays = 1

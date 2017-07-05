@@ -16,18 +16,32 @@
                     $nothing
                         <a href=@{LeaguePlayersR leagueId}>
                             Free Agent
+
             <li .list-group-item>
                 <h6 .list-group-item-heading>Status
                 <p .list-group-item-text>
                     #{toPathPiece $ characterStatus character}
+
             <li .list-group-item>
-                <h6 .list-group-item-heading>Season 6 Points
+                <h6 .list-group-item-heading>Points This Season
                 <p .list-group-item-text>
                     #{displayRational $ playerSeasonTotalPoints playerSeason}
+
             <li .list-group-item>
-                <h6 .list-group-item-heading>Season 5 Points
-                <p .list-group-item-text>
-                    #{characterPointsLastSeason character}
+                <h6 .list-group-item-heading>Points Last Season
+                $maybe lastPlayerSeason <- maybeLastPlayerSeason
+                  <p .list-group-item-text>
+                      #{displayRational $ playerSeasonTotalPoints lastPlayerSeason}
+                $nothing
+                  <p .list-group-item-text>
+                      #{characterPointsLastSeason character}
+
+            <!-- TODO - uncomment this once season 7 episode 1 has aired -->
+            <!-- <li .list-group-item> -->
+            <!--     <h6 .list-group-item-heading>Points for Weighting -->
+            <!--     <p .list-group-item-text> -->
+            <!--         #{displayRational $ performanceCappedCumulativePoints performance} -->
+
             <li .list-group-item>
                 <h6 .list-group-item-heading>Bio
                 <p .list-group-item-text>#{characterBio character}

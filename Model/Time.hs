@@ -22,7 +22,7 @@ displayAirDate :: UTCTime -> String
 displayAirDate utcTime = formatTime defaultTimeLocale "%B %e, %Y" $ utcTimeToEasternTime utcTime
 
 displayUTCDate :: UTCTime -> String
-displayUTCDate = formatTime defaultTimeLocale "%a, %b %e"
+displayUTCDate = formatTime defaultTimeLocale "%a, %b %e, %Y"
 
 displayUTCTime :: UTCTime -> String
 displayUTCTime = formatTime defaultTimeLocale "%a, %b %e %l:%M %p %Z"

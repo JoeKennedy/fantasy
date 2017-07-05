@@ -3,6 +3,7 @@ module Handler.Character where
 import Import
 
 import Handler.Event         (getCharacterEvents)
+import Handler.Score         (getPreviousWeeks)
 import Handler.League.Player (blurbPanel)
 import Handler.League.Season (createPerformance)
 
@@ -94,17 +95,19 @@ createCharacterPerformancesIfNecessary characterId = do
 
 createCharacterPerformances :: CharacterId -> Handler ()
 createCharacterPerformances characterId = do
-    weeks <- runDB $ selectList [] [Asc WeekId]
+    seasonIds <- runDB $ selectKeysList [SeasonIsActive ==. True] [Asc SeasonLeagueId]
+    weeks <- runDB $ selectList [WeekSeasonId <-. seasonIds] [Asc WeekLeagueId]
     mapM_ (createCharacterPerformanceForWeek characterId) weeks
 
 createCharacterPerformanceForWeek :: CharacterId -> Entity Week -> Handler ()
 createCharacterPerformanceForWeek characterId (Entity weekId week) = do
+    episode <- runDB $ get404 $ weekEpisodeId week
+    previousWeeks <- getPreviousWeeks week episode
     let leagueId = weekLeagueId week
-    previousWeekIds <- runDB $ selectKeysList [WeekNumber <. weekNumber week] []
     playerEntity <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
     let (playerId, seasonId) = (entityKey playerEntity, weekSeasonId week)
     playerSeasonEntity <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId playerId seasonId
-    createPerformance leagueId weekId previousWeekIds playerSeasonEntity
+    createPerformance leagueId weekId (map entityKey previousWeeks) playerSeasonEntity
 
 
 -------------

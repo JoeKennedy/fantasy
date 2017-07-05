@@ -11,6 +11,18 @@ import Data.Random.RVar
 import Data.Random.Source.DevRandom
 import Network.Mail.Mime
 import System.Random                (newStdGen)
+import Text.Blaze                   (toMarkup)
+
+------------
+-- Routes --
+------------
+getLeagueSeasonR :: LeagueId -> Int -> Handler ()
+getLeagueSeasonR leagueId year = do
+    seasonEntity <- runDB $ getBy404 $ UniqueSeasonLeagueIdYear leagueId year
+    _ <- setSelectedSeason leagueId $ Just $ entityKey seasonEntity
+    setMessage $ toMarkup $ "Successfully switched to " ++ toPathPiece year ++ " season"
+    redirectUltDest $ LeagueR leagueId
+
 
 -------------
 -- Seasons --
@@ -26,7 +38,7 @@ updateLeagueSeasonsIfRelevent oldSeries (Entity seriesId series) =
 
 createLeagueSeasons :: Entity Series -> Handler ()
 createLeagueSeasons seriesEntity = do
-    leagues <- runDB $ selectList [] [Asc LeagueId]
+    leagues <- runDB $ selectList [LeagueIsActive ==. True] [Asc LeagueId]
     let userId = seriesCreatedBy $ entityVal seriesEntity
     forM_ leagues $ createLeagueSeason userId seriesEntity
 
@@ -36,14 +48,15 @@ createLeagueSeason userId (Entity seriesId series) (Entity leagueId league) = do
     if isJust maybeSeason then return () else do
         seasonEntity <- runDB $ do
             let leagueEntity = Entity leagueId league
-            Entity seasonId season <- createSeason userId (Entity seriesId series) leagueId
+            seasonEntity <- createSeason userId (Entity seriesId series) leagueId
+            let seasonId = entityKey seasonEntity
             inactivateOtherSeasons userId seasonId leagueId
             createTeamInfo userId seasonId leagueEntity
 
             maybePreviousSeasonId <- selectPreviousSeasonId leagueId series
-            createGeneralSettings userId seasonId leagueEntity maybePreviousSeasonId
+            createGeneralSettings userId seasonEntity leagueEntity maybePreviousSeasonId
             mapM_ (createScoringSettingsRow userId seasonId leagueEntity maybePreviousSeasonId) allActions
-            return $ Entity seasonId season
+            return seasonEntity
 
         backgroundHandler $ do
             runDB $ createPlayerInfo userId (entityKey seasonEntity) leagueId
@@ -228,19 +241,21 @@ createPlayerSeason userId leagueId seasonId playerId = do
 ----------------------
 -- General Settings --
 ----------------------
-createGeneralSettings :: UserId -> SeasonId -> Entity League -> Maybe SeasonId -> ReaderT SqlBackend Handler ()
-createGeneralSettings userId seasonId (Entity leagueId league) maybePreviousSeasonId = do
+createGeneralSettings :: UserId -> Entity Season -> Entity League -> Maybe SeasonId -> ReaderT SqlBackend Handler ()
+createGeneralSettings userId (Entity seasonId season) (Entity leagueId league) maybePreviousSeasonId = do
     now <- liftIO getCurrentTime
+    series <- get404 $ seasonSeriesId season
     let teamsCount = leagueTeamsCount league
+        totalWeeks = seriesTotalEpisodes series
         generalSettings = GeneralSettings
             { generalSettingsLeagueId = leagueId
             , generalSettingsSeasonId = seasonId
             , generalSettingsNumberOfStarters = fst $ defaultRosterSize teamsCount
             , generalSettingsRosterSize = snd $ defaultRosterSize teamsCount
-            , generalSettingsRegularSeasonLength = fst $ defaultSeasonLength teamsCount
-            , generalSettingsPlayoffLength = snd $ defaultSeasonLength teamsCount
-            , generalSettingsNumberOfTeamsInPlayoffs = defaultNumberOfTeamsInPlayoffs teamsCount
-            , generalSettingsTradeDeadlineWeek = defaultTradeDeadlineWeek teamsCount
+            , generalSettingsRegularSeasonLength = fst $ defaultSeasonLength totalWeeks teamsCount
+            , generalSettingsPlayoffLength = snd $ defaultSeasonLength totalWeeks teamsCount
+            , generalSettingsNumberOfTeamsInPlayoffs = defaultNumberOfTeamsInPlayoffs totalWeeks teamsCount
+            , generalSettingsTradeDeadlineWeek = defaultTradeDeadlineWeek totalWeeks teamsCount
             , generalSettingsWaiverPeriodInDays = defaultWaiverPeriodInDays
             , generalSettingsCreatedBy = userId
             , generalSettingsCreatedAt = now
@@ -255,10 +270,6 @@ createGeneralSettings userId seasonId (Entity leagueId league) maybePreviousSeas
             insert_ $ generalSettings
                 { generalSettingsNumberOfStarters = generalSettingsNumberOfStarters prevGS
                 , generalSettingsRosterSize = generalSettingsRosterSize prevGS
-                , generalSettingsRegularSeasonLength = generalSettingsRegularSeasonLength prevGS
-                , generalSettingsPlayoffLength = generalSettingsPlayoffLength prevGS
-                , generalSettingsNumberOfTeamsInPlayoffs = generalSettingsNumberOfTeamsInPlayoffs prevGS
-                , generalSettingsTradeDeadlineWeek = generalSettingsTradeDeadlineWeek prevGS
                 , generalSettingsWaiverPeriodInDays = generalSettingsWaiverPeriodInDays prevGS
                 }
 
@@ -295,12 +306,8 @@ createScoringSettingsRow userId seasonId (Entity leagueId league) maybePreviousS
                 Nothing -> insert_ scoringSettings
                 Just (Entity _ prevSS) ->
                     insert_ $ scoringSettings
-                        { scoringSettingsIsUsed = scoringSettingsIsUsed prevSS
-                        , scoringSettingsPoints = scoringSettingsPoints prevSS
-                        , scoringSettingsWeight = scoringSettingsWeight prevSS
-                        , scoringSettingsPointsReceiving = scoringSettingsPointsReceiving prevSS
-                        , scoringSettingsWeightReceiving = scoringSettingsWeightReceiving prevSS
-                        }
+                        { scoringSettingsIsUsed = scoringSettingsIsUsed prevSS }
+
 
 ----------
 -- Week --
@@ -407,11 +414,9 @@ createGame leagueId weekId teamId = do
 -----------------
 createPerformances :: Episode -> Entity Week -> Handler ()
 createPerformances episode (Entity weekId week) = do
-    series <- runDB $ get404 $ episodeSeriesId episode
-    let (leagueId, totalEpisodes) = (weekLeagueId week, seriesTotalEpisodes series)
-        overallNumber = episodeOverallNumber episode
-    previousWeeks <- getPreviousWeeks leagueId overallNumber totalEpisodes
+    previousWeeks <- getPreviousWeeks week episode
     playerSeasons <- runDB $ selectList [PlayerSeasonSeasonId ==. weekSeasonId week] []
+    let leagueId = weekLeagueId week
     mapM_ (createPerformance leagueId weekId $ map entityKey previousWeeks) playerSeasons
 
 createPerformance :: LeagueId -> WeekId -> [WeekId] -> Entity PlayerSeason -> Handler ()
@@ -434,3 +439,4 @@ createPerformance leagueId weekId previousWeekIds (Entity _ playerSeason) = do
             , performanceCreatedAt = now
             , performanceUpdatedAt = now
             }
+

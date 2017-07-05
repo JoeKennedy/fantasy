@@ -13,19 +13,20 @@ import           Text.Blaze         (toMarkup)
 -----------
 -- Types --
 -----------
-type FullPlayer = (Entity Player, Entity PlayerSeason,
+type FullPlayer = (Entity Player, Entity PlayerSeason, Entity Performance,
                    Maybe (Entity Team), Entity Character, Entity Series)
 type FullPlayerForTable = (Int, Entity Player, Entity PlayerSeason,
-                           Maybe (Entity Team), Entity Character,
-                           Entity Series, Widget)
+                           Entity Performance, Maybe (Entity Team),
+                           Entity Character, Entity Series, Widget)
 type FullPlayerWithButton = (Entity Player, Entity PlayerSeason,
-                             Maybe (Entity Team), Entity Character,
-                             Entity Series, Widget)
+                             Entity Performance, Maybe (Entity Team),
+                             Entity Character, Entity Series, Widget)
 type FullPlayerForTableSansTeam = (Int, Entity Player, Entity PlayerSeason,
-                                   Entity Character, Entity Series, Widget)
+                                   Entity Performance, Entity Character,
+                                   Entity Series, Widget)
 type FullPlayerForTableReqTeam = (Int, Entity Player, Entity PlayerSeason,
-                                  Entity Team, Entity Character,
-                                  Entity Series, Widget)
+                                  Entity Performance, Entity Team,
+                                  Entity Character, Entity Series, Widget)
 
 ------------
 -- Routes --
@@ -36,12 +37,13 @@ getLeaguePlayersR leagueId = do
     maybeTeamId <- maybeAuthTeamId leagueId
     Entity seasonId season <- getSelectedSeason leagueId
     Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
-    leaguePlayers <- getPlayers seasonId
+    weekId <- getMostRecentWeekId leagueId seasonId
+    leaguePlayers <- getPlayers seasonId weekId
     allPlayers <- playersWithButtons leagueId season leaguePlayers
-    currentTeamPlayers <- getTeamPlayers seasonId maybeTeamId
+    currentTeamPlayers <- getTeamPlayers seasonId weekId maybeTeamId
     myPlayers <- playersWithButtons leagueId season currentTeamPlayers
-    let (freeAgents, onRosters) = partition (\(_, _, _, maybeTeam, _, _, _) -> isNothing maybeTeam) allPlayers
-        teamsAndPlayers = groupByFourthOfSeven $ sortByTeam onRosters
+    let (freeAgents, onRosters) = partition (\(_, _, _, _, maybeTeam, _, _, _) -> isNothing maybeTeam) allPlayers
+        teamsAndPlayers = groupByFifthOfEight $ sortByTeam onRosters
         numberOfStarters = generalSettingsNumberOfStarters generalSettings
         rosterSize = generalSettingsRosterSize generalSettings
     leagueLayout leagueId "Characters" $(widgetFile "league/players")
@@ -53,11 +55,20 @@ getLeaguePlayerR leagueId characterId = do
     Entity playerId _ <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
     character <- runDB $ get404 characterId
     blurbs <- runDB $ selectList [BlurbCharacterId ==. characterId] [Desc BlurbId]
-    performances <- getPerformancesForPlayer playerId
+    Entity seasonId season <- getSelectedSeason leagueId
+    performances <- getPerformancesForPlayer playerId seasonId
     playsByWeek <- mapM (\(p, _, _) -> getPlaysForPerformance p) performances
     let performancesAndPlays = zip performances playsByWeek
-    seasonId <- getSelectedSeasonId leagueId
     Entity _ playerSeason <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId playerId seasonId
+    maybeLastSeasonId <- getLastSeasonId season
+    maybeLastPlayerSeason <- case maybeLastSeasonId of
+        Nothing -> return Nothing
+        Just lastSeasonId -> do
+            lastSeasonEntity <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId playerId lastSeasonId
+            return $ Just $ entityVal lastSeasonEntity
+    -- TODO - uncomment this once season 7 episode 1 has aired
+    -- weekId <- getMostRecentWeekId leagueId seasonId
+    -- Entity _ performance <- runDB $ getBy404 $ UniquePerformanceWeekIdPlayerId weekId playerId
     maybeTeam <- case playerSeasonTeamId playerSeason of
         Nothing     -> return Nothing
         Just teamId -> do
@@ -82,7 +93,7 @@ postLeaguePlayerStartR leagueId characterId = do
                 let message = "You need to bench another player before starting "
                               ++ characterName character
                 failTransaction_ transactionId "Can't start player when no slots are available"
-                setMessage $ toMarkup message
+                addMessage "danger" $ toMarkup message
             else do
                 now <- liftIO getCurrentTime
                 userId <- requireAuthId
@@ -188,34 +199,38 @@ blurbPanel maybeUser (Entity blurbId blurb) = $(widgetFile "blurb_panel")
 -------------
 -- Queries --
 -------------
-getPlayers :: SeasonId -> Handler [FullPlayer]
-getPlayers seasonId = runDB
+getPlayers :: SeasonId -> WeekId -> Handler [FullPlayer]
+getPlayers seasonId weekId = runDB
     $ E.select
-    $ E.from $ \(player `E.InnerJoin` playerSeason `E.InnerJoin` character `E.LeftOuterJoin` team `E.InnerJoin` series) -> do
+    $ E.from $ \(player `E.InnerJoin` playerSeason `E.InnerJoin` performance `E.InnerJoin` character `E.LeftOuterJoin` team `E.InnerJoin` series) -> do
         E.on $ character ^. CharacterRookieSeriesId E.==. series ^. SeriesId
-        E.on $ E.just (player ^. PlayerTeamId) E.==. E.just (team ?. TeamId)
+        E.on $ E.just (playerSeason ^. PlayerSeasonTeamId) E.==. E.just (team ?. TeamId)
         E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
+        E.on $ performance ^. PerformancePlayerId E.==. player ^. PlayerId
+            E.&&. performance ^. PerformanceWeekId E.==. E.val weekId
         E.on $ playerSeason ^. PlayerSeasonPlayerId E.==. player ^. PlayerId
         E.where_ $ playerSeason ^. PlayerSeasonSeasonId E.==. E.val seasonId
-             E.&&. player ^. PlayerIsPlayable E.==. E.val True
+            E.&&. player ^. PlayerIsPlayable E.==. E.val True
         E.orderBy [E.asc (character ^. CharacterName)]
-        return (player, playerSeason, team, character, series)
+        return (player, playerSeason, performance, team, character, series)
 
-getTeamPlayers :: SeasonId -> Maybe TeamId -> Handler [FullPlayer]
-getTeamPlayers _ Nothing = return []
-getTeamPlayers seasonId (Just teamId) = runDB
+getTeamPlayers :: SeasonId -> WeekId -> Maybe TeamId -> Handler [FullPlayer]
+getTeamPlayers _ _ Nothing = return []
+getTeamPlayers seasonId weekId (Just teamId) = runDB
     $ E.select
-    $ E.from $ \(player `E.InnerJoin` playerSeason `E.InnerJoin` character `E.LeftOuterJoin` team `E.InnerJoin` series) -> do
+    $ E.from $ \(player `E.InnerJoin` playerSeason `E.InnerJoin` performance `E.InnerJoin` character `E.LeftOuterJoin` team `E.InnerJoin` series) -> do
         E.on $ character ^. CharacterRookieSeriesId E.==. series ^. SeriesId
-        E.on $ E.just (player ^. PlayerTeamId) E.==. E.just (team ?. TeamId)
+        E.on $ E.just (playerSeason ^. PlayerSeasonTeamId) E.==. E.just (team ?. TeamId)
         E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
+        E.on $ performance ^. PerformancePlayerId E.==. player ^. PlayerId
+            E.&&. performance ^. PerformanceWeekId E.==. E.val weekId
         E.on $ playerSeason ^. PlayerSeasonPlayerId E.==. player ^. PlayerId
         E.where_ $ playerSeason ^. PlayerSeasonTeamId E.==. E.just (E.val teamId)
             E.&&. playerSeason ^. PlayerSeasonSeasonId E.==. E.val seasonId
         E.orderBy [ E.desc (playerSeason ^. PlayerSeasonIsStarter)
                   , E.asc (character ^. CharacterName)
                   ]
-        return (player, playerSeason, team, character, series)
+        return (player, playerSeason, performance, team, character, series)
 
 
 --------------------------
@@ -230,15 +245,15 @@ playersWithButtons leagueId season players = do
         playersAndButtons = if isUserLeagueMember && transactionsPossible
             then map (playerWithButton isAfterTradeDeadline $ fromJust maybeUserId) players
             else map playerWithNoButton players
-    return $ rank6 playersAndButtons
+    return $ rank7 playersAndButtons
 
 playerWithButton :: Bool -> UserId -> FullPlayer -> FullPlayerWithButton
-playerWithButton isAfterTradeDeadline userId ((Entity playerId player), playerSeason, maybeTeam, character, series) =
+playerWithButton isAfterTradeDeadline userId ((Entity playerId player), playerSeason, performance, maybeTeam, character, series) =
     let (text, dataToggle, dataTarget, icon) = playerButtonAttributes playerSeason maybeTeam userId
         buttonId = text ++ "-" ++ toPathPiece (playerLeagueId player) ++ "-" ++ toPathPiece (playerCharacterId player)
         name = characterName $ entityVal character
         isPostDeadlineTrade = text == "trade" && isAfterTradeDeadline
-    in  ((Entity playerId player), playerSeason, maybeTeam, character, series, $(widgetFile "league/player_action_button"))
+    in  ((Entity playerId player), playerSeason, performance, maybeTeam, character, series, $(widgetFile "league/player_action_button"))
 
 playerButtonAttributes :: Entity PlayerSeason -> Maybe (Entity Team) -> UserId -> (Text, Text, Text, Text)
 playerButtonAttributes _ Nothing _ = ("claim", "modal", "#claim_modal", "plus")
@@ -248,8 +263,8 @@ playerButtonAttributes (Entity _ playerSeason) (Just (Entity _ team)) userId =
         else ("start", "", "", "level-up"))
     else ("trade", "modal", "#trade_modal", "refresh")
 
-playerWithNoButton :: (a, b, c, d, e) -> (a, b, c, d, e, Widget)
-playerWithNoButton (v, w, x, y, z) = (v, w, x, y, z, [whamlet||])
+playerWithNoButton :: (a, b, c, d, e, f) -> (a, b, c, d, e, f, Widget)
+playerWithNoButton (u, v, w, x, y, z) = (u, v, w, x, y, z, [whamlet||])
 
 
 -------------
@@ -257,7 +272,7 @@ playerWithNoButton (v, w, x, y, z) = (v, w, x, y, z, [whamlet||])
 -------------
 recombineTeamToPlayers :: Entity Team -> [FullPlayerForTableSansTeam] -> [FullPlayerForTable]
 recombineTeamToPlayers teamEntity players =
-    map (\(num, player, playerSeason, character, series, widget) -> (num, player, playerSeason, Just teamEntity, character, series, widget)) players
+    map (\(num, player, playerSeason, performance, character, series, widget) -> (num, player, playerSeason, performance, Just teamEntity, character, series, widget)) players
 
 isLeagueMember :: Maybe UserId -> LeagueId -> Handler Bool
 isLeagueMember Nothing _ = return False
@@ -267,8 +282,8 @@ isLeagueMember justUserId leagueId = do
 
 splitStartersAndBench :: [FullPlayerForTable] -> Int -> Int -> [(Text, [FullPlayerForTable], [Int])]
 splitStartersAndBench players numberOfStarters rosterSize =
-    let (starters, bench) = partition (\(_, _, Entity _ ps, _, _, _, _) -> playerSeasonIsStarter ps) players
-        benchWithNumbers = map (\(n, p, ps, mt, c, s, w) -> (n - numberOfStarters, p, ps, mt, c, s, w)) bench
+    let (starters, bench) = partition (\(_, _, Entity _ ps, _, _, _, _, _) -> playerSeasonIsStarter ps) players
+        benchWithNumbers = map (\(n, p, ps, pe, mt, c, s, w) -> (n - numberOfStarters, p, ps, pe, mt, c, s, w)) bench
         extraStarterSlots = [length starters + 1 .. numberOfStarters]
         extraBenchSlots   = [length bench + 1 .. rosterSize - numberOfStarters]
     in  [("Starters", starters, extraStarterSlots), ("Bench", benchWithNumbers, extraBenchSlots)]
@@ -283,6 +298,6 @@ maybeAuthTeamId leagueId = do
 
 sortByTeam :: [FullPlayerForTable] -> [FullPlayerForTableReqTeam]
 sortByTeam players =
-    let withTeams = map (\(n, p, ps, mt, c, s, w) -> (n, p, ps, fromJust mt, c, s, w)) players
-    in  sortBy (\(_, _, _, Entity _ t1, _, _, _) (_, _, _, Entity _ t2, _, _, _) -> teamName t1 `compare` teamName t2) withTeams
+    let withTeams = map (\(n, p, ps, pe, mt, c, s, w) -> (n, p, ps, pe, fromJust mt, c, s, w)) players
+    in  sortBy (\(_, _, _, _, Entity _ t1, _, _, _) (_, _, _, _, Entity _ t2, _, _, _) -> teamName t1 `compare` teamName t2) withTeams
 

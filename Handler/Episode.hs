@@ -112,22 +112,22 @@ upsertAppearanceEvent userId now event characterId = do
 ----------
 finishAiringEpisode :: Handler ()
 finishAiringEpisode = do
-    maybeEpisode <- runDB $ selectFirst [EpisodeStatus ==. Airing] [Asc EpisodeId]
+    maybeEpisode <- runDB $ selectFirst [EpisodeStatus ==. Airing] [Asc EpisodeOverallNumber]
     case maybeEpisode of
         Nothing -> return ()
         Just (Entity episodeId _) -> runDB $ update episodeId [EpisodeStatus =. Aired]
 
 airEpisode :: Handler ()
 airEpisode = do
-    -- For now, grab the most recent episode yet to air
-    -- TODO - come up with a way to do this using the air time
-    maybeEpisode <- runDB $ selectFirst [EpisodeStatus ==. YetToAir] [Asc EpisodeId]
+    maybeEpisode <- runDB $ selectFirst [EpisodeStatus ==. YetToAir] [Asc EpisodeOverallNumber]
     case maybeEpisode of
         Nothing -> return ()
         Just (Entity episodeId episode) -> do
-            runDB $ update episodeId [EpisodeStatus =. Airing]
-            seasons <- runDB $ selectList [SeasonIsActive ==. True] [Asc SeasonId]
-            mapM_ (createWeekData_ $ Entity episodeId episode) seasons
+            now <- liftIO getCurrentTime
+            if utctDay now /= utctDay (episodeAirTime episode) then return () else do
+                runDB $ update episodeId [EpisodeStatus =. Airing]
+                seasons <- runDB $ selectList [SeasonIsActive ==. True] [Asc SeasonId]
+                mapM_ (createWeekData_ $ Entity episodeId episode) seasons
 
 
 -------------

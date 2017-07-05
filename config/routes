@@ -51,8 +51,9 @@
     /team    SetupTeamsSettingsR   GET POST
     /confirm SetupConfirmSettingsR GET POST
 
-/leagues/#LeagueId        LeagueR       GET
-/leagues/#LeagueId/cancel LeagueCancelR POST
+/leagues/#LeagueId             LeagueR       GET
+/leagues/#LeagueId/cancel      LeagueCancelR POST
+/leagues/#LeagueId/season/#Int LeagueSeasonR GET
 
 /leagues/#LeagueId/teams                 LeagueTeamsR        GET
 /leagues/#LeagueId/teams/#Int            LeagueTeamR         GET

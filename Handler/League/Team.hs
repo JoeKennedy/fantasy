@@ -19,11 +19,11 @@ import Text.Blaze (toMarkup)
 ----------
 -- Form --
 ----------
-teamSettingsForm :: UserId -> League -> Season -> DraftSettings -> [Team] -> Form [Team]
-teamSettingsForm currentUserId league season draftSettings teams extra = do
+teamSettingsForm :: UserId -> League -> Season -> Maybe DraftSettings -> [Team] -> Form [Team]
+teamSettingsForm currentUserId league season maybeDraftSettings teams extra = do
     let areTeamsSetup = leagueLastCompletedStep league > 4
-        draftOrderType = draftSettingsDraftOrderType draftSettings
-        isDraftOrderEditable = areTeamsSetup && draftOrderType == ManuallySet &&
+        draftOrderType = map draftSettingsDraftOrderType maybeDraftSettings
+        isDraftOrderEditable = areTeamsSetup && draftOrderType == Just ManuallySet &&
                 not (seasonIsDraftComplete season) && length teams > 1
 
     forms <- do
@@ -88,9 +88,8 @@ getSetupTeamsSettingsR = do
     let action = SetupLeagueR SetupTeamsSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamNumber]
-    Entity seasonId season <- getSelectedSeason leagueId
-    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
-    (widget, enctype) <- generateFormPost $ teamSettingsForm userId league season draftSettings $ map entityVal teams
+    form <- generateTeamSettingsForm teams $ Entity leagueId league
+    (widget, enctype) <- generateFormPost form
     defaultLayout $ do
         setTitle $ leagueSetupStepTitle league action
         let maybeLeagueId = Just leagueId
@@ -102,12 +101,11 @@ postSetupTeamsSettingsR = do
     let action = SetupLeagueR SetupTeamsSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
     teams <- runDB $ selectList [TeamLeagueId ==. leagueId] [Asc TeamNumber]
-    Entity seasonId season <- getSelectedSeason leagueId
-    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
-    ((result, widget), enctype) <- runFormPost $ teamSettingsForm userId league season draftSettings $ map entityVal teams
+    form <- generateTeamSettingsForm teams $ Entity leagueId league
+    ((result, widget), enctype) <- runFormPost form
     case result of
         FormSuccess teams' -> do
-            replaceTeams userId seasonId teams teams'
+            replaceTeams leagueId teams teams'
             updateLeagueLastCompletedStep leagueId league 5
             redirect $ SetupLeagueR SetupConfirmSettingsR
         _ -> defaultLayout $ do
@@ -123,6 +121,7 @@ getLeagueTeamsR leagueId = do
     teams <- getTeamsOrderBy seasonId False TeamSeasonRegularSeasonPoints
     withResendable <- mapM (addIsJoinEmailResendable maybeUserId league) teams
     let fullTeams = rank3 withResendable
+    maybeDraftSettingsEntity <- runDB $ getBy $ UniqueDraftSettingsSeasonId seasonId
     leagueLayout leagueId "Houses" $(widgetFile "league/teams")
 
 getLeagueTeamR :: LeagueId -> Int -> Handler Html
@@ -134,15 +133,16 @@ getLeagueTeamR leagueId number = do
     league <- runDB $ get404 leagueId
     Entity teamId team <- runDB $ getBy404 $ UniqueTeamLeagueIdNumber leagueId number
     joinEmailResendable <- isJoinEmailResendable maybeUserId league $ Entity teamId team
-    teamPlayers <- getTeamPlayers seasonId $ Just teamId
+    weekId <- getMostRecentWeekId leagueId seasonId
+    teamPlayers <- getTeamPlayers seasonId weekId $ Just teamId
     players <- playersWithButtons leagueId season teamPlayers
     Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId 
     transactions <- getSuccessfulTransactions seasonId (Just teamId) Nothing
     tradeProposals <- getRequestedTransactions seasonId (Just teamId) Trade
     waiverClaims <- getRequestedTransactions seasonId (Just teamId) Claim
-    currentTeamPlayers <- getTeamPlayers seasonId maybeUserTeamId
+    currentTeamPlayers <- getTeamPlayers seasonId weekId maybeUserTeamId
     myPlayers <- playersWithButtons leagueId season currentTeamPlayers
-    weeks <- runDB $ selectList [WeekLeagueId ==. leagueId] [Asc WeekNumber]
+    weeks <- runDB $ selectList [WeekSeasonId ==. seasonId] [Asc WeekNumber]
     games <- getGamesForTeam seasonId teamId
     performances <- mapM (getPerformancesForGame . fst) games
     Entity _ teamSeason <- runDB $ getBy404 $ UniqueTeamSeasonTeamIdSeasonId teamId seasonId
@@ -237,39 +237,45 @@ resendJoinButton leagueId number =
 -------------
 -- Helpers --
 -------------
+generateTeamSettingsForm :: [Entity Team] -> Entity League -> Handler (Form [Team])
+generateTeamSettingsForm teams (Entity leagueId league) = do
+    userId <- requireAuthId
+    Entity seasonId season <- getSelectedSeason leagueId
+    maybeDraftSettingsEntity <- runDB $ getBy $ UniqueDraftSettingsSeasonId seasonId
+    let maybeDraftSettings = map entityVal maybeDraftSettingsEntity
+    return $ teamSettingsForm userId league season maybeDraftSettings $ map entityVal teams
+
 isUserTeamOwner :: Maybe UserId -> Team -> Bool
 isUserTeamOwner (Just userId) team = teamOwnerId team == Just userId
 isUserTeamOwner _ _ = False
 
 editTeamSettings :: LeagueId -> Maybe Int -> Text -> Handler Html
 editTeamSettings leagueId maybeTeamNumber pillName = do
-    userId <- requireAuthId
-    league <- runDB $ get404 leagueId
     teams <- getTeamsForSettings leagueId maybeTeamNumber
-    Entity seasonId season <- getSelectedSeason leagueId
-    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
-    (widget, enctype) <- generateFormPost $ teamSettingsForm userId league season draftSettings $ map entityVal teams
+    league <- runDB $ get404 leagueId
+    form <- generateTeamSettingsForm teams $ Entity leagueId league
+    (widget, enctype) <- generateFormPost form
     let action = teamSettingsAction leagueId maybeTeamNumber
     leagueSettingsLayout leagueId action enctype widget pillName
 
 updateTeamSettings :: LeagueId -> Maybe Int -> Text -> Handler Html
 updateTeamSettings leagueId maybeTeamNumber pillName = do
-    userId <- requireAuthId
-    league <- runDB $ get404 leagueId
     teams <- getTeamsForSettings leagueId maybeTeamNumber
-    Entity seasonId season <- getSelectedSeason leagueId
-    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
-    ((result, widget), enctype) <- runFormPost $ teamSettingsForm userId league season draftSettings $ map entityVal teams
+    league <- runDB $ get404 leagueId
+    form <- generateTeamSettingsForm teams $ Entity leagueId league
+    ((result, widget), enctype) <- runFormPost form
     let action = teamSettingsAction leagueId maybeTeamNumber
     case result of
         FormSuccess teams' -> do
-            replaceTeams userId seasonId teams teams'
+            replaceTeams leagueId teams teams'
             setMessage $ toMarkup $ "Successfully updated " ++ pillName ++ " settings"
             redirect action
         _ -> leagueSettingsLayout leagueId action enctype widget pillName
 
-replaceTeams :: UserId -> SeasonId -> [Entity Team] -> [Team] -> Handler ()
-replaceTeams userId seasonId teams teams' =
+replaceTeams :: LeagueId -> [Entity Team] -> [Team] -> Handler ()
+replaceTeams leagueId teams teams' = do
+    userId <- requireAuthId
+    seasonId <- getSelectedSeasonId leagueId
     mapM_ (replaceTeam userId seasonId) (zip (map entityKey teams) teams')
 
 replaceTeam :: UserId -> SeasonId -> (TeamId, Team) -> Handler ()

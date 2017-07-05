@@ -48,7 +48,7 @@ instance AdminRecord Blurb where
 
 instance AdminRecord Character where
     afterCreate characterEntity = do -- backgroundHandler $ do
-        leagueIds <- runDB $ selectKeysList [] [Asc LeagueId]
+        leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
         let userId = characterCreatedBy $ entityVal characterEntity
         _ <- mapM (\lid -> runDB $ createPlayer userId lid characterEntity) leagueIds
         createCharacterPerformances $ entityKey characterEntity

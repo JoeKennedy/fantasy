@@ -60,6 +60,7 @@ import Handler.League.DraftSettings
 import Handler.League.GeneralSettings
 import Handler.League.Player
 import Handler.League.Scoring
+import Handler.League.Season
 import Handler.League.Team
 import Handler.League.Transaction
 import Handler.Series

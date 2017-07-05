@@ -20,14 +20,15 @@
                         Status
                     <th .hidden-sm .hidden-xs data-field="player-survived" data-sortable="true">
                         Seasons Survived
-                    <th .hidden-sm .hidden-xs data-field="player-points-5" data-sortable="true">
-                        Season 5 Points
-                    <th data-field="player-points-6" data-sortable="true">
-                        Season 6 Points
+                    <!-- TODO - uncomment this once season 7 episode 1 airs -->
+                    <!-- <th .hidden-sm .hidden-xs data-field="player-points-5" data-sortable="true"> -->
+                    <!--     Points For Weight -->
+                    <th data-field="player-points-this-season" data-sortable="true">
+                        Points This Season
                     <th data-field="player-action">
 
             <tbody>
-                $forall (num, Entity _ player, Entity _ playerSeason, maybeTeam, Entity characterId character, Entity _ rookieSeries, button) <- subTablePlayers
+                $forall (num, Entity _ player, Entity _ playerSeason, Entity _ _performance,  maybeTeam, Entity characterId character, Entity _ rookieSeries, button) <- subTablePlayers
                     <tr .vertical-align-middle>
                         $if hasRadioButton playersTableType
                             $with cid <- toPathPiece characterId
@@ -66,8 +67,9 @@
                                                 Rookie
                                             $of _
                                                 #{seasonsSurvived}
-                        <td .hidden-sm .hidden-xs>
-                            #{characterPointsLastSeason character}
+                        <!-- TODO - uncomment this once season 7 episode 1 airs -->
+                        <!-- <td .hidden-sm .hidden-xs> -->
+                        <!--     #{displayRational $ performanceCappedCumulativePoints performance} -->
                         <td>
                             #{displayRational $ playerSeasonTotalPoints playerSeason}
                         <td .text-right .player-action>

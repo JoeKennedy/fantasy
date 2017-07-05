@@ -89,8 +89,8 @@ getLeagueDraftSettingsR :: LeagueId -> Handler Html
 getLeagueDraftSettingsR leagueId = do
     userId <- requireAuthId
     seasonId <- getSelectedSeasonId leagueId
-    draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
-    (widget, enctype) <- generateFormPost $ draftSettingsForm userId leagueId seasonId $ Just $ entityVal draftSettings
+    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId seasonId
+    (widget, enctype) <- generateFormPost $ draftSettingsForm userId leagueId seasonId $ map entityVal maybeDraftSettings
     let action = LeagueSettingsR leagueId LeagueDraftSettingsR
     leagueSettingsLayout leagueId action enctype widget "Draft"
 
@@ -98,12 +98,14 @@ postLeagueDraftSettingsR :: LeagueId -> Handler Html
 postLeagueDraftSettingsR leagueId = do
     userId <- requireAuthId
     seasonId <- getSelectedSeasonId leagueId
-    Entity draftSettingsId draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
-    ((result, widget), enctype) <- runFormPost $ draftSettingsForm userId leagueId seasonId $ Just draftSettings
+    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId seasonId
+    ((result, widget), enctype) <- runFormPost $ draftSettingsForm userId leagueId seasonId $ map entityVal maybeDraftSettings
     let action = LeagueSettingsR leagueId LeagueDraftSettingsR
     case result of
-        FormSuccess draftSettings' -> do
-            runDB $ replace draftSettingsId draftSettings'
+        FormSuccess draftSettings -> do
+            runDB $ case map entityKey maybeDraftSettings of
+                Just draftSettingsId -> replace draftSettingsId draftSettings
+                Nothing -> insert_ draftSettings
             setMessage "Successfully updated league draft settings"
             redirect action
         _ -> leagueSettingsLayout leagueId action enctype widget "Draft"

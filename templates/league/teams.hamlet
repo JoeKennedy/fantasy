@@ -11,17 +11,23 @@
             <table data-toggle="table" data-classes="table table-hover table-no-bordered teams-table" data-striped="true">
                 <thead>
                     <tr>
-                        <th .col-sm-1 data-field="team-rank" data-sortable="true">Rank
-                        <th .col-sm-3 data-field="team-name" data-sortable="true" data-sorter="linkSorter">Name
-                        <th .col-sm-1 .hidden-xs data-field="team-abbreviation" data-sortable="true" data-sorter="linkSorter">Abbreviation
-                        <th .col-sm-3 data-field="team-owner" data-sortable="true">Owner
+                        <th .col-sm-1 data-field="team-rank" data-sortable="true">
+                            Rank
+                        <th .col-sm-3 data-field="team-name" data-sortable="true" data-sorter="linkSorter">
+                            Name
+                        <th .col-sm-1 .hidden-xs data-field="team-abbreviation" data-sortable="true" data-sorter="linkSorter">
+                            Abbreviation
+                        <th .col-sm-3 data-field="team-owner" data-sortable="true">
+                            Owner
                         <th .col-sm-1 .hidden-xs data-field="team-waiver-draft" data-sortable="true">
                             $if seasonIsDraftComplete season
                                 Waiver
                             $else
                                 Draft
-                        <th .col-sm-1 data-field="team-points" data-sortable="true">Points
-                        <th .col-sm-1 .hidden-xs data-field="team-status" data-sortable="true">Status
+                        <th .col-sm-1 data-field="team-points" data-sortable="true">
+                            Points
+                        <th .col-sm-1 .hidden-xs data-field="team-status" data-sortable="true">
+                            Status
 
                 <tbody>
                     $forall (rank, Entity _ team, Entity _ teamSeason, joinEmailResendable) <- fullTeams
@@ -37,8 +43,10 @@
                             <td .hidden-xs>
                                 $if seasonIsDraftComplete season
                                     #{teamSeasonWaiverOrder teamSeason}
-                                $else
+                                $elseif isJust maybeDraftSettingsEntity
                                     #{teamSeasonDraftOrder teamSeason}
+                                $else
+                                    ?
                             <td>#{displayRational $ teamSeasonRegularSeasonPoints teamSeason}
                             <td .hidden-xs>
                                 $if teamIsConfirmed team

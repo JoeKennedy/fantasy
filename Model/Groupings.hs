@@ -23,6 +23,9 @@ groupByThirdOfSix = groupByFirst . map sextupleToTuple3
 groupByFourthOfSeven :: Eq d => [(a, b, c, d, e, f, g)] -> [(d, [(a, b, c, e, f, g)])]
 groupByFourthOfSeven = groupByFirst . map septupleToTuple4
 
+groupByFifthOfEight :: Eq e => [(a, b, c, d, e, f, g, h)] -> [(e, [(a, b, c, d, f, g, h)])]
+groupByFifthOfEight = groupByFirst . map octupleToTuple5
+
 ----------------------
 -- Grouping Helpers --
 ----------------------
@@ -46,6 +49,9 @@ sextupleToTuple3 sextuple = (thirdOf6 sextuple, allBut3Of6 sextuple)
 
 septupleToTuple4 :: (a, b, c, d, e, f, g) -> (d, (a, b, c, e, f, g))
 septupleToTuple4 septuple = (fourthOf7 septuple, allBut4Of7 septuple)
+
+octupleToTuple5 :: (a, b, c, d, e, f, g, h) -> (e, (a, b, c, d, f, g, h))
+octupleToTuple5 octuple = (fifthOf8 octuple, allBut5Of8 octuple)
 
 firstOf4 :: (a, b, c, d) -> a
 firstOf4 (x, _, _, _) = x
@@ -82,5 +88,11 @@ fourthOf7 (_, _, _, w, _, _, _) = w
 
 allBut4Of7 :: (a, b, c, d, e, f, g) -> (a, b, c, e, f, g)
 allBut4Of7 (t, u, v, _, x, y, z) = (t, u, v, x, y, z)
+
+fifthOf8 :: (a, b, c, d, e, f, g, h) -> e
+fifthOf8 (_, _, _, _, w, _, _, _) = w
+
+allBut5Of8 :: (a, b, c, d, e, f, g, h) -> (a, b, c, d, f, g, h)
+allBut5Of8 (s, t, u, v, _, x, y, z) = (s, t, u, v, x, y, z)
 
 

@@ -5,7 +5,46 @@ import Model.Types
 import           ClassyPrelude.Yesod
 import qualified Data.Char           as Char
 
-data Action = Appear | Kill | Defeat | Insult | Fight | Attack | Injure | Bravery | Cowardice | Sentence | Torture | Sex | Force | Guilty | Innocent | Clear | Death | Raise | Pour | Drink | Finish
+data Action = Appear
+            | Advise
+            | Affection
+            | Attack
+            | Bravery
+            | Clear
+            | Command
+            | Cowardice
+            | Death
+            | Defeat
+            | Dishonor
+            | Drink
+            | Fight
+            | Finish
+            | Force
+            | Gain
+            | Guilty
+            | Honor
+            | Injure
+            | Innocent
+            | Insult
+            | Kill
+            | Loss
+            | Magic
+            | Manipulate
+            | Massacre
+            | Onslaught
+            | Order
+            | Pour
+            | Praise
+            | Quest
+            | Raise
+            | Sacrifice
+            | Sentence
+            | Sex
+            | Suicide
+            | Tease
+            | Threaten
+            | Torture
+            | Wit
     deriving (Show, Read, Eq, Enum, Bounded)
 derivePersistField "Action"
 
@@ -17,49 +56,87 @@ multiCharacterActions = map show $ filter isMultiCharacter allActions
 
 isMultiCharacter :: Action -> Bool
 isMultiCharacter Appear    = False
-isMultiCharacter Kill      = True
-isMultiCharacter Defeat    = True
-isMultiCharacter Insult    = True
-isMultiCharacter Fight     = True
+isMultiCharacter Advise    = True
+isMultiCharacter Affection = True
 isMultiCharacter Attack    = True
-isMultiCharacter Injure    = True
-isMultiCharacter Sentence  = True
 isMultiCharacter Bravery   = False
-isMultiCharacter Cowardice = False
-isMultiCharacter Torture   = True
-isMultiCharacter Sex       = True
-isMultiCharacter Force     = True
-isMultiCharacter Guilty    = False
-isMultiCharacter Innocent  = False
 isMultiCharacter Clear     = False
+isMultiCharacter Command   = True
+isMultiCharacter Cowardice = False
 isMultiCharacter Death     = False
-isMultiCharacter Raise     = True
-isMultiCharacter Pour      = False
+isMultiCharacter Defeat    = True
+isMultiCharacter Dishonor  = False
 isMultiCharacter Drink     = False
+isMultiCharacter Fight     = True
 isMultiCharacter Finish    = False
+isMultiCharacter Force     = True
+isMultiCharacter Gain      = False
+isMultiCharacter Guilty    = False
+isMultiCharacter Honor     = False
+isMultiCharacter Injure    = True
+isMultiCharacter Innocent  = False
+isMultiCharacter Insult    = True
+isMultiCharacter Kill      = True
+isMultiCharacter Loss      = False
+isMultiCharacter Magic     = False
+isMultiCharacter Manipulate= True
+isMultiCharacter Massacre  = False
+isMultiCharacter Onslaught = False
+isMultiCharacter Order     = False
+isMultiCharacter Pour      = False
+isMultiCharacter Praise    = True
+isMultiCharacter Quest     = False
+isMultiCharacter Raise     = True
+isMultiCharacter Sacrifice = False
+isMultiCharacter Sentence  = True
+isMultiCharacter Sex       = True
+isMultiCharacter Suicide   = False
+isMultiCharacter Tease     = True
+isMultiCharacter Threaten  = True
+isMultiCharacter Torture   = True
+isMultiCharacter Wit       = False
 
 actionToSplitString :: Action -> (String, String)
 actionToSplitString Appear    = ("appeared in the episode ", "")
-actionToSplitString Kill      = ("killed ", "")
-actionToSplitString Defeat    = ("defeated ", " in combat ")
-actionToSplitString Insult    = ("insulted ", "")
-actionToSplitString Fight     = ("fought ", "")
+actionToSplitString Advise    = ("gave advice to ", "")
+actionToSplitString Affection = ("displayed affection with ", "")
 actionToSplitString Attack    = ("attacked ", "")
-actionToSplitString Injure    = ("injured ", "")
-actionToSplitString Sentence  = ("sentenced ", " to death ")
 actionToSplitString Bravery   = ("displayed bravery ", "")
-actionToSplitString Cowardice = ("displayed cowardice ", "")
-actionToSplitString Torture   = ("tortured ", "")
-actionToSplitString Sex       = ("had sex with ", "")
-actionToSplitString Force     = ("forced sex upon ", "")
-actionToSplitString Guilty    = ("was found guilty of a crime ", "")
-actionToSplitString Innocent  = ("was found innocent of a crime ", "")
 actionToSplitString Clear     = ("was cleared of a wrongful charge ", "")
+actionToSplitString Command   = ("issued a command to ", "")
+actionToSplitString Cowardice = ("displayed cowardice ", "")
 actionToSplitString Death     = ("died of natural causes ", "")
-actionToSplitString Raise     = ("raised ", " from the dead ")
-actionToSplitString Pour      = ("poured an alcoholic drink ", "")
+actionToSplitString Defeat    = ("defeated ", " in combat ")
+actionToSplitString Dishonor  = ("acted dishonorably ", "")
 actionToSplitString Drink     = ("took an alcoholic drink ", "")
+actionToSplitString Fight     = ("fought ", "")
 actionToSplitString Finish    = ("finished an alcoholic drink ", "")
+actionToSplitString Force     = ("forced sex upon ", "")
+actionToSplitString Gain      = ("learned of positive development ", "")
+actionToSplitString Guilty    = ("was found guilty of a crime ", "")
+actionToSplitString Honor     = ("acted honorably ", "")
+actionToSplitString Injure    = ("injured ", "")
+actionToSplitString Innocent  = ("was found innocent of a crime ", "")
+actionToSplitString Insult    = ("insulted ", "")
+actionToSplitString Kill      = ("killed ", "")
+actionToSplitString Loss      = ("learned of negative development ", "")
+actionToSplitString Magic     = ("performed a feat of magic ", "")
+actionToSplitString Manipulate= ("manipulated ", "")
+actionToSplitString Massacre  = ("massacred a number of characters ", "")
+actionToSplitString Onslaught = ("launched a mass attack ", "")
+actionToSplitString Order     = ("ordered subordinates ", "")
+actionToSplitString Pour      = ("poured an alcoholic drink ", "")
+actionToSplitString Praise    = ("praised ", "")
+actionToSplitString Quest     = ("completed a long personal quest ", "")
+actionToSplitString Raise     = ("raised ", " from the dead ")
+actionToSplitString Sacrifice = ("sacrificed life ", "")
+actionToSplitString Sentence  = ("sentenced ", " to death ")
+actionToSplitString Sex       = ("had sex with ", "")
+actionToSplitString Suicide   = ("committed suicide ", "")
+actionToSplitString Tease     = ("teased ", "")
+actionToSplitString Threaten  = ("threatened ", "")
+actionToSplitString Torture   = ("tortured ", "")
+actionToSplitString Wit       = ("dropped a witty line ", "")
 
 actionToSplitCaps :: Action -> (String, String)
 actionToSplitCaps action =
@@ -67,44 +144,71 @@ actionToSplitCaps action =
     in  (capitalize before, after)
 
 reverseActionString :: Action -> String
-reverseActionString Kill      = "killed by"
-reverseActionString Defeat    = "defeated in combat by"
-reverseActionString Insult    = "insulted by"
-reverseActionString Fight     = "fought"
+reverseActionString Advise    = "advised by"
 reverseActionString Attack    = "attacked by"
-reverseActionString Injure    = "injured by"
-reverseActionString Sentence  = "sentenced to death by"
-reverseActionString Torture   = "tortured by"
-reverseActionString Sex       = "had sex with"
+reverseActionString Affection = "displayed affection with"
+reverseActionString Command   = "issued a command by"
+reverseActionString Defeat    = "defeated in combat by"
+reverseActionString Fight     = "fought"
 reverseActionString Force     = "was forced to have sex with"
+reverseActionString Injure    = "injured by"
+reverseActionString Insult    = "insulted by"
+reverseActionString Kill      = "killed by"
+reverseActionString Manipulate= "manipulated by"
+reverseActionString Praise    = "praised by"
 reverseActionString Raise     = "resurrected by"
+reverseActionString Sentence  = "sentenced to death by"
+reverseActionString Sex       = "had sex with"
+reverseActionString Tease     = "teased by"
+reverseActionString Threaten  = "threatened by"
+reverseActionString Torture   = "tortured by"
 reverseActionString _         = error "This is not a multi-player action"
 
 reverseActionCaps :: Action -> String
 reverseActionCaps = capitalize . reverseActionString
 
+-- (enabled by default, points, weight, receiving points, receiving weight)
 weightedScoringAttributes :: Action -> (Bool, Int, Int, Int, Int)
-weightedScoringAttributes Appear    = (False,  0,   0,   0,   0)
-weightedScoringAttributes Kill      = (True,  20,  10, -20, -10)
-weightedScoringAttributes Defeat    = (True,  15,   7, -15,  -7)
-weightedScoringAttributes Insult    = (True,   5,   2,  -5,  -2)
-weightedScoringAttributes Fight     = (True,  10,   5,  10,   5)
+weightedScoringAttributes Appear    = (False,  1,   0,   0,   0)
+weightedScoringAttributes Advise    = (True,   6,   3,   2,   1)
+weightedScoringAttributes Affection = (True,   6,   3,   6,   3)
 weightedScoringAttributes Attack    = (True,   5,   2,  -5,  -2)
-weightedScoringAttributes Injure    = (True,  10,   5, -10,  -5)
-weightedScoringAttributes Sentence  = (True,  18,   9, -18,  -9)
-weightedScoringAttributes Bravery   = (True,   5,   2,   0,   0)
-weightedScoringAttributes Cowardice = (True,  -5,  -2,   0,   0)
-weightedScoringAttributes Torture   = (True,  16,   8, -16,  -8)
-weightedScoringAttributes Sex       = (True,  12,   6,  12,   6)
-weightedScoringAttributes Force     = (False,  0,   0,   0,   0)
-weightedScoringAttributes Guilty    = (True,  -7,  -3,   0,   0)
-weightedScoringAttributes Innocent  = (True,   7,   3,   0,   0)
-weightedScoringAttributes Clear     = (True,  14,   7,   0,   0)
+weightedScoringAttributes Bravery   = (True,  10,   0,   0,   0)
+weightedScoringAttributes Clear     = (True,  14,   0,   0,   0)
+weightedScoringAttributes Command   = (True,   2,   0,   0,   0)
+weightedScoringAttributes Cowardice = (True, -10,   0,   0,   0)
 weightedScoringAttributes Death     = (True,  -5,  -2,   0,   0)
+weightedScoringAttributes Defeat    = (True,  15,   7, -15,  -7)
+weightedScoringAttributes Dishonor  = (True,  -5,   0,   0,   0)
+weightedScoringAttributes Drink     = (True,   4,   0,   0,   0)
+weightedScoringAttributes Fight     = (True,  10,   5,  10,   5)
+weightedScoringAttributes Finish    = (True,   6,   0,   0,   0)
+weightedScoringAttributes Force     = (False,  0,   0,   0,   0)
+weightedScoringAttributes Gain      = (True,   5,   0,   0,   0)
+weightedScoringAttributes Guilty    = (True,  -7,   0,   0,   0)
+weightedScoringAttributes Honor     = (True,   5,   0,   0,   0)
+weightedScoringAttributes Injure    = (True,  10,   5, -10,  -5)
+weightedScoringAttributes Innocent  = (True,   7,   0,   0,   0)
+weightedScoringAttributes Insult    = (True,   5,   2,  -5,  -2)
+weightedScoringAttributes Kill      = (True,  20,  10, -20, -10)
+weightedScoringAttributes Loss      = (True,  -5,   0,   0,   0)
+weightedScoringAttributes Magic     = (True,  20,   0,   0,   0)
+weightedScoringAttributes Manipulate= (True,  10,   5, -10,  -5)
+weightedScoringAttributes Massacre  = (True, 100,   0,   0,   0)
+weightedScoringAttributes Onslaught = (True,  25,   0,   0,   0)
+weightedScoringAttributes Order     = (True,   8,   0,   0,   0)
+weightedScoringAttributes Pour      = (True,   2,   0,   0,   0)
+weightedScoringAttributes Praise    = (True,   5,   2,   5,   2)
+weightedScoringAttributes Quest     = (True,  25,   0,   0,   0)
 weightedScoringAttributes Raise     = (True,  20,  10,  20,  10)
-weightedScoringAttributes Pour      = (True,   1,   0,   0,   0)
-weightedScoringAttributes Drink     = (True,   2,   0,   0,   0)
-weightedScoringAttributes Finish    = (True,   4,   0,   0,   0)
+weightedScoringAttributes Sacrifice = (True,  20,  10,   0,   0)
+weightedScoringAttributes Sentence  = (True,  10,   5, -10,  -5)
+weightedScoringAttributes Sex       = (True,  12,   6,  12,   6)
+weightedScoringAttributes Suicide   = (True, -20, -10,   0,   0)
+weightedScoringAttributes Tease     = (True,   3,   1,   0,   0)
+weightedScoringAttributes Threaten  = (True,   7,   3,  -7,  -3)
+weightedScoringAttributes Torture   = (True,  16,   8, -16,  -8)
+weightedScoringAttributes Wit       = (True,   3,   0,   0,   0)
 
 defaultScoringAttributes :: Action -> ScoringType -> (Bool, Int, Int, Int, Int)
 defaultScoringAttributes action Weighted = weightedScoringAttributes action

@@ -214,10 +214,6 @@ pluralize string = case lastSplit string of Nothing            -> []
 seriesNumberText :: Series -> Text
 seriesNumberText = pack . show . seriesNumber
 
-alertClass :: Text -> Text
-alertClass "" = "bg-primary"
-alertClass status = "alert-" ++ status
-
 lastSplit :: String -> Maybe (String, Char)
 lastSplit []     = Nothing
 lastSplit string = Just (L.init string, L.last string)

@@ -74,6 +74,17 @@
 
         <div .panel .panel-primary>
             <div #p8 .panel-heading>
+                <div .panel-title>What is "weighted scoring?"
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <p>Good question! This is a system by which an action may be attributed more or less points based on the characters at play. For instance, killing Her Grace Queen Cersei should reward more points than killing some ruffian in the local pub. The weight is calculated as a percentage of the character's total points over the last season-length, and is added to the regularly assigned point value for the action.
+                            <p>Most of the weighted scoring actions are 2 character actions. When both characters benefit from said action (e.g. sex) then each character receives a weighted bonus corresponding to the other's points. (e.g. if Podrick and Daenerys were to have sex, Podrick would receive more points because she is clearly out of his league).
+                            <p>When one character benefits at the other's expense (e.g. killing) then both characters' scores reflect the loser's weight. This is to say, when Bronn kills Tyrion, he will literally take points from Tyrion based on Tyrion's importance.
+
+        <div .panel .panel-primary>
+            <div #p9 .panel-heading>
                 <div .panel-title>
                     That was confusing. Can I see an example of weekly play?
             <table .table .panel-table>
@@ -93,7 +104,7 @@
                             <p>I realize that Rickon Stark is a useless baby and make another waiver claim to drop him for Nymeria Sand because she was in the episode too, it can't hurt. This claim goes through after one day (early Thursday Morning) and nobody else was claiming her that had better priority so I get her on my team. Success!
 
         <div .panel .panel-primary>
-            <div #p9 .panel-heading>
+            <div #p10 .panel-heading>
                 <div .panel-title>
                     Is there an example league that I can check out?
             <table .table .panel-table>
@@ -109,7 +120,7 @@
             <h4>Other Questions
 
         <div .panel .panel-primary>
-            <div #p10 .panel-heading>
+            <div #p11 .panel-heading>
                 <div .panel-title>What is a normal league size?
             <table .table .panel-table>
                 <tbody>
@@ -118,7 +129,7 @@
                             We have found the game works well with 7-9 houses per league and recommend something around there, but we allow leagues to be between 4 and 12 houses (12 is a lot - that's untested water). In our experience there are generally about 35 +/- 5 "ownable" characters at a time, so you should shoot for (# houses) x (# characters/house) to hit somewhere around that number.
 
         <div .panel .panel-primary>
-            <div #p11 .panel-heading>
+            <div #p12 .panel-heading>
                 <div .panel-title>How are the scores tallied?
             <table .table .panel-table>
                 <tbody>
@@ -127,7 +138,7 @@
                             Each individual league was set up with different points assigned to different actions. The Fantasy Game of Thrones team watches each episode and tallies the amount of times these actions take place, then enters them into the site to generate scores for all leagues.
 
         <div .panel .panel-primary>
-            <div #p12 .panel-heading>
+            <div #p13 .panel-heading>
                 <div .panel-title>Why isn't X character on the site?
             <table .table .panel-table>
                 <tbody>
@@ -136,7 +147,7 @@
                             Either because we haven't added them yet or they are not important.
 
         <div .panel .panel-primary>
-            <div #p13 .panel-heading>
+            <div #p14 .panel-heading>
                 <div .panel-title>
                     Why does the site seem to be missing features/when
                     will these features come?
@@ -146,7 +157,7 @@
                         <td>This website is still in development, and while it is ready for basic GOT leagues, we are working on more features all the time. Some of them may come in the middle of the season, or next year. Be patient, we're not getting paid for this (yet...?).
 
         <div .panel .panel-primary>
-            <div #p14 .panel-heading>
+            <div #p15 .panel-heading>
                 <div .panel-title>I have more questions, can I ask you?
             <table .table .panel-table>
                 <tbody>
@@ -157,11 +168,37 @@
                                 grandmaester@fantasygameofthrones.com
 
         <div .panel .panel-primary>
-            <div #p15 .panel-heading>
-                <div .panel-title>You guys are my sun and stars
+            <div #p16 .panel-heading>
+                <div .panel-title>You guys are my sun and stars!
             <table .table .panel-table>
                 <tbody>
                     <tr>
                         <td>
                             Aw, thanks! But there are actually more stars in the sky than people working on this.
+
+        <div .panel .panel-primary>
+            <div #p17 .panel-heading>
+                <div .panel-title>
+                    Wait, who is working on this site?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <p>
+                                Like most organizations, this site operates
+                                similarly to the Night's Watch. Thus, our
+                                organization chart looks like:
+                            <ul .list-unstyled>
+                                <li>
+                                    <span .text-primary>First Ranger:
+                                    Dylan Sorensen
+                                <li>
+                                    <span .text-primary>First Steward:
+                                    Kevin Morrissey
+                                <li>
+                                    <span .text-primary>First Builder:
+                                    Joe Kennedy
+                                <li>
+                                    <span .text-primary>Hot Pie:
+                                    Jay Farber
 

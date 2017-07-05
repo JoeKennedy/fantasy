@@ -20,6 +20,7 @@ leagueLayout leagueId activeTab widget = do
     leagues <- getLeaguesByUser maybeUserId
     Entity selectedSeasonId selectedSeason <- getSelectedSeason leagueId
     seasons <- runDB $ selectList [SeasonLeagueId ==. leagueId] [Desc SeasonId]
+    maybeDraftSettingsEntity <- runDB $ getBy $ UniqueDraftSettingsSeasonId selectedSeasonId
     let settingsRoute = case maybeTeam of
             Just (Entity _ team) -> LeagueTeamSettingsR leagueId $ teamNumber team
             Nothing -> LeagueSettingsR leagueId LeagueEditSettingsR

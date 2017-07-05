@@ -29,18 +29,20 @@ getPerformancesForPlayer seasonId playerId = runDB
         E.orderBy [E.asc (week ^. WeekNumber)]
         return (performance, week)
 
-getPreviousWeeks :: LeagueId -> Int -> Int -> Handler [Entity Week]
-getPreviousWeeks leagueId overallEpisodeNumber totalEpisodes = runDB
-    $ E.select
-    $ E.from $ \(week `E.InnerJoin` episode) -> do
-        E.on $ week ^. WeekEpisodeId E.==. episode ^. EpisodeId
-        E.where_ $ week ^. WeekLeagueId E.==. E.val leagueId
-            E.&&. episode ^. EpisodeOverallNumber E.<. E.val overallEpisodeNumber
-        E.orderBy [E.asc (episode ^. EpisodeOverallNumber)]
+getPreviousWeeks :: Week -> Episode -> Handler [Entity Week]
+getPreviousWeeks week episode = runDB $ do
+    series <- get404 $ episodeSeriesId episode
+    let (leagueId, totalEpisodes) = (weekLeagueId week, seriesTotalEpisodes series)
+        overallNumber = episodeOverallNumber episode
+    E.select $ E.from $ \(week' `E.InnerJoin` episode') -> do
+        E.on $ week' ^. WeekEpisodeId E.==. episode' ^. EpisodeId
+        E.where_ $ week' ^. WeekLeagueId E.==. E.val leagueId
+            E.&&. episode' ^. EpisodeOverallNumber E.<. E.val overallNumber
+        E.orderBy [E.asc (episode' ^. EpisodeOverallNumber)]
         -- TODO - maybe this number should be configurable by league?
-        -- But right now it's the total number of episodes in the season minus 1
-        E.limit (fromIntegral $ totalEpisodes - 1)
-        return week
+        -- But right now it's the total number of episodes in the season
+        E.limit $ fromIntegral totalEpisodes
+        return week'
 
 --------------------
 -- Finalize Weeks --
@@ -309,9 +311,7 @@ calculateNextWeekCumulativePoints week = do
 calculateWeekCumulativePoints :: Entity Week -> Handler ()
 calculateWeekCumulativePoints (Entity weekId week) = do
     episode <- runDB $ get404 $ weekEpisodeId week
-    series <- runDB $ get404 $ episodeSeriesId episode
-    let (leagueId, overallNumber) = (weekLeagueId week, episodeOverallNumber episode)
-    previousWeeks <- getPreviousWeeks leagueId overallNumber $ seriesTotalEpisodes series
+    previousWeeks <- getPreviousWeeks week episode
     performances <- runDB $ selectList [PerformanceWeekId ==. weekId] []
     forM_ performances $ updateCumulativePoints $ map entityKey previousWeeks
 

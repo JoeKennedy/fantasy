@@ -2,7 +2,7 @@
 
 <div .well>
     $if null events
-        Due to developer laziness, you'll need to
+        Due to the laziness of the First Builder, you'll need to
         <a href=@{AdminR AdminEventsR}?episode=#{toPathPiece episodeId}>create an event
         for
         <a href=@{AdminR $ AdminEpisodeR episodeId}>this episode

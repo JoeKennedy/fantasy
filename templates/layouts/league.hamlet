@@ -76,12 +76,17 @@
             $forall Entity seasonId season <- seasons
               $if seasonId /= selectedSeasonId
                 <li>
-                  <a href=#">#{seasonYear season}
+                  <a href=@{LeagueSeasonR leagueId $ seasonYear season}>
+                    #{seasonYear season}
 
       $if canEnterDraftResults maybeUserId league selectedSeason
         <div .nav .navbar-nav .navbar-right>
-          <a .btn .btn-primary .navbar-btn href=@{LeagueDraftR leagueId}>
-            Enter Draft Results!
+          $if isJust maybeDraftSettingsEntity
+            <a .btn .btn-primary .navbar-btn href=@{LeagueDraftR leagueId}>
+              Enter Draft Results!
+          $else
+            <a .btn .btn-primary .navbar-btn href=@{LeagueSettingsR leagueId LeagueDraftSettingsR}>
+              Edit Draft Settings
 
 <div .league-container>
   ^{widget}

@@ -84,13 +84,14 @@ getPerformancesForGame (Entity _ game) = runDB
         E.orderBy [E.desc (performance ^. PerformanceIsStarter), E.asc (character ^. CharacterName)]
         return (performance, week, player, team, character)
 
-getPerformancesForPlayer :: PlayerId -> Handler [(Entity Performance, Entity Week, Maybe (Entity Team))]
-getPerformancesForPlayer playerId = runDB
+getPerformancesForPlayer :: PlayerId -> SeasonId -> Handler [(Entity Performance, Entity Week, Maybe (Entity Team))]
+getPerformancesForPlayer playerId seasonId = runDB
     $ E.select
     $ E.from $ \(performance `E.InnerJoin` week `E.LeftOuterJoin` team) -> do
         E.on $ E.just (performance ^. PerformanceTeamId) E.==. E.just (team ?. TeamId)
         E.on $ performance ^. PerformanceWeekId E.==. week ^. WeekId
         E.where_ $ performance ^. PerformancePlayerId E.==. E.val playerId
+            E.&&. week ^. WeekSeasonId E.==. E.val seasonId
         E.orderBy [E.desc (week ^. WeekNumber)]
         return (performance, week, team)
 
@@ -137,8 +138,8 @@ getPlaysForWeek weekId = runDB
 leagueResultsLayout :: LeagueId -> Text -> Widget -> Handler Html
 leagueResultsLayout leagueId activePill widget = do
     league <- runDB $ get404 leagueId
-    weeks  <- runDB $ selectList [WeekLeagueId ==. leagueId] [Asc WeekNumber]
-    Entity _ season <- getSelectedSeason leagueId
+    Entity seasonId season <- getSelectedSeason leagueId
+    weeks  <- runDB $ selectList [WeekSeasonId ==. seasonId] [Asc WeekNumber]
     leagueLayout leagueId "Results" $(widgetFile "layouts/results")
 
 

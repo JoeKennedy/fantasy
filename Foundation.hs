@@ -69,10 +69,11 @@ instance Yesod App where
     defaultLayout widget = do
         master <- getYesod
         maybeUser <- maybeAuth
-        mmsg <- getMessage
+        messages <- getMessages
         (title', parents) <- breadcrumbs
 
         seriesList <- runDB $ selectList [] [Asc SeriesNumber]
+        setUltDestCurrent
 
         leagues <- getLeaguesByUser $ map entityKey maybeUser
 
@@ -126,6 +127,7 @@ instance Yesod App where
     isAuthorized LeaguesR                          _ = return Authorized
     isAuthorized (LeagueR leagueId)                _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueCancelR leagueId)          _ = requireLeagueManager leagueId
+    isAuthorized (LeagueSeasonR leagueId year)     _ = requireSeasonAccessible leagueId year
     isAuthorized (LeagueDraftR leagueId)           _ = requireLeagueManagerAndIncompleteDraft leagueId
     isAuthorized (LeagueTransactionsR leagueId)    _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueAcceptTradeR _ tid)        _ = requireTradeAcceptable tid
@@ -221,6 +223,16 @@ requirePublicOrLeagueMember leagueId = do
     if leagueIsPrivate league
         then requireLeagueMember leagueId
         else return Authorized
+
+requireSeasonAccessible :: LeagueId -> Int -> Handler AuthResult
+requireSeasonAccessible leagueId year = do
+    authResult <- requirePublicOrLeagueMember leagueId
+    case authResult of
+        Authorized -> do
+          maybeSeasonEntity <- runDB $ getBy $ UniqueSeasonLeagueIdYear leagueId year
+          case maybeSeasonEntity of Just _  -> return Authorized
+                                    Nothing -> return $ Unauthorized "Season was not found"
+        _ -> return authResult
 
 requirePlayable :: LeagueId -> CharacterId -> Handler AuthResult
 requirePlayable leagueId characterId = do
@@ -362,13 +374,17 @@ requireLeagueManager leagueId = do
 
 requireLeagueManagerAndIncompleteDraft :: LeagueId -> Handler AuthResult
 requireLeagueManagerAndIncompleteDraft leagueId = do
-    Entity _ season <- getSelectedSeason leagueId
+    Entity seasonId season <- getSelectedSeason leagueId
     authResult <- requireLeagueManager leagueId
-    return $ case authResult of
+    case authResult of
         Authorized -> if seasonIsDraftComplete season
-                          then Unauthorized "Draft already completed"
-                          else Authorized
-        _ -> authResult
+            then return $ Unauthorized "Draft already completed"
+            else do
+                maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId seasonId
+                return $ case maybeDraftSettings of
+                    Just _ -> Authorized
+                    Nothing -> Unauthorized "Draft settings must be filled out for this season"
+        _ -> return $ authResult
 
 requirePlayerOwnerAndTransactionsPossible :: LeagueId -> CharacterId -> Handler AuthResult
 requirePlayerOwnerAndTransactionsPossible leagueId characterId = do
@@ -502,6 +518,7 @@ instance YesodBreadcrumbs App where
 
     breadcrumb (AdminR (AdminScoreEventR _)) = return ("", Nothing)
 
+    breadcrumb LeagueSeasonR{}            = return ("", Nothing)
     breadcrumb LeagueCancelTransactionR{} = return ("", Nothing)
     breadcrumb LeagueMoveClaimUpR{}       = return ("", Nothing)
     breadcrumb LeagueMoveClaimDownR{}     = return ("", Nothing)
@@ -595,9 +612,18 @@ instance YesodAuthPersist App
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
 
----------------------
--- Handler Helpers --
----------------------
+
+--------
+-- UI --
+--------
+alertClass :: Text -> Text
+alertClass "" = "bg-primary"
+alertClass status = "alert-" ++ status
+
+
+--------------
+-- Handlers --
+--------------
 unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = US.fakeHandlerGetLogger appLogger
 
@@ -605,17 +631,17 @@ backgroundHandler :: Handler () -> Handler ()
 backgroundHandler = forkHandler $ $logErrorS "errorHandler" . tshow
 
 
-------------------
--- User Helpers --
-------------------
+-----------
+-- Users --
+-----------
 isAdmin :: Maybe (Entity User) -> Bool
 isAdmin (Just (Entity _ user)) = userIsAdmin user
 isAdmin Nothing                = False
 
 
---------------------
--- League Helpers --
---------------------
+-------------
+-- Leagues --
+-------------
 getLeaguesByUser :: Maybe UserId -> Handler [Entity League]
 getLeaguesByUser maybeUserId = runDB
     $ E.select
@@ -628,9 +654,24 @@ getLeaguesByUser maybeUserId = runDB
         return league
 
 
---------------------
--- Season Helpers --
---------------------
+-----------
+-- Weeks --
+-----------
+getMostRecentWeek :: LeagueId -> SeasonId -> Handler (Entity Week)
+getMostRecentWeek leagueId seasonId = runDB $ do
+    maybeWeek <- selectFirst [ WeekLeagueId ==. leagueId
+                             , WeekSeasonId <=. seasonId
+                             ] [Desc WeekId]
+    return $ fromJust maybeWeek
+
+getMostRecentWeekId :: LeagueId -> SeasonId -> Handler WeekId
+getMostRecentWeekId leagueId seasonId = do
+    mostRecentWeekEntity <- getMostRecentWeek leagueId seasonId
+    return $ entityKey mostRecentWeekEntity
+
+-------------
+-- Seasons --
+-------------
 readCurrentSeason :: LeagueId -> ReaderT SqlBackend Handler (Entity Season)
 readCurrentSeason leagueId = do
     maybeSeason <- selectFirst [ SeasonLeagueId ==. leagueId
@@ -672,9 +713,19 @@ setSelectedSeason leagueId maybeSeasonId = do
         Just seasonId -> do
             season <- runDB $ get404 seasonId
             return $ Entity seasonId season
-    setSession "selectedSessionId" $ toPathPiece $ entityKey seasonEntity
+    setSession "selectedSeasonId" $ toPathPiece $ entityKey seasonEntity
     return seasonEntity
 
+getLastSeason :: Season -> Handler (Maybe (Entity Season))
+getLastSeason season = runDB $ do
+    series <- get404 $ seasonSeriesId season
+    let (leagueId, year) = (seasonLeagueId season, seriesYear series - 1)
+    getBy $ UniqueSeasonLeagueIdYear leagueId year
+
+getLastSeasonId :: Season -> Handler (Maybe SeasonId)
+getLastSeasonId season = do
+    lastSeason <- getLastSeason season
+    return $ map entityKey lastSeason
 
 
 -- Note: Some functionality previously present in the scaffolding has been
