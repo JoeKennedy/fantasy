@@ -141,7 +141,7 @@ postLeagueEditSettingsR leagueId = do
 createLeague :: League -> Handler ()
 createLeague league = do
     leagueId <- runDB $ insert league
-    seriesList <- runDB $ selectList [SeriesNumber >=. 6] [Desc SeriesNumber]
+    seriesList <- runDB $ selectList [SeriesNumber >=. 6] [Asc SeriesNumber]
     let userId = leagueCreatedBy league
     mapM_ (\s -> createLeagueSeason userId s $ Entity leagueId league) seriesList
 
