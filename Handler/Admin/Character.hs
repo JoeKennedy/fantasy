@@ -25,7 +25,7 @@ characterForm userId character = renderBootstrapForm $ Character
     <*> updatedAtField
     where speciesList = optionsPersistKey [] [Asc SpeciesName]  speciesName
           houses      = optionsPersistKey [] [Asc HouseName]    houseName
-          seriesList  = optionsPersistKey [] [Asc SeriesNumber] seriesNumberText
+          seriesList  = optionsPersistKey [] [Desc SeriesNumber] seriesNumberText
 
 
 ------------
