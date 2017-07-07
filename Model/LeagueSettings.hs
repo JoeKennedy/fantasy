@@ -42,7 +42,7 @@ possibleRegularSeasonLengths  _ = totalWeeksError
 
 possiblePlayoffLengths :: Int -> [Int]
 possiblePlayoffLengths 10 = [0..3]
-possiblePlayoffLengths  7 = [0..7]
+possiblePlayoffLengths  7 = [0..2]
 possiblePlayoffLengths  _ = totalWeeksError
 
 possibleNumbersOfTeamsInPlayoffs :: Int -> [Int]
@@ -93,7 +93,9 @@ defaultNumberOfTeamsInPlayoffs _ _ = totalWeeksError
 -- takes in total number of weeks in season and number of teams
 -- returns last week of regular season
 defaultTradeDeadlineWeek :: Int -> Int -> Int
-defaultTradeDeadlineWeek totalWeeks teamsCount = fst $ defaultSeasonLength totalWeeks teamsCount
+defaultTradeDeadlineWeek 10 teamsCount = fst $ defaultSeasonLength 10 teamsCount
+defaultTradeDeadlineWeek 7 _ = 6
+defaultTradeDeadlineWeek _ _ = totalWeeksError
 
 defaultWaiverPeriodInDays :: Int
 defaultWaiverPeriodInDays = 1
