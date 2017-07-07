@@ -21,7 +21,7 @@
                             need to give that team a player from your roster.
                             Choose a player to trade.
                         $of _
-            ^{playersTable players playersTableType}
+            ^{playersTable players playersTableType series}
             <div .modal-footer>
                 <button .btn .btn-default type="button" data-dismiss="modal" aria-label="Cancel">
                     Cancel

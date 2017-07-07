@@ -51,7 +51,7 @@
                                     -
                         <td .hidden-xs>#{toPathPiece $ characterStatus character}
                         <td .hidden-sm .hidden-xs>
-                            $with seasonsSurvived <- 6 - seriesNumber rookieSeries
+                            $with seasonsSurvived <- seriesNumber series - seriesNumber rookieSeries
                                 $case characterStatus character
                                     $of Dead
                                         -

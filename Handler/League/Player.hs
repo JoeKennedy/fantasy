@@ -37,6 +37,7 @@ getLeaguePlayersR leagueId = do
     maybeTeamId <- maybeAuthTeamId leagueId
     Entity seasonId season <- getSelectedSeason leagueId
     Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
+    series <- runDB $ get404 $ seasonSeriesId season
     weekId <- getMostRecentWeekId leagueId seasonId
     leaguePlayers <- getPlayers seasonId weekId
     allPlayers <- playersWithButtons leagueId season leaguePlayers
@@ -174,8 +175,8 @@ postLeaguePlayerTradeR leagueId characterIdToTake characterIdToGive = do
 -------------
 -- Widgets --
 -------------
-playersTable :: [FullPlayerForTable] -> PlayersTableType -> Widget
-playersTable players playersTableType =
+playersTable :: [FullPlayerForTable] -> PlayersTableType -> Series -> Widget
+playersTable players playersTableType series =
     let colspan = playersTableColumnCount playersTableType
         subTables = case splitPlayersTable playersTableType of
             Nothing -> [(packPlayersTableType playersTableType, players, [])]
@@ -183,8 +184,8 @@ playersTable players playersTableType =
                 splitStartersAndBench players numberOfStarters rosterSize
     in  $(widgetFile "league/players_table")
 
-playersModal :: [FullPlayerForTable] -> PlayersTableType -> TransactionType -> Widget
-playersModal players playersTableType modalType =
+playersModal :: [FullPlayerForTable] -> PlayersTableType -> Series -> TransactionType -> Widget
+playersModal players playersTableType series modalType =
     let typeText = toPathPiece modalType
         typeLower = toLower typeText
         modalId = typeLower ++ "_modal"

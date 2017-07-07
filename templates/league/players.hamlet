@@ -30,16 +30,16 @@
     <div .col-lg-9 .col-sm-8 .col-xs-12>
         <div .tab-content>
             <div #free_agents .tab-pane .active role="tabpanel">
-                ^{playersTable freeAgents FreeAgents}
+                ^{playersTable freeAgents FreeAgents series}
             <div #on_rosters .tab-pane role="tabpanel">
-                ^{playersTable onRosters OnRosters}
+                ^{playersTable onRosters OnRosters series}
             $forall (Entity teamId team, players) <- teamsAndPlayers
                 <div id="team_#{toPathPiece teamId}" .tab-pane role="tabpanel">
                     $with onRosterPlayers <- recombineTeamToPlayers (Entity teamId team) players
-                        ^{playersTable onRosterPlayers (SingleTeam (teamName team))}
+                        ^{playersTable onRosterPlayers (SingleTeam (teamName team)) series}
             <div #all_players .tab-pane role="tabpanel">
-                ^{playersTable allPlayers AllPlayers}
+                ^{playersTable allPlayers AllPlayers series}
 
-^{playersModal myPlayers (PlayersModal numberOfStarters rosterSize) Claim}
-^{playersModal myPlayers (PlayersModal numberOfStarters rosterSize) Trade}
+^{playersModal myPlayers (PlayersModal numberOfStarters rosterSize) series Claim}
+^{playersModal myPlayers (PlayersModal numberOfStarters rosterSize) series Trade}
 

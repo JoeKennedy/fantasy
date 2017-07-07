@@ -146,6 +146,7 @@ getLeagueTeamR leagueId number = do
     games <- getGamesForTeam seasonId teamId
     performances <- mapM (getPerformancesForGame . fst) games
     Entity _ teamSeason <- runDB $ getBy404 $ UniqueTeamSeasonTeamIdSeasonId teamId seasonId
+    series <- runDB $ get404 $ seasonSeriesId season
     let gamesAndPerformances = zip games performances
         tab = if isUserTeamOwner maybeUserId team then "My House" else "Houses"
         numberOfStarters = generalSettingsNumberOfStarters generalSettings
