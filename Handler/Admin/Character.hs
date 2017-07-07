@@ -23,8 +23,8 @@ characterForm userId character = renderBootstrapForm $ Character
     <*> createdAtField (characterCreatedAt <$> character)
     <*> updatedByField userId
     <*> updatedAtField
-    where speciesList = optionsPersistKey [] [Asc SpeciesName]  speciesName
-          houses      = optionsPersistKey [] [Asc HouseName]    houseName
+    where speciesList = optionsPersistKey [] [Asc SpeciesId] speciesName
+          houses      = optionsPersistKey [] [Asc HouseName] houseName
           seriesList  = optionsPersistKey [] [Desc SeriesNumber] seriesNumberText
 
 
