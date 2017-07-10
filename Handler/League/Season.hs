@@ -52,6 +52,7 @@ createLeagueSeason userId (Entity seriesId series) (Entity leagueId league) = do
             let seasonId = entityKey seasonEntity
             inactivateOtherSeasons userId seasonId leagueId
             createTeamInfo userId seasonId leagueEntity
+            createPlayersIfNecessary userId leagueId
 
             maybePreviousSeasonId <- selectPreviousSeasonId leagueId series
             createGeneralSettings userId seasonEntity leagueEntity maybePreviousSeasonId
@@ -59,7 +60,7 @@ createLeagueSeason userId (Entity seriesId series) (Entity leagueId league) = do
             return seasonEntity
 
         backgroundHandler $ do
-            runDB $ createPlayerInfo userId (entityKey seasonEntity) leagueId
+            runDB $ createPlayerSeasons userId (entityKey seasonEntity) leagueId
             episodes <- runDB $ selectList [ EpisodeSeriesId ==. seriesId
                                            , EpisodeStatus !=. YetToAir
                                            ] [Asc EpisodeNumber]
@@ -190,35 +191,34 @@ teamNonTextAttributes _ _ = (Nothing, Nothing)
 -------------
 -- Players --
 -------------
-createPlayerInfo :: UserId -> SeasonId -> LeagueId -> ReaderT SqlBackend Handler ()
-createPlayerInfo userId seasonId leagueId = do
-    playerIds <- selectOrCreatePlayerIds userId leagueId
-    forM_ playerIds $ createPlayerSeason userId leagueId seasonId
-
-selectOrCreatePlayerIds :: UserId -> LeagueId -> ReaderT SqlBackend Handler [PlayerId]
-selectOrCreatePlayerIds userId leagueId = do
-    playerIds <- selectKeysList [PlayerLeagueId ==. leagueId] []
-    if length playerIds > 0 then return playerIds else do
+createPlayersIfNecessary :: UserId -> LeagueId -> ReaderT SqlBackend Handler ()
+createPlayersIfNecessary userId leagueId = do
+    playersCount <- count [PlayerLeagueId ==. leagueId]
+    if playersCount > 0 then return () else do
         characters <- selectList [] [Asc CharacterName]
-        mapM (createPlayer userId leagueId) characters
+        mapM_ (createPlayer userId leagueId) characters
 
-createPlayer :: UserId -> LeagueId -> Entity Character ->
-                ReaderT SqlBackend Handler PlayerId
+createPlayer :: UserId -> LeagueId -> Entity Character -> ReaderT SqlBackend Handler ()
 createPlayer userId leagueId (Entity characterId character) = do
     now <- liftIO getCurrentTime
-    insert $ Player { playerLeagueId         = leagueId
-                    , playerCharacterId      = characterId
-                    , playerTeamId           = Nothing
-                    , playerIsStarter        = False
-                    , playerPointsThisSeason = 0
-                    , playerPointsThisRegularSeason = 0
-                    , playerPointsThisPostSeason = 0
-                    , playerIsPlayable       = characterIsPlayable character
-                    , playerCreatedBy        = userId
-                    , playerCreatedAt        = now
-                    , playerUpdatedBy        = userId
-                    , playerUpdatedAt        = now
-                    }
+    insert_ $ Player { playerLeagueId         = leagueId
+                     , playerCharacterId      = characterId
+                     , playerTeamId           = Nothing
+                     , playerIsStarter        = False
+                     , playerPointsThisSeason = 0
+                     , playerPointsThisRegularSeason = 0
+                     , playerPointsThisPostSeason = 0
+                     , playerIsPlayable       = characterIsPlayable character
+                     , playerCreatedBy        = userId
+                     , playerCreatedAt        = now
+                     , playerUpdatedBy        = userId
+                     , playerUpdatedAt        = now
+                     }
+
+createPlayerSeasons :: UserId -> SeasonId -> LeagueId -> ReaderT SqlBackend Handler ()
+createPlayerSeasons userId seasonId leagueId = do
+    playerIds <- selectKeysList [PlayerLeagueId ==. leagueId] []
+    forM_ playerIds $ createPlayerSeason userId leagueId seasonId
 
 createPlayerSeason :: UserId -> LeagueId -> SeasonId -> PlayerId -> ReaderT SqlBackend Handler ()
 createPlayerSeason userId leagueId seasonId playerId = do
