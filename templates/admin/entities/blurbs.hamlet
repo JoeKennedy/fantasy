@@ -1,5 +1,5 @@
 <thead>
-    <th data-field="blurb-character" data-sortable="true" data-sorter="linkSorter">
+    <th data-field="blurb-character" data-sortable="true">
         Character
     <th data-field="blurb-content" data-sortable="true">
         Status

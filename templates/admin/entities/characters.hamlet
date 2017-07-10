@@ -1,17 +1,17 @@
 <thead>
-    <th data-field="character-name" data-sortable="true" data-sorter="linkSorter">
+    <th data-field="character-name" data-sortable="true">
         Character
     <th data-field="character-status" data-sortable="true">
         Status
-    <th .hidden-xs data-field="character-species" data-sortable="true" data-sorter="linkSorter">
+    <th .hidden-xs data-field="character-species" data-sortable="true">
         Species
     <th .hidden-sm .hidden-xs data-field="character-is-playable" data-sortable="true">
         Playable?
-    <th .hidden-sm .hidden-xs data-field="character-season" data-sortable="true" data-sorter="linkSorter">
+    <th .hidden-sm .hidden-xs data-field="character-season" data-sortable="true">
         Rookie Season
     <th .hidden-sm .hidden-xs data-field="character-episodes" data-sortable="true">
         Episode Count
-    <th data-field="character-house" data-sortable="true" data-sorter="linkSorter">
+    <th data-field="character-house" data-sortable="true">
         House
     <th>
 
