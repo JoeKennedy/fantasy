@@ -28,13 +28,17 @@ getLeagueSeasonR leagueId year = do
 -- Seasons --
 -------------
 updateLeagueSeasonsIfRelevent :: Series -> Entity Series -> Handler ()
-updateLeagueSeasonsIfRelevent oldSeries (Entity seriesId series) =
+updateLeagueSeasonsIfRelevent oldSeries (Entity seriesId series) = do -- TODO - remove this "do"
     if seriesYear series == seriesYear oldSeries then return () else runDB $
         updateWhere [ SeasonSeriesId ==. seriesId ]
                     [ SeasonYear =. seriesYear series
                     , SeasonUpdatedBy =. seriesUpdatedBy series
                     , SeasonUpdatedAt =. seriesUpdatedAt series
                     ]
+    -- TODO - remove the rest of this function
+    if seriesNumber series /= 7 then return () else do
+        leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] []
+        forM_ leagueIds $ createPlayerSeasonsIfNecessary $ Entity seriesId series
 
 createLeagueSeasons :: Entity Series -> Handler ()
 createLeagueSeasons seriesEntity = do
@@ -214,6 +218,14 @@ createPlayer userId leagueId (Entity characterId character) = do
                      , playerUpdatedBy        = userId
                      , playerUpdatedAt        = now
                      }
+
+-- TODO - remove this function
+createPlayerSeasonsIfNecessary :: Entity Series -> LeagueId -> Handler ()
+createPlayerSeasonsIfNecessary (Entity seriesId series) leagueId = runDB $ do
+    Entity seasonId _ <- getBy404 $ UniqueSeasonLeagueIdSeriesId leagueId seriesId
+    playerSeasonCount <- count [PlayerSeasonSeasonId ==. seasonId]
+    if playerSeasonCount > 0 then return () else
+        createPlayerSeasons (seriesUpdatedBy series) seasonId leagueId
 
 createPlayerSeasons :: UserId -> SeasonId -> LeagueId -> ReaderT SqlBackend Handler ()
 createPlayerSeasons userId seasonId leagueId = do
