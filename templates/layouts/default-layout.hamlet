@@ -51,7 +51,8 @@
         <li .visible-lg>
           <a href=@{FAQR}>How To Play
         <li .visible-lg>
-          <a href="https://smigoversensays.com/game-of-thrones-fantasy/">Blog
+          <a href="https://fantasygameofthronesblog.wordpress.com/" target="_blank">
+            Blog
         $if isAdmin maybeUser
           <li .visible-md .visible-lg>
             <a href="@{AdminR AdminDashboardR}">Admin
@@ -89,7 +90,8 @@
       <li>
         <a href=@{FAQR}>How To Play
       <li>
-        <a href="https://smigoversensays.com/game-of-thrones-fantasy/">Blog
+        <a href="https://fantasygameofthronesblog.wordpress.com/" target="_blank">
+          Blog
       $if isAdmin maybeUser
         <li .hidden-xs>
           <a href="@{AdminR AdminDashboardR}">Admin
