@@ -560,6 +560,7 @@ claimProcessableAt leagueId utcTime = do
 updateTeamSeasonStartersCount :: TeamId -> SeasonId -> UTCTime -> UserId -> Handler ()
 updateTeamSeasonStartersCount teamId seasonId utcTime userId = runDB $ do
     startersCount <- count [ PlayerSeasonTeamId ==. Just teamId
+                           , PlayerSeasonSeasonId ==. seasonId
                            , PlayerSeasonIsStarter ==. True]
     updateWhere [ TeamSeasonTeamId ==. teamId, TeamSeasonSeasonId ==. seasonId ]
                 [ TeamSeasonStartersCount =. startersCount

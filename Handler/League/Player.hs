@@ -117,7 +117,7 @@ postLeaguePlayerBenchR leagueId characterId = do
         now <- liftIO getCurrentTime
         userId <- requireAuthId
         Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
-        runDB $ update playerSeasonId [ PlayerSeasonIsStarter =. True
+        runDB $ update playerSeasonId [ PlayerSeasonIsStarter =. False
                                       , PlayerSeasonUpdatedAt =. now
                                       , PlayerSeasonUpdatedBy =. userId ]
         let teamId = fromJust $ playerSeasonTeamId playerSeason
@@ -125,8 +125,9 @@ postLeaguePlayerBenchR leagueId characterId = do
         updateTeamSeasonStartersCount teamId seasonId now userId
         character <- runDB $ get404 characterId
         let spotsLeft = generalSettingsNumberOfStarters generalSettings - teamSeasonStartersCount teamSeason + 1
+            spotOrSpots = if spotsLeft == 1 then "spot" else "spots"
             message = characterName character ++ " is now benched in your lineup and you have "
-                      ++ pack (show spotsLeft) ++ " spots for starters."
+                      ++ pack (show spotsLeft) ++ " " ++ spotOrSpots ++ " for starters."
         succeedTransaction transactionId
         setMessage $ toMarkup message
 
