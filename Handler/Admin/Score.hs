@@ -114,9 +114,7 @@ replacertEvent episodeId maybeEventId = do
     result <- runInputPostResult $ scoreEventForm userId episodeId now maybeEvent
     case result of
         FormMissing -> badMethod
-        FormFailure args -> do
-            $(logInfo) (unwords args)
-            invalidArgs args
+        FormFailure args -> invalidArgs args
         FormSuccess event -> do
             uniqueFailureOrEventId <- runDB $ replacertUnique maybeEventId event
             case uniqueFailureOrEventId of
