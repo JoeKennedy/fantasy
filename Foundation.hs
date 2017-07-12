@@ -121,20 +121,17 @@ instance Yesod App where
     isAuthorized (SeriesEpisodesR _)  _ = return Authorized
     isAuthorized (SeriesEpisodeR _ _) _ = return Authorized
 
-    -- TODO - For transaction routes, make sure transaction is in the correct
-    -- league, or take leagueId out of the route, OR figure out how to get a
-    -- transactionNumber within league, or something like that
     isAuthorized LeaguesR                          _ = return Authorized
     isAuthorized (LeagueR leagueId)                _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueCancelR leagueId)          _ = requireLeagueManager leagueId
     isAuthorized (LeagueSeasonR leagueId year)     _ = requireSeasonAccessible leagueId year
     isAuthorized (LeagueDraftR leagueId)           _ = requireLeagueManagerAndIncompleteDraft leagueId
     isAuthorized (LeagueTransactionsR leagueId)    _ = requirePublicOrLeagueMember leagueId
-    isAuthorized (LeagueAcceptTradeR _ tid)        _ = requireTradeAcceptable tid
-    isAuthorized (LeagueDeclineTradeR _ tid)       _ = requireTradeDeclinable tid
-    isAuthorized (LeagueCancelTransactionR _ tid)  _ = requireTransactionCancelable tid
-    isAuthorized (LeagueMoveClaimUpR _ tid)        _ = requireClaimMovableUp tid
-    isAuthorized (LeagueMoveClaimDownR _ tid)      _ = requireClaimMovableDown tid
+    isAuthorized (LeagueAcceptTradeR lid tid)      _ = requireTradeAcceptable lid tid
+    isAuthorized (LeagueDeclineTradeR lid tid)     _ = requireTradeDeclinable lid tid
+    isAuthorized (LeagueCancelTransactionR lid tid)_ = requireTransactionCancelable lid tid
+    isAuthorized (LeagueMoveClaimUpR lid tid)      _ = requireClaimMovableUp lid tid
+    isAuthorized (LeagueMoveClaimDownR lid tid)    _ = requireClaimMovableDown lid tid
 
     isAuthorized (LeagueTeamsR leagueId)           _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeagueTeamR leagueId _)          _ = requirePublicOrLeagueMember leagueId
@@ -148,11 +145,10 @@ instance Yesod App where
     isAuthorized (LeagueResultsWeekR lid weekNo)   _ = requireWeekExists lid weekNo
     isAuthorized (LeaguePlayersR leagueId)         _ = requirePublicOrLeagueMember leagueId
     isAuthorized (LeaguePlayerR leagueId characId) _ = requirePlayable leagueId characId
-    -- The below four lines need more stringent conditions
-    isAuthorized (LeaguePlayerStartR lid characId) _ = requirePlayerOwnerAndTransactionsPossible lid characId
-    isAuthorized (LeaguePlayerBenchR lid characId) _ = requirePlayerOwnerAndTransactionsPossible lid characId
-    isAuthorized (LeaguePlayerClaimR lid _ charId) _ = requirePlayerOwnerAndTransactionsPossible lid charId
-    isAuthorized (LeaguePlayerTradeR lid _ charId) _ = requirePlayerOwnerAndTransactionsPossible lid charId
+    isAuthorized (LeaguePlayerStartR lid characId) _ = requirePlayerStartable lid characId
+    isAuthorized (LeaguePlayerBenchR lid characId) _ = requirePlayerBenchable lid characId
+    isAuthorized (LeaguePlayerClaimR lid cid rcid) _ = requireClaimPossible lid cid rcid
+    isAuthorized (LeaguePlayerTradeR lid cid rcid) _ = requireTradePossible lid cid rcid
 
     isAuthorized (LeagueSettingsR leagueId _)   True = requireLeagueManager leagueId
     isAuthorized (LeagueSettingsR leagueId _)  False = requirePublicOrLeagueMember leagueId
@@ -276,57 +272,70 @@ requireWeekExists leagueId weekNo = do
     case maybeWeek of Just _  -> requirePublicOrLeagueMember leagueId
                       Nothing -> return $ Unauthorized "Week does not exist"
 
-requireTradeAcceptable :: TransactionId -> Handler AuthResult
-requireTradeAcceptable transactionId = do
-    transaction <- runDB $ get404 transactionId
-    Entity _ season <- getSelectedSeason $ transactionLeagueId transaction
-    muid <- maybeAuthId
-    case (muid, transactionOtherTeamId transaction) of
-        (Nothing, _)     -> return AuthenticationRequired
-        (_, Nothing)     -> return $ Unauthorized "Transaction must have another team"
-        (_, Just teamId) ->
-            if transactionStatus transaction == Requested && transactionType transaction == Trade
-                then if seasonIsAfterTradeDeadline season
-                         then return $ Unauthorized "Trades cannot happen after trade deadline"
-                         else requireTeamOwner teamId
-                else return $ Unauthorized "Must be a trade transaction with status of requested"
+requireTransactionInLeague :: LeagueId -> Transaction -> AuthResult
+requireTransactionInLeague leagueId transaction =
+    if leagueId == transactionLeagueId transaction
+        then Authorized else Unauthorized "Transaction is not in this league"
 
-requireTradeDeclinable :: TransactionId -> Handler AuthResult
+requireTradeAcceptable :: LeagueId -> TransactionId -> Handler AuthResult
+requireTradeAcceptable leagueId transactionId = do
+    transaction <- runDB $ get404 transactionId
+    let transactionInLeague = requireTransactionInLeague leagueId transaction
+    if transactionInLeague /= Authorized then return transactionInLeague else do
+        Entity _ season <- getSelectedSeason $ transactionLeagueId transaction
+        muid <- maybeAuthId
+        case (muid, transactionOtherTeamId transaction) of
+            (Nothing, _)     -> return AuthenticationRequired
+            (_, Nothing)     -> return $ Unauthorized "Transaction must have another team"
+            (_, Just teamId) ->
+                if transactionStatus transaction == Requested && transactionType transaction == Trade
+                    then if seasonIsAfterTradeDeadline season
+                             then return $ Unauthorized "Trades cannot happen after trade deadline"
+                             else requireTeamOwner teamId
+                    else return $ Unauthorized "Must be a trade transaction with status of requested"
+
+requireTradeDeclinable :: LeagueId -> TransactionId -> Handler AuthResult
 requireTradeDeclinable = requireTradeAcceptable
 
-requireTransactionCancelable :: TransactionId -> Handler AuthResult
-requireTransactionCancelable transactionId = do
+requireTransactionCancelable :: LeagueId -> TransactionId -> Handler AuthResult
+requireTransactionCancelable leagueId transactionId = do
     transaction <- runDB $ get404 transactionId
-    Entity _ season <- getSelectedSeason $ transactionLeagueId transaction
-    let teamId = transactionTeamId transaction
-    if transactionStatus transaction == Requested
-        then case transactionType transaction of
-                 Claim -> requireTeamOwner teamId
-                 Trade -> if seasonIsAfterTradeDeadline season
-                              then return $ Unauthorized "Must be a trade transaction with status of requested"
-                              else requireTeamOwner teamId
-                 _ -> return $ Unauthorized "Must be a trade or claim transaction"
-        else return $ Unauthorized "Must be a transaction with status of requested"
+    let transactionInLeague = requireTransactionInLeague leagueId transaction
+    if transactionInLeague /= Authorized then return transactionInLeague else do
+        Entity _ season <- getSelectedSeason $ transactionLeagueId transaction
+        let teamId = transactionTeamId transaction
+        if transactionStatus transaction == Requested
+            then case transactionType transaction of
+                     Claim -> requireTeamOwner teamId
+                     Trade -> if seasonIsAfterTradeDeadline season
+                                  then return $ Unauthorized "Must be a trade transaction with status of requested"
+                                  else requireTeamOwner teamId
+                     _ -> return $ Unauthorized "Must be a trade or claim transaction"
+            else return $ Unauthorized "Must be a transaction with status of requested"
 
-requireClaimMovableUp :: TransactionId -> Handler AuthResult
-requireClaimMovableUp transactionId = do
+requireClaimMovableUp :: LeagueId -> TransactionId -> Handler AuthResult
+requireClaimMovableUp leagueId transactionId = do
     transaction <- runDB $ get404 transactionId
-    if fromMaybe 1 (transactionPosition transaction) > 1 && transactionType transaction == Claim
-        then requireTransactionCancelable transactionId
-        else return $ Unauthorized "Must be a claim transaction that isn't first"
-
-requireClaimMovableDown :: TransactionId -> Handler AuthResult
-requireClaimMovableDown transactionId = do
-    transaction <- runDB $ get404 transactionId
-    let teamId = transactionTeamId transaction
-    claimRequests <- runDB $ count [ TransactionTeamId ==. teamId
-                                   , TransactionType   ==. Claim
-                                   , TransactionStatus ==. Requested
-                                   ]
-    if fromMaybe claimRequests (transactionPosition transaction) < claimRequests
-        && transactionType transaction == Claim
-            then requireTransactionCancelable transactionId
+    let transactionInLeague = requireTransactionInLeague leagueId transaction
+    if transactionInLeague /= Authorized then return transactionInLeague else
+        if fromMaybe 1 (transactionPosition transaction) > 1 && transactionType transaction == Claim
+            then requireTransactionCancelable leagueId transactionId
             else return $ Unauthorized "Must be a claim transaction that isn't first"
+
+requireClaimMovableDown :: LeagueId -> TransactionId -> Handler AuthResult
+requireClaimMovableDown leagueId transactionId = do
+    transaction <- runDB $ get404 transactionId
+    let transactionInLeague = requireTransactionInLeague leagueId transaction
+    if transactionInLeague /= Authorized then return transactionInLeague else do
+        let teamId = transactionTeamId transaction
+        claimRequests <- runDB $ count [ TransactionTeamId ==. teamId
+                                       , TransactionType   ==. Claim
+                                       , TransactionStatus ==. Requested
+                                       ]
+        if fromMaybe claimRequests (transactionPosition transaction) < claimRequests
+            && transactionType transaction == Claim
+                then requireTransactionCancelable leagueId transactionId
+                else return $ Unauthorized "Must be a claim transaction that isn't first"
 
 requireCorrectVerificationKey :: LeagueId -> Int -> Text -> Handler AuthResult
 requireCorrectVerificationKey leagueId number verificationKey = do
@@ -386,28 +395,74 @@ requireLeagueManagerAndIncompleteDraft leagueId = do
                     Nothing -> Unauthorized "Draft settings must be filled out for this season"
         _ -> return $ authResult
 
-requirePlayerOwnerAndTransactionsPossible :: LeagueId -> CharacterId -> Handler AuthResult
+requireSinglePlayerTransactionPossible :: Bool -> LeagueId -> CharacterId -> Handler AuthResult
+requireSinglePlayerTransactionPossible isStarter leagueId characterId = do
+    result <- requirePlayerOwnerAndTransactionsPossible leagueId characterId
+    case result of
+        Right authResult -> return authResult
+        Left playerSeason ->
+            case (playerSeasonIsStarter playerSeason, isStarter) of
+                (True,  True)  -> return $ Authorized
+                (True,  False) -> return $ Unauthorized "Player must be on the bench"
+                (False, True)  -> return $ Unauthorized "Player must be starting"
+                (False, False) -> do
+                    let seasonId = playerSeasonSeasonId playerSeason
+                        teamId = fromJust $ playerSeasonTeamId playerSeason
+                    Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
+                    Entity _ teamSeason <- runDB $ getBy404 $ UniqueTeamSeasonTeamIdSeasonId teamId seasonId
+                    return $ if teamSeasonStartersCount teamSeason < generalSettingsNumberOfStarters generalSettings
+                        then Authorized
+                        else Unauthorized "Another player must be benched before this one can be started"
+
+requireMultiPlayerTransactionPossible :: Bool -> LeagueId -> CharacterId -> CharacterId -> Handler AuthResult
+requireMultiPlayerTransactionPossible onTeam leagueId yourCharacterId myCharacterId = do
+    result <- requirePlayerOwnerAndTransactionsPossible leagueId myCharacterId
+    case result of
+        Right authResult -> return authResult
+        Left myPlayerSeason -> do
+            Entity yourPlayerId _ <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId yourCharacterId
+            seasonId <- getSelectedSeasonId leagueId
+            Entity _ yourPlayerSeason <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId yourPlayerId seasonId
+            let string = if onTeam then "on a team" else "a free agent"
+            if playerSeasonTeamId myPlayerSeason == playerSeasonTeamId yourPlayerSeason
+                then return $ Unauthorized "Players must not be on the same team"
+                else return $ if isJust (playerSeasonTeamId yourPlayerSeason) == onTeam
+                    then Authorized else Unauthorized $ "Player must be " ++ string
+
+requirePlayerStartable :: LeagueId -> CharacterId -> Handler AuthResult
+requirePlayerStartable = requireSinglePlayerTransactionPossible False
+
+requirePlayerBenchable :: LeagueId -> CharacterId -> Handler AuthResult
+requirePlayerBenchable = requireSinglePlayerTransactionPossible True
+
+requireClaimPossible :: LeagueId -> CharacterId -> CharacterId -> Handler AuthResult
+requireClaimPossible = requireMultiPlayerTransactionPossible False
+
+requireTradePossible :: LeagueId -> CharacterId -> CharacterId -> Handler AuthResult
+requireTradePossible = requireMultiPlayerTransactionPossible True
+
+requirePlayerOwnerAndTransactionsPossible :: LeagueId -> CharacterId -> Handler (Either PlayerSeason AuthResult)
 requirePlayerOwnerAndTransactionsPossible leagueId characterId = do
     Entity _ season <- getSelectedSeason leagueId
     muid <- maybeAuthId
     case (muid, seasonIsDraftComplete season, seasonIsSeasonComplete season) of
-        (Nothing, _, _) -> return AuthenticationRequired
-        (_, False, _)   -> return $ Unauthorized "Transactions cannot happen before draft occurs"
-        (_, _, True)    -> return $ Unauthorized "Transactions cannot happen after season is complete"
+        (Nothing, _, _) -> return $ Right AuthenticationRequired
+        (_, False, _)   -> return $ Right $ Unauthorized "Transactions cannot happen before draft occurs"
+        (_, _, True)    -> return $ Right $ Unauthorized "Transactions cannot happen after season is complete"
         (_, _, _)       -> requirePlayerOwner leagueId characterId
 
-requirePlayerOwner :: LeagueId -> CharacterId -> Handler AuthResult
+requirePlayerOwner :: LeagueId -> CharacterId -> Handler (Either PlayerSeason AuthResult)
 requirePlayerOwner leagueId characterId = do
     Entity playerId _ <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
     seasonId <- getSelectedSeasonId leagueId
     Entity _ playerSeason <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId playerId seasonId
-    let unauthorized = Unauthorized "This player is not on your team"
+    let unauthorized = Right $ Unauthorized "This player is not on your team"
     case playerSeasonTeamId playerSeason of
         Nothing  -> return unauthorized
         Just tid -> do
             team <- runDB $ get404 tid
             muid <- maybeAuthId
-            return $ if teamOwnerId team == muid then Authorized else unauthorized
+            return $ if teamOwnerId team == muid then Left playerSeason else unauthorized
 
 
 instance YesodBreadcrumbs App where
