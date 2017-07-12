@@ -101,7 +101,7 @@ postLeaguePlayerStartR leagueId characterId = do
                 runDB $ update playerSeasonId [ PlayerSeasonIsStarter =. True
                                               , PlayerSeasonUpdatedAt =. now
                                               , PlayerSeasonUpdatedBy =. userId ]
-                updateTeamSeasonStartersCount teamId seasonId now userId
+                updateTeamSeasonStartersCount_ teamId seasonId now userId
                 succeedTransaction transactionId
                 let message = characterName character ++ " is now starting in your lineup."
                 setMessage $ toMarkup message
@@ -121,14 +121,13 @@ postLeaguePlayerBenchR leagueId characterId = do
                                       , PlayerSeasonUpdatedAt =. now
                                       , PlayerSeasonUpdatedBy =. userId ]
         let teamId = fromJust $ playerSeasonTeamId playerSeason
-        Entity _ teamSeason <- runDB $ getBy404 $ UniqueTeamSeasonTeamIdSeasonId teamId seasonId
-        updateTeamSeasonStartersCount teamId seasonId now userId
+        startersCount <- updateTeamSeasonStartersCount teamId seasonId now userId
+        succeedTransaction transactionId
         character <- runDB $ get404 characterId
-        let spotsLeft = generalSettingsNumberOfStarters generalSettings - teamSeasonStartersCount teamSeason + 1
+        let spotsLeft = generalSettingsNumberOfStarters generalSettings - startersCount
             spotOrSpots = if spotsLeft == 1 then "spot" else "spots"
             message = characterName character ++ " is now benched in your lineup and you have "
                       ++ pack (show spotsLeft) ++ " " ++ spotOrSpots ++ " for starters."
-        succeedTransaction transactionId
         setMessage $ toMarkup message
 
 postLeaguePlayerClaimR :: LeagueId -> CharacterId -> CharacterId -> Handler ()

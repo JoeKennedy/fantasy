@@ -531,10 +531,10 @@ movePlayerToNewTeam adminUserId (Entity _ transactionPlayer, Entity playerSeason
                                   , PlayerSeasonUpdatedBy =. adminUserId
                                   ]
     case transactionPlayerNewTeamId transactionPlayer of
-        Just newTeamId -> updateTeamSeasonStartersCount newTeamId seasonId now adminUserId
+        Just newTeamId -> updateTeamSeasonStartersCount_ newTeamId seasonId now adminUserId
         Nothing -> return ()
     case transactionPlayerOldTeamId transactionPlayer of
-        Just oldTeamId -> updateTeamSeasonStartersCount oldTeamId seasonId now adminUserId
+        Just oldTeamId -> updateTeamSeasonStartersCount_ oldTeamId seasonId now adminUserId
         Nothing -> return ()
 
 isTransactionPlayerValid :: (Entity TransactionPlayer, Entity PlayerSeason) -> Bool
@@ -557,7 +557,11 @@ claimProcessableAt leagueId utcTime = do
         let daysToAdd = min 0 $ generalSettingsWaiverPeriodInDays generalSettings - dayOfWeek utcTime
         return $ if daysToAdd == 0 then utcTime else addXDays daysToAdd utcTime
 
-updateTeamSeasonStartersCount :: TeamId -> SeasonId -> UTCTime -> UserId -> Handler ()
+updateTeamSeasonStartersCount_ :: TeamId -> SeasonId -> UTCTime -> UserId -> Handler ()
+updateTeamSeasonStartersCount_ teamId seasonId utcTime userId = do
+    updateTeamSeasonStartersCount teamId seasonId utcTime userId >> return ()
+
+updateTeamSeasonStartersCount :: TeamId -> SeasonId -> UTCTime -> UserId -> Handler Int
 updateTeamSeasonStartersCount teamId seasonId utcTime userId = runDB $ do
     startersCount <- count [ PlayerSeasonTeamId ==. Just teamId
                            , PlayerSeasonSeasonId ==. seasonId
@@ -567,6 +571,7 @@ updateTeamSeasonStartersCount teamId seasonId utcTime userId = runDB $ do
                 , TeamSeasonUpdatedAt =. utcTime
                 , TeamSeasonUpdatedBy =. userId
                 ]
+    return startersCount
 
 repositionClaimRequests :: TeamId -> Handler ()
 repositionClaimRequests teamId = do
