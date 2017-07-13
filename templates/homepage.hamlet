@@ -32,3 +32,12 @@
         <div .btn-group>
             <a .btn .btn-primary .btn-lg href=@{SetupLeagueR SetupNewLeagueR}>
                 Create A League!
+
+    <div .page-header>
+
+    <div .row>
+        <div .col-lg-8 .col-md-10 .col-xs-12 .col-lg-offset-2 .col-md-offset-1>
+            <div .page-header .text-center>
+                <h2>Preseason Rankings
+            <a .thumbnail target="_blank" href="https://docs.google.com/spreadsheets/d/10BgapLBtTTxqgQEgK3vcrqJpnq-LKaYMSHmLJgmUOeQ/edit?usp=sharing">
+                <img src="/static/images/rankings.png" alt="Rankings">
