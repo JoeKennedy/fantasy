@@ -202,3 +202,40 @@
                                     <span .text-primary>Hot Pie:
                                     Jay Farber
 
+        <div .panel .panel-primary>
+            <div #p17 .panel-heading>
+                <div .panel-title>
+                    Wow, that few? And you're bogged down by Hot Pie? How can I
+                    help?
+            <table .table .panel-table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <p>
+                                The easiest way to help us out is to send a
+                                raven to #
+                                <a href="mailto:grandmaester@fantasygameofthrones.com">
+                                    our Grand Maester
+                                \ with anything you'd like to contribute. If
+                                you'd like to become a steward, we can always
+                                use more people to help out with scoring;
+                                those interested in becoming rangers can help
+                                with writing blurbs or blog posts.
+
+                            <p>
+                                And anyone interested in the position of builder
+                                is in luck, because this site is open source. #
+                                <a href="https://github.com/JoeKennedy/fantasy">
+                                    The repo
+                                \ is hosted on GitHub. Check out the #
+                                <a href="https://github.com/JoeKennedy/fantasy/issues">
+                                    list of issues
+                                \ and feel free to work on any issue marked
+                                \ <span class="label label-success">help wanted</span>.
+
+                            <p>
+                                We should note as well that we here at Fantasy
+                                Game Of Thrones wear many hats, so we tend to
+                                dabble in the different orders as the need
+                                arises.
+
