@@ -13,19 +13,19 @@ import           Text.Blaze         (toMarkup)
 -----------
 -- Types --
 -----------
-type FullPlayer = (Entity Player, Entity PlayerSeason, Entity Performance,
+type FullPlayer = (Entity Player, Entity PlayerSeason, Maybe (Entity Performance),
                    Maybe (Entity Team), Entity Character, Entity Series)
 type FullPlayerForTable = (Int, Entity Player, Entity PlayerSeason,
-                           Entity Performance, Maybe (Entity Team),
+                           Maybe (Entity Performance), Maybe (Entity Team),
                            Entity Character, Entity Series, Widget)
 type FullPlayerWithButton = (Entity Player, Entity PlayerSeason,
-                             Entity Performance, Maybe (Entity Team),
+                             Maybe (Entity Performance), Maybe (Entity Team),
                              Entity Character, Entity Series, Widget)
 type FullPlayerForTableSansTeam = (Int, Entity Player, Entity PlayerSeason,
-                                   Entity Performance, Entity Character,
+                                   Maybe (Entity Performance), Entity Character,
                                    Entity Series, Widget)
 type FullPlayerForTableReqTeam = (Int, Entity Player, Entity PlayerSeason,
-                                  Entity Performance, Entity Team,
+                                  Maybe (Entity Performance), Entity Team,
                                   Entity Character, Entity Series, Widget)
 
 ------------
@@ -203,12 +203,12 @@ blurbPanel maybeUser (Entity blurbId blurb) = $(widgetFile "blurb_panel")
 getPlayers :: SeasonId -> WeekId -> Handler [FullPlayer]
 getPlayers seasonId weekId = runDB
     $ E.select
-    $ E.from $ \(player `E.InnerJoin` playerSeason `E.InnerJoin` performance `E.InnerJoin` character `E.LeftOuterJoin` team `E.InnerJoin` series) -> do
+    $ E.from $ \(player `E.InnerJoin` playerSeason `E.LeftOuterJoin` performance `E.InnerJoin` character `E.LeftOuterJoin` team `E.InnerJoin` series) -> do
         E.on $ character ^. CharacterRookieSeriesId E.==. series ^. SeriesId
         E.on $ E.just (playerSeason ^. PlayerSeasonTeamId) E.==. E.just (team ?. TeamId)
         E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
-        E.on $ performance ^. PerformancePlayerId E.==. player ^. PlayerId
-            E.&&. performance ^. PerformanceWeekId E.==. E.val weekId
+        E.on $ performance ?. PerformancePlayerId E.==. E.just (player ^. PlayerId)
+            E.&&. performance ?. PerformanceWeekId E.==. E.just (E.val weekId)
         E.on $ playerSeason ^. PlayerSeasonPlayerId E.==. player ^. PlayerId
         E.where_ $ playerSeason ^. PlayerSeasonSeasonId E.==. E.val seasonId
             E.&&. player ^. PlayerIsPlayable E.==. E.val True
@@ -219,12 +219,12 @@ getTeamPlayers :: SeasonId -> WeekId -> Maybe TeamId -> Handler [FullPlayer]
 getTeamPlayers _ _ Nothing = return []
 getTeamPlayers seasonId weekId (Just teamId) = runDB
     $ E.select
-    $ E.from $ \(player `E.InnerJoin` playerSeason `E.InnerJoin` performance `E.InnerJoin` character `E.LeftOuterJoin` team `E.InnerJoin` series) -> do
+    $ E.from $ \(player `E.InnerJoin` playerSeason `E.LeftOuterJoin` performance `E.InnerJoin` character `E.LeftOuterJoin` team `E.InnerJoin` series) -> do
         E.on $ character ^. CharacterRookieSeriesId E.==. series ^. SeriesId
         E.on $ E.just (playerSeason ^. PlayerSeasonTeamId) E.==. E.just (team ?. TeamId)
         E.on $ player ^. PlayerCharacterId E.==. character ^. CharacterId
-        E.on $ performance ^. PerformancePlayerId E.==. player ^. PlayerId
-            E.&&. performance ^. PerformanceWeekId E.==. E.val weekId
+        E.on $ performance ?. PerformancePlayerId E.==. E.just (player ^. PlayerId)
+            E.&&. performance ?. PerformanceWeekId E.==. E.just (E.val weekId)
         E.on $ playerSeason ^. PlayerSeasonPlayerId E.==. player ^. PlayerId
         E.where_ $ playerSeason ^. PlayerSeasonTeamId E.==. E.just (E.val teamId)
             E.&&. playerSeason ^. PlayerSeasonSeasonId E.==. E.val seasonId
