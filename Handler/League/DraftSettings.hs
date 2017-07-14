@@ -8,13 +8,18 @@ import Handler.League.Layout
 ----------
 -- Form --
 ----------
-draftSettingsForm :: UserId -> LeagueId -> SeasonId -> Maybe DraftSettings -> Form DraftSettings
-draftSettingsForm currentUserId leagueId seasonId draftSettings extra = do
+draftSettingsForm :: UserId -> Entity Season -> Maybe DraftSettings -> Form DraftSettings
+draftSettingsForm currentUserId (Entity seasonId season) draftSettings extra = do
+    let draftOrderTypeOptionsToUse =
+            if isJust $ seasonDraftOrderDeterminedAt season
+                then selectedDraftOrderTypeOptions (draftSettingsDraftOrderType <$> draftSettings)
+                else draftOrderTypeOptions
+
     (draftTypeRes, draftTypeView) <- mreq hiddenField (hidden "Draft type")
         (draftSettingsDraftType <$> draftSettings)
     (draftOrderRes, draftOrderView) <- mreq (selectFieldList draftOrderOptions)
         (fieldName "Draft Order") (draftSettingsDraftOrder <$> draftSettings)
-    (draftOrderTypeRes, draftOrderTypeView) <- mreq (selectFieldList draftOrderTypeOptions)
+    (draftOrderTypeRes, draftOrderTypeView) <- mreq (selectFieldList draftOrderTypeOptionsToUse)
         (fieldName "Determination Of Draft Order") (draftSettingsDraftOrderType <$> draftSettings)
     (dateRes, dateView) <- mopt dayField (fieldName "Draft Day")
         (draftSettingsDate <$> draftSettings)
@@ -32,11 +37,13 @@ draftSettingsForm currentUserId leagueId seasonId draftSettings extra = do
 
     now <- liftIO getCurrentTime
     let draftSettingsResult = DraftSettings
-            <$> pure leagueId
+            <$> pure (seasonLeagueId season)
             <*> pure seasonId
             <*> draftTypeRes
             <*> draftOrderRes
-            <*> draftOrderTypeRes
+            <*> (if isJust (seasonDraftOrderDeterminedAt season)
+                    then pure (fromMaybe ManuallySet (draftSettingsDraftOrderType <$> draftSettings))
+                    else draftOrderTypeRes)
             <*> dateRes
             <*> timeRes
             <*> locationRes
@@ -58,9 +65,9 @@ getSetupDraftSettingsR = do
     userId <- requireAuthId
     let action = SetupLeagueR SetupDraftSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
-    seasonId <- getSelectedSeasonId leagueId
-    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId seasonId
-    (widget, enctype) <- generateFormPost $ draftSettingsForm userId leagueId seasonId $ map entityVal maybeDraftSettings
+    seasonEntity <- getSelectedSeason leagueId
+    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId $ entityKey seasonEntity
+    (widget, enctype) <- generateFormPost $ draftSettingsForm userId seasonEntity $ map entityVal maybeDraftSettings
     defaultLayout $ do
         setTitle $ leagueSetupStepTitle league action
         let maybeLeagueId = Just leagueId
@@ -71,13 +78,14 @@ postSetupDraftSettingsR = do
     userId <- requireAuthId
     let action = SetupLeagueR SetupDraftSettingsR
     (Entity leagueId league, lastCompletedStep) <- leagueOrRedirect userId action
-    seasonId <- getSelectedSeasonId leagueId
-    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId seasonId
-    ((result, widget), enctype) <- runFormPost $ draftSettingsForm userId leagueId seasonId $ map entityVal maybeDraftSettings
+    seasonEntity <- getSelectedSeason leagueId
+    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId $ entityKey seasonEntity
+    ((result, widget), enctype) <- runFormPost $ draftSettingsForm userId seasonEntity $ map entityVal maybeDraftSettings
     case result of
         FormSuccess draftSettings -> do
             case maybeDraftSettings of Just (Entity dsId _) -> runDB $ replace dsId draftSettings
                                        Nothing              -> runDB $ insert_ draftSettings
+            randomizeDraftOrderIfRelevant userId RandomNow draftSettings seasonEntity
             updateLeagueLastCompletedStep leagueId league 4
             redirect $ SetupLeagueR SetupTeamsSettingsR
         _ -> defaultLayout $ do
@@ -88,24 +96,25 @@ postSetupDraftSettingsR = do
 getLeagueDraftSettingsR :: LeagueId -> Handler Html
 getLeagueDraftSettingsR leagueId = do
     userId <- requireAuthId
-    seasonId <- getSelectedSeasonId leagueId
-    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId seasonId
-    (widget, enctype) <- generateFormPost $ draftSettingsForm userId leagueId seasonId $ map entityVal maybeDraftSettings
+    seasonEntity <- getSelectedSeason leagueId
+    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId $ entityKey seasonEntity
+    (widget, enctype) <- generateFormPost $ draftSettingsForm userId seasonEntity $ map entityVal maybeDraftSettings
     let action = LeagueSettingsR leagueId LeagueDraftSettingsR
     leagueSettingsLayout leagueId action enctype widget "Draft"
 
 postLeagueDraftSettingsR :: LeagueId -> Handler Html
 postLeagueDraftSettingsR leagueId = do
     userId <- requireAuthId
-    seasonId <- getSelectedSeasonId leagueId
-    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId seasonId
-    ((result, widget), enctype) <- runFormPost $ draftSettingsForm userId leagueId seasonId $ map entityVal maybeDraftSettings
+    seasonEntity <- getSelectedSeason leagueId
+    maybeDraftSettings <- runDB $ getBy $ UniqueDraftSettingsSeasonId $ entityKey seasonEntity
+    ((result, widget), enctype) <- runFormPost $ draftSettingsForm userId seasonEntity $ map entityVal maybeDraftSettings
     let action = LeagueSettingsR leagueId LeagueDraftSettingsR
     case result of
         FormSuccess draftSettings -> do
             runDB $ case map entityKey maybeDraftSettings of
                 Just draftSettingsId -> replace draftSettingsId draftSettings
                 Nothing -> insert_ draftSettings
+            randomizeDraftOrderIfRelevant userId RandomNow draftSettings seasonEntity
             setMessage "Successfully updated league draft settings"
             redirect action
         _ -> leagueSettingsLayout leagueId action enctype widget "Draft"

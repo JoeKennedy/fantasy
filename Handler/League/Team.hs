@@ -24,7 +24,8 @@ teamSettingsForm currentUserId league season maybeDraftSettings teams extra = do
     let areTeamsSetup = leagueLastCompletedStep league > 4
         draftOrderType = map draftSettingsDraftOrderType maybeDraftSettings
         isDraftOrderEditable = areTeamsSetup && draftOrderType == Just ManuallySet &&
-                not (seasonIsDraftComplete season) && length teams > 1
+                not (seasonIsDraftComplete season) && length teams > 1 &&
+                isNothing (seasonDraftOrderDeterminedAt season)
 
     forms <- do
         draftOrderFields <- forM teams (\team ->
@@ -45,8 +46,7 @@ teamSettingsForm currentUserId league season maybeDraftSettings teams extra = do
         return $ zip4 teams textFields draftOrderFields [1..leagueTeamsCount league]
 
     now <- liftIO getCurrentTime
-    let showEmail = case teams of []    -> False
-                                  (t:_) -> Just currentUserId == teamOwnerId t
+    let showEmail = currentUserId == leagueCreatedBy league
         teamSettingsResult = for forms (\(team, textFields, draftOrderField, _) -> Team
             <$> pure (teamLeagueId team)
             <*> pure (teamNumber team)
@@ -276,8 +276,16 @@ updateTeamSettings leagueId maybeTeamNumber pillName = do
 replaceTeams :: LeagueId -> [Entity Team] -> [Team] -> Handler ()
 replaceTeams leagueId teams teams' = do
     userId <- requireAuthId
-    seasonId <- getSelectedSeasonId leagueId
+    Entity seasonId season <- getSelectedSeason leagueId
     mapM_ (replaceTeam userId seasonId) (zip (map entityKey teams) teams')
+    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
+    if draftSettingsDraftOrderType draftSettings /= ManuallySet || isJust (seasonDraftOrderDeterminedAt season)
+        then return () else do
+            now <- liftIO getCurrentTime
+            runDB $ update seasonId [ SeasonDraftOrderDeterminedAt =. Just now
+                                    , SeasonUpdatedBy =. userId
+                                    , SeasonUpdatedAt =. now
+                                    ]
 
 replaceTeam :: UserId -> SeasonId -> (TeamId, Team) -> Handler ()
 replaceTeam userId seasonId (teamId, team') = runDB $ do

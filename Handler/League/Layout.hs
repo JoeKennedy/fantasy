@@ -4,9 +4,12 @@ import Import
 
 import Handler.League.Setup
 
-import qualified Database.Esqueleto as E
-import           Database.Esqueleto ((^.))
-import           Text.Blaze         (toMarkup)
+import qualified Database.Esqueleto           as E
+import           Database.Esqueleto           ((^.))
+import           Data.Random.List
+import           Data.Random.RVar
+import           Data.Random.Source.DevRandom
+import           Text.Blaze                   (toMarkup)
 
 ------------
 -- Layout --
@@ -98,4 +101,30 @@ leagueOrRedirectIfIncomplete :: LeagueId -> Handler League
 leagueOrRedirectIfIncomplete leagueId = do
     league <- runDB $ get404 leagueId
     if leagueIsSetupComplete league then return league else redirect $ leagueSetupNextStepToComplete league
+
+
+-------------
+-- Helpers --
+-------------
+randomizeDraftOrderIfRelevant :: UserId -> DraftOrderType -> DraftSettings -> Entity Season -> Handler ()
+randomizeDraftOrderIfRelevant userId draftOrderType draftSettings (Entity seasonId season)
+    | draftOrderType /= draftSettingsDraftOrderType draftSettings = return ()
+    | isJust (seasonDraftOrderDeterminedAt season) = return ()
+    | otherwise = runDB $ do
+        teamSeasonIds <- selectKeysList [TeamSeasonSeasonId ==. seasonId] [Asc TeamSeasonId]
+        let numberRange = [1..length teamSeasonIds]
+        draftOrder <- liftIO (runRVar (shuffle numberRange) DevRandom :: IO [Int])
+        now <- liftIO getCurrentTime
+        mapM_ (randomizeTeamDraftOrder userId now) $ zip teamSeasonIds draftOrder
+        update seasonId [ SeasonDraftOrderDeterminedAt =. Just now
+                        , SeasonUpdatedBy =. userId
+                        , SeasonUpdatedAt =. now
+                        ]
+
+randomizeTeamDraftOrder :: UserId -> UTCTime -> (TeamSeasonId, Int) -> ReaderT SqlBackend Handler ()
+randomizeTeamDraftOrder userId now (teamSeasonId, draftOrder) =
+    update teamSeasonId [ TeamSeasonDraftOrder =. draftOrder
+                        , TeamSeasonUpdatedBy  =. userId
+                        , TeamSeasonUpdatedAt  =. now
+                        ]
 

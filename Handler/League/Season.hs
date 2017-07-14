@@ -90,6 +90,7 @@ createSeason userId (Entity seriesId series) leagueId = do
                         , seasonCreatedAt = now
                         , seasonUpdatedBy = userId
                         , seasonUpdatedAt = now
+                        , seasonDraftOrderDeterminedAt = Nothing
                         , seasonDraftCompletedAt = Nothing
                         }
     seasonId <- insert season

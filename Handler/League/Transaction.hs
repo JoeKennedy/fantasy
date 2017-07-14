@@ -50,13 +50,15 @@ draftForm draftSettings generalSettings teams playersForSelect extra = do
 ------------
 getLeagueDraftR :: LeagueId -> Handler Html
 getLeagueDraftR leagueId = do
+    userId <- requireAuthId
     league <- runDB $ get404 leagueId
-    seasonId <- getSelectedSeasonId leagueId
+    Entity seasonId season <- getSelectedSeason leagueId
+    Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
+    randomizeDraftOrderIfRelevant userId RandomLater draftSettings $ Entity seasonId season
     teams <- getTeamsOrderBy seasonId True TeamSeasonDraftOrder
     if foldr (\(Entity _ t, _) acc -> teamIsConfirmed t && acc) True teams
         then do
             Entity _ generalSettings <- runDB $ getBy404 $ UniqueGeneralSettingsSeasonId seasonId
-            Entity _ draftSettings <- runDB $ getBy404 $ UniqueDraftSettingsSeasonId seasonId
             playersAndCharacters <- getPlayersAndCharacters leagueId
             let playersForSelect =
                     map (\(Entity pid _, Entity _ c) -> (characterName c, pid)) playersAndCharacters

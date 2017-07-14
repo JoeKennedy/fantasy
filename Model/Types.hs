@@ -122,15 +122,22 @@ instance PathPiece DraftOrderType where
 
 draftOrderTypeDescription :: DraftOrderType -> String
 draftOrderTypeDescription ManuallySet = "Manually set by league manager"
-draftOrderTypeDescription RandomNow   = "Randomized at league creation"
+draftOrderTypeDescription RandomNow   = "Randomized now"
 draftOrderTypeDescription RandomLater = "Randomized at draft time"
 
 draftOrderTypes :: [DraftOrderType]
 draftOrderTypes = [minBound .. maxBound] :: [DraftOrderType]
 
 draftOrderTypeOptions :: [(Text, DraftOrderType)]
-draftOrderTypeOptions = map (\draftOrderType ->
-    (pack $ draftOrderTypeDescription draftOrderType, draftOrderType)) draftOrderTypes 
+draftOrderTypeOptions = map draftOrderTypeOption draftOrderTypes
+
+selectedDraftOrderTypeOptions :: Maybe DraftOrderType -> [(Text, DraftOrderType)]
+selectedDraftOrderTypeOptions Nothing = [draftOrderTypeOption ManuallySet]
+selectedDraftOrderTypeOptions (Just draftOrderType) = [draftOrderTypeOption draftOrderType]
+
+draftOrderTypeOption :: DraftOrderType -> (Text, DraftOrderType)
+draftOrderTypeOption draftOrderType =
+    (pack $ draftOrderTypeDescription draftOrderType, draftOrderType)
 
 
 ----------------------

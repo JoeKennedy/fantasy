@@ -139,6 +139,7 @@ Season
     createdAt UTCTime
     updatedBy UserId
     updatedAt UTCTime
+    draftOrderDeterminedAt UTCTime Maybe
     draftCompletedAt UTCTime Maybe
     UniqueSeasonLeagueIdSeriesId leagueId seriesId
     UniqueSeasonLeagueIdYear leagueId year
@@ -236,7 +237,6 @@ Team
     UniqueTeamAbbreviationLeagueId abbreviation leagueId
     UniqueTeamOwnerEmailLeagueId ownerEmail leagueId
     UniqueTeamLeagueIdOwnerName leagueId ownerName
-    UniqueTeamLeagueIdDraftOrder leagueId draftOrder
     deriving Eq Ord
 
 Player
