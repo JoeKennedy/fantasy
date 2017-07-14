@@ -25,7 +25,7 @@ displayUTCDate :: UTCTime -> String
 displayUTCDate = formatTime defaultTimeLocale "%a, %b %e, %Y"
 
 displayUTCTime :: UTCTime -> String
-displayUTCTime = formatTime defaultTimeLocale "%a, %b %e %l:%M %p %Z"
+displayUTCTime = formatTime defaultTimeLocale "%a, %b %e, %Y %l:%M %p %Z"
 
 addXDays :: Int -> UTCTime -> UTCTime
 addXDays x utcTime = UTCTime { utctDay = addDays (toInteger x) (utctDay utcTime)
