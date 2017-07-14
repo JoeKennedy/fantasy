@@ -192,51 +192,93 @@ teamNonTextAttributes _ _ = (Nothing, Nothing)
 -------------
 -- Players --
 -------------
+createPlayerInfo :: Entity Character -> LeagueId -> Handler ()
+createPlayerInfo (Entity characterId character) leagueId = do
+    let userId = characterCreatedBy character
+    playerEntity <- runDB $ createPlayer userId leagueId $ Entity characterId character
+    createPlayerSeasonAndPerformances userId playerEntity
+
+createPlayerSeasonAndPerformances :: UserId -> Entity Player -> Handler ()
+createPlayerSeasonAndPerformances userId playerEntity = do
+    maybePlayerSeasonEntity <- maybeCreatePlayerSeason userId playerEntity
+    case maybePlayerSeasonEntity of
+        Just playerSeasonEntity -> createPerformancesForPlayerSeason playerSeasonEntity
+        Nothing -> return ()
+
+maybeCreatePlayerSeason :: UserId -> Entity Player -> Handler (Maybe (Entity PlayerSeason))
+maybeCreatePlayerSeason userId (Entity playerId player) = do
+    let leagueId = playerLeagueId player
+    maybeSeasonEntity <- runDB $ selectFirst [ SeasonIsActive ==. True
+                                             , SeasonLeagueId ==. leagueId
+                                             ] [Desc SeasonYear]
+    case maybeSeasonEntity of
+        Nothing -> return Nothing
+        Just (Entity seasonId _) -> do
+            maybePlayerSeason <- runDB $ getBy $ UniquePlayerSeasonPlayerIdSeasonId playerId seasonId
+            case maybePlayerSeason of
+                Just playerSeasonEntity -> return $ Just playerSeasonEntity
+                Nothing -> do
+                    playerSeasonEntity <- runDB $ createPlayerSeason userId leagueId seasonId playerId
+                    return $ Just playerSeasonEntity
+
+maybeCreatePlayerSeason_ :: UserId -> Entity Player -> Handler ()
+maybeCreatePlayerSeason_ userId playerEntity = maybeCreatePlayerSeason userId playerEntity >> return ()
+
 createPlayersIfNecessary :: UserId -> LeagueId -> ReaderT SqlBackend Handler ()
 createPlayersIfNecessary userId leagueId = do
     playersCount <- count [PlayerLeagueId ==. leagueId]
     if playersCount > 0 then return () else do
         characters <- selectList [] [Asc CharacterName]
-        mapM_ (createPlayer userId leagueId) characters
+        mapM_ (createPlayer_ userId leagueId) characters
 
-createPlayer :: UserId -> LeagueId -> Entity Character -> ReaderT SqlBackend Handler ()
+createPlayer :: UserId -> LeagueId -> Entity Character -> ReaderT SqlBackend Handler (Entity Player)
 createPlayer userId leagueId (Entity characterId character) = do
     now <- liftIO getCurrentTime
-    insert_ $ Player { playerLeagueId         = leagueId
-                     , playerCharacterId      = characterId
-                     , playerTeamId           = Nothing
-                     , playerIsStarter        = False
-                     , playerPointsThisSeason = 0
-                     , playerPointsThisRegularSeason = 0
-                     , playerPointsThisPostSeason = 0
-                     , playerIsPlayable       = characterIsPlayable character
-                     , playerCreatedBy        = userId
-                     , playerCreatedAt        = now
-                     , playerUpdatedBy        = userId
-                     , playerUpdatedAt        = now
-                     }
+    let player = Player { playerLeagueId         = leagueId
+                        , playerCharacterId      = characterId
+                        , playerTeamId           = Nothing
+                        , playerIsStarter        = False
+                        , playerPointsThisSeason = 0
+                        , playerPointsThisRegularSeason = 0
+                        , playerPointsThisPostSeason = 0
+                        , playerIsPlayable       = characterIsPlayable character
+                        , playerCreatedBy        = userId
+                        , playerCreatedAt        = now
+                        , playerUpdatedBy        = userId
+                        , playerUpdatedAt        = now
+                        }
+    playerId <- insert player
+    return $ Entity playerId player
+
+createPlayer_ :: UserId -> LeagueId -> Entity Character -> ReaderT SqlBackend Handler ()
+createPlayer_ userId leagueId characterEntity = createPlayer userId leagueId characterEntity >> return ()
 
 createPlayerSeasons :: UserId -> SeasonId -> LeagueId -> ReaderT SqlBackend Handler ()
 createPlayerSeasons userId seasonId leagueId = do
     playerIds <- selectKeysList [PlayerLeagueId ==. leagueId] []
-    forM_ playerIds $ createPlayerSeason userId leagueId seasonId
+    forM_ playerIds $ createPlayerSeason_ userId leagueId seasonId
 
-createPlayerSeason :: UserId -> LeagueId -> SeasonId -> PlayerId -> ReaderT SqlBackend Handler ()
+createPlayerSeason :: UserId -> LeagueId -> SeasonId -> PlayerId -> ReaderT SqlBackend Handler (Entity PlayerSeason)
 createPlayerSeason userId leagueId seasonId playerId = do
     now <- liftIO getCurrentTime
-    insert_ $ PlayerSeason { playerSeasonLeagueId = leagueId
-                           , playerSeasonPlayerId = playerId
-                           , playerSeasonSeasonId = seasonId
-                           , playerSeasonTeamId = Nothing
-                           , playerSeasonIsStarter = False
-                           , playerSeasonTotalPoints = 0
-                           , playerSeasonRegularSeasonPoints = 0
-                           , playerSeasonPostSeasonPoints = 0
-                           , playerSeasonCreatedBy = userId
-                           , playerSeasonCreatedAt = now
-                           , playerSeasonUpdatedBy = userId
-                           , playerSeasonUpdatedAt = now
-                           }
+    let playerSeason = PlayerSeason { playerSeasonLeagueId = leagueId
+                                    , playerSeasonPlayerId = playerId
+                                    , playerSeasonSeasonId = seasonId
+                                    , playerSeasonTeamId = Nothing
+                                    , playerSeasonIsStarter = False
+                                    , playerSeasonTotalPoints = 0
+                                    , playerSeasonRegularSeasonPoints = 0
+                                    , playerSeasonPostSeasonPoints = 0
+                                    , playerSeasonCreatedBy = userId
+                                    , playerSeasonCreatedAt = now
+                                    , playerSeasonUpdatedBy = userId
+                                    , playerSeasonUpdatedAt = now
+                                    }
+    playerSeasonId <- insert playerSeason
+    return $ Entity playerSeasonId playerSeason
+
+createPlayerSeason_ :: UserId -> LeagueId -> SeasonId -> PlayerId -> ReaderT SqlBackend Handler ()
+createPlayerSeason_ userId leagueId seasonId playerId = createPlayerSeason userId leagueId seasonId playerId >> return ()
 
 
 ----------------------
@@ -420,6 +462,13 @@ createPerformances episode (Entity weekId week) = do
     let leagueId = weekLeagueId week
     mapM_ (createPerformance leagueId weekId $ map entityKey previousWeeks) playerSeasons
 
+createPerformancesForPlayerSeason :: Entity PlayerSeason -> Handler ()
+createPerformancesForPlayerSeason playerSeasonEntity = do
+      let seasonId = playerSeasonSeasonId $ entityVal playerSeasonEntity
+          leagueId = playerSeasonLeagueId $ entityVal playerSeasonEntity
+      weeks <- runDB $ selectList [WeekSeasonId ==. seasonId] [Asc WeekId]
+      forM_ weeks $ createPerformanceForWeek leagueId playerSeasonEntity
+
 createPerformance :: LeagueId -> WeekId -> [WeekId] -> Entity PlayerSeason -> Handler ()
 createPerformance leagueId weekId previousWeekIds (Entity _ playerSeason) = do
     now <- liftIO getCurrentTime
@@ -440,4 +489,10 @@ createPerformance leagueId weekId previousWeekIds (Entity _ playerSeason) = do
             , performanceCreatedAt = now
             , performanceUpdatedAt = now
             }
+
+createPerformanceForWeek :: LeagueId -> Entity PlayerSeason -> Entity Week -> Handler ()
+createPerformanceForWeek leagueId playerSeasonEntity (Entity weekId week) = do
+    episode <- runDB $ get404 $ weekEpisodeId week
+    previousWeeks <- getPreviousWeeks week episode
+    createPerformance leagueId weekId (map entityKey previousWeeks) playerSeasonEntity
 

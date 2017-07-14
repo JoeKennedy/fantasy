@@ -2,11 +2,10 @@ module Handler.Admin.Record where
 
 import Import
 
-import Handler.Character     (createCharacterPerformances,
-                              createCharacterPerformancesIfNecessary)
+import Handler.Character     (addCharacterToLeagues, updateCharacterInLeagues)
 import Handler.Episode       (finalizeEpisode)
 import Handler.Event         (updateEventRelations)
-import Handler.League.Season (createLeagueSeasons, createPlayer, updateLeagueSeasonsIfRelevent)
+import Handler.League.Season (createLeagueSeasons, updateLeagueSeasonsIfRelevent)
 import Handler.Score
 
 ----------------
@@ -47,16 +46,8 @@ instance AdminRecord Blurb where
     updatedAt = blurbUpdatedAt
 
 instance AdminRecord Character where
-    afterCreate characterEntity = do -- backgroundHandler $ do
-        leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
-        let userId = characterCreatedBy $ entityVal characterEntity
-        _ <- mapM (\lid -> runDB $ createPlayer userId lid characterEntity) leagueIds
-        createCharacterPerformances $ entityKey characterEntity
-
-    afterUpdate _ (Entity characterId character) = do -- backgroundHandler $ do
-        runDB $ updateWhere [PlayerCharacterId ==. characterId]
-                            [PlayerIsPlayable =. characterIsPlayable character]
-        createCharacterPerformancesIfNecessary characterId
+    afterCreate = addCharacterToLeagues
+    afterUpdate = updateCharacterInLeagues
 
     createdBy = characterCreatedBy
     createdAt = characterCreatedAt

@@ -3,9 +3,9 @@ module Handler.Character where
 import Import
 
 import Handler.Event         (getCharacterEvents)
-import Handler.Score         (getPreviousWeeks)
 import Handler.League.Player (blurbPanel)
-import Handler.League.Season (createPerformance)
+import Handler.League.Season (createPlayerInfo, createPlayerSeasonAndPerformances,
+                              maybeCreatePlayerSeason_)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -86,28 +86,21 @@ getCharacterBlurbs characterId = runDB
 ---------------
 -- Callbacks --
 ---------------
-createCharacterPerformancesIfNecessary :: CharacterId -> Handler ()
-createCharacterPerformancesIfNecessary characterId = do
-    playerIds <- runDB $ selectKeysList [PlayerCharacterId ==. characterId] [Asc PlayerId]
-    performances <- runDB $ count [PerformancePlayerId <-. playerIds]
-    case performances of 0 -> createCharacterPerformances characterId
-                         _ -> return ()
+addCharacterToLeagues :: Entity Character -> Handler ()
+addCharacterToLeagues characterEntity = do
+    leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
+    forM_ leagueIds $ createPlayerInfo characterEntity
 
-createCharacterPerformances :: CharacterId -> Handler ()
-createCharacterPerformances characterId = do
-    seasonIds <- runDB $ selectKeysList [SeasonIsActive ==. True] [Asc SeasonLeagueId]
-    weeks <- runDB $ selectList [WeekSeasonId <-. seasonIds] [Asc WeekLeagueId]
-    mapM_ (createCharacterPerformanceForWeek characterId) weeks
-
-createCharacterPerformanceForWeek :: CharacterId -> Entity Week -> Handler ()
-createCharacterPerformanceForWeek characterId (Entity weekId week) = do
-    episode <- runDB $ get404 $ weekEpisodeId week
-    previousWeeks <- getPreviousWeeks week episode
-    let leagueId = weekLeagueId week
-    playerEntity <- runDB $ getBy404 $ UniquePlayerLeagueIdCharacterId leagueId characterId
-    let (playerId, seasonId) = (entityKey playerEntity, weekSeasonId week)
-    playerSeasonEntity <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId playerId seasonId
-    createPerformance leagueId weekId (map entityKey previousWeeks) playerSeasonEntity
+updateCharacterInLeagues :: Character -> Entity Character -> Handler ()
+updateCharacterInLeagues oldCharacter (Entity characterId character) = do
+    if characterIsPlayable oldCharacter == characterIsPlayable character then return () else
+        runDB $ updateWhere [PlayerCharacterId ==. characterId]
+                            [PlayerIsPlayable =. characterIsPlayable character]
+    players <- runDB $ selectList [PlayerCharacterId ==. characterId] [Asc PlayerId]
+    let (playerIds, userId) = (map entityKey players, characterUpdatedBy character)
+    performancesCount <- runDB $ count [PerformancePlayerId <-. playerIds]
+    case performancesCount of 0 -> forM_ players $ createPlayerSeasonAndPerformances userId
+                              _ -> forM_ players $ maybeCreatePlayerSeason_ userId
 
 
 -------------
