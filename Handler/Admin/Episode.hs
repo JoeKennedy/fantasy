@@ -48,14 +48,13 @@ utcDateField = Field
 parseUTCDate :: String -> Either FormMessage UTCTime
 parseUTCDate = maybe (Left MsgInvalidDay) Right . readMaybe
 
-episodeAreEventsCompleteField :: (MonadHandler m,
-                                  RenderMessage (HandlerSite m) FormMessage) =>
+episodeAreEventsCompleteField :: (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
                                  Maybe Episode -> AForm m Bool 
 episodeAreEventsCompleteField Nothing = pure False
 episodeAreEventsCompleteField (Just episode) = do
     -- TODO - force a minimum of at least X events for the episode, and figure
     -- out what X should be (if not 0)
-    if episodeStatus episode == Aired && not (episodeAreEventsComplete episode)
+    if episodeStatus episode == EventsPending
         then areq checkBoxField (fieldName "Is Episode Finalized?") $ Just False
         else pure $ episodeAreEventsComplete episode
 
