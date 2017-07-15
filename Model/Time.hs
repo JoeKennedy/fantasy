@@ -21,6 +21,9 @@ utcTimeToEasternTime utcTime = utcToLocalTime edtTimeZone utcTime
 displayAirDate :: UTCTime -> String
 displayAirDate utcTime = formatTime defaultTimeLocale "%B %e, %Y" $ utcTimeToEasternTime utcTime
 
+displayAirTime :: UTCTime -> String
+displayAirTime utcTime = formatTime defaultTimeLocale "%B %e, %Y %l:%M %p EDT" $ utcTimeToEasternTime utcTime
+
 displayUTCDate :: UTCTime -> String
 displayUTCDate = formatTime defaultTimeLocale "%a, %b %e, %Y"
 

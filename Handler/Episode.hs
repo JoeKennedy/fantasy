@@ -50,9 +50,8 @@ getSeriesEpisodes seriesId = runDB
 ---------------
 -- Callbacks --
 ---------------
-finalizeEpisode :: EpisodeId -> Handler ()
-finalizeEpisode episodeId = do
-    userId <- requireAuthId
+finalizeEpisode :: EpisodeId -> UserId -> Handler ()
+finalizeEpisode episodeId userId = do
     now <- liftIO getCurrentTime
     backgroundHandler $ do
         incrementEpisodeTimesFinalized episodeId userId now
@@ -63,6 +62,8 @@ finalizeEpisode episodeId = do
 incrementEpisodeTimesFinalized :: EpisodeId -> UserId -> UTCTime -> Handler ()
 incrementEpisodeTimesFinalized episodeId userId now =
     runDB $ update episodeId [ EpisodeTimesFinalized +=. 1
+                             , EpisodeStatus =. EventsComplete
+                             , EpisodeEventsCompleteAt =. Just now
                              , EpisodeUpdatedBy =. userId
                              , EpisodeUpdatedAt =. now ]
 

@@ -81,13 +81,15 @@ Episode
     overallNumber Int
     airTime UTCTime
     seriesId SeriesId
-    status EpisodeStatus default='Aired'
+    status EpisodeStatus default='YetToAir'
     areEventsComplete Bool default=false
     timesFinalized Int default=0
     createdBy UserId default=2
     createdAt UTCTime default=now()
     updatedBy UserId default=2
     updatedAt UTCTime default=now()
+    eventsPendingAt UTCTime Maybe
+    eventsCompleteAt UTCTime Maybe
     UniqueEpisodeOverallNumber overallNumber
     UniqueEpisodeNumberSeries number seriesId
     UniqueEpisodeAirTime airTime

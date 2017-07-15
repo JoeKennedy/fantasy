@@ -25,6 +25,8 @@ episodeForm userId episode = renderBootstrapForm $ Episode
     <*> createdAtField (episodeCreatedAt <$> episode)
     <*> updatedByField userId
     <*> updatedAtField
+    <*> existingElseDefault Nothing (episodeEventsPendingAt <$> episode)
+    <*> existingElseDefault Nothing (episodeEventsCompleteAt <$> episode)
     where seriesOptions = optionsPersistKey [] [Desc SeriesNumber] seriesNumberText
 
 

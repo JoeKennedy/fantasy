@@ -9,6 +9,7 @@ import           Database.Esqueleto           ((^.))
 import           Data.Random.List
 import           Data.Random.RVar
 import           Data.Random.Source.DevRandom
+import           Data.Time                    (addUTCTime)
 import           Text.Blaze                   (toMarkup)
 
 ------------
@@ -24,6 +25,7 @@ leagueLayout leagueId activeTab widget = do
     Entity selectedSeasonId selectedSeason <- getSelectedSeason leagueId
     seasons <- runDB $ selectList [SeasonLeagueId ==. leagueId] [Desc SeasonId]
     maybeDraftSettingsEntity <- runDB $ getBy $ UniqueDraftSettingsSeasonId selectedSeasonId
+    maybeSeriesAndEpisode <- getHeaderSeriesAndEpisode
     let settingsRoute = case maybeTeam of
             Just (Entity _ team) -> LeagueTeamSettingsR leagueId $ teamNumber team
             Nothing -> LeagueSettingsR leagueId LeagueEditSettingsR
@@ -106,6 +108,20 @@ leagueOrRedirectIfIncomplete leagueId = do
 -------------
 -- Helpers --
 -------------
+getHeaderSeriesAndEpisode :: Handler (Maybe (Entity Series, Entity Episode))
+getHeaderSeriesAndEpisode = runDB $ do
+    maybeSeriesEntity <- selectFirst [] [Desc SeriesNumber]
+    case maybeSeriesEntity of
+        Nothing -> return Nothing
+        Just seriesEntity -> do
+            now <- liftIO getCurrentTime
+            let threeDaysFromNow = addUTCTime (3 * 24 * 60 * 60) now
+            maybeEpisodeEntity <- selectFirst [ EpisodeAirTime <=. threeDaysFromNow
+                                              , EpisodeSeriesId ==. entityKey seriesEntity
+                                              ] [Desc EpisodeAirTime]
+            return $ case maybeEpisodeEntity of Just episodeEntity -> Just (seriesEntity, episodeEntity)
+                                                Nothing            -> Nothing
+
 randomizeDraftOrderIfRelevant :: UserId -> DraftOrderType -> DraftSettings -> Entity Season -> Handler ()
 randomizeDraftOrderIfRelevant userId draftOrderType draftSettings (Entity seasonId season)
     | draftOrderType /= draftSettingsDraftOrderType draftSettings = return ()

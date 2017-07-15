@@ -21,7 +21,7 @@ isDead    _ = False
 -------------------
 -- EpisodeStatus --
 -------------------
-data EpisodeStatus = Aired | Airing | YetToAir
+data EpisodeStatus = YetToAir | Airing | Aired | EventsPending | EventsComplete
     deriving (Show, Read, Eq, Ord, Enum, Bounded)
 derivePersistField "EpisodeStatus"
 
