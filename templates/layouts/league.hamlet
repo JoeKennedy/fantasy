@@ -1,12 +1,12 @@
 $maybe (Entity _ series, Entity _ episode) <- maybeSeriesAndEpisode
   $with episodeNo <- episodeNumber episode
-    <div .alert .bg-primary .alert-dismissable>
+    <div .alert .bg-primary>
       <a .alert-link href=@{SeriesEpisodeR (seriesNumber series) episodeNo}>
           #{episodeName episode}
 
       $case episodeStatus episode
         $of YetToAir
-          airs at #{displayAirTime $ episodeAirTime episode}. At that time,
+          airs on #{displayAirTime $ episodeAirTime episode}. At that time,
           line-ups for week #{episodeNo} will be locked.
 
         $of Airing
@@ -19,14 +19,14 @@ $maybe (Entity _ series, Entity _ episode) <- maybeSeriesAndEpisode
         $of EventsPending
           has finished airing and is currently being scoring.
           $maybe eventsPendingAt <- episodeEventsPendingAt episode
-            Scoring started at #{displayAirTime eventsPendingAt}
+            Scoring started on #{displayAirTime eventsPendingAt}
           Week #{episodeNo} scores
           for your team and players will fluctuate until scoring is complete.
 
         $of EventsComplete
           has finished airing and
           $maybe eventsCompleteAt <- episodeEventsCompleteAt episode
-            scoring was completed at #{displayAirTime eventsCompleteAt}
+            scoring was completed on #{displayAirTime eventsCompleteAt}
           $nothing
             has been scored.
           $if seriesYear series == seasonYear selectedSeason
