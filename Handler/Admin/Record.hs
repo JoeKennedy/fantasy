@@ -55,19 +55,9 @@ instance AdminRecord Character where
     updatedAt = characterUpdatedAt
 
 instance AdminRecord Episode where
-    afterUpdate oldEpisode (Entity episodeId episode) = do
+    afterUpdate oldEpisode (Entity episodeId episode) =
         if episodeAreEventsComplete episode && not (episodeAreEventsComplete oldEpisode)
             then finalizeEpisode episodeId $ episodeUpdatedBy episode
-            else return ()
-        -- TODO - remove the below once all Season 6 episodes have been marked
-        -- as EventsComplete
-        if episodeAreEventsComplete episode && episodeStatus episode /= EventsComplete
-            then runDB $ do
-                let datetime = Just $ episodeCreatedAt episode
-                update episodeId [ EpisodeStatus =. EventsComplete
-                                 , EpisodeEventsPendingAt =. datetime
-                                 , EpisodeEventsCompleteAt =. datetime
-                                 ]
             else return ()
 
     createdBy = episodeCreatedBy
