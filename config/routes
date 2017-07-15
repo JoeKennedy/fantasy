@@ -36,10 +36,10 @@
 /houses          HousesR GET
 /houses/#HouseId HouseR  GET
 
-/seasons                                    SeriesListR          GET
-/seasons/#Int                               SeriesR              GET
-/seasons/#Int/episodes                      SeriesEpisodesR      GET
-/seasons/#Int/episodes/#Int                 SeriesEpisodeR       GET
+/seasons                    SeriesListR     GET
+/seasons/#Int               SeriesR         GET
+/seasons/#Int/episodes      SeriesEpisodesR GET
+/seasons/#Int/episodes/#Int SeriesEpisodeR  GET
 
 /leagues/ LeaguesR GET
 
