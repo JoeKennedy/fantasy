@@ -56,17 +56,15 @@
                                     $of Dead
                                         -
                                     $of Uncertain
-                                        $case seasonsSurvived
-                                            $of 0
-                                                Rookie?
-                                            $of _
-                                                #{seasonsSurvived}?
-                                    $of Alive
-                                        $case seasonsSurvived
-                                            $of 0
-                                                Rookie
-                                            $of _
-                                                #{seasonsSurvived}
+                                        $if seasonsSurvived == 0
+                                            Rookie?
+                                        $else
+                                            #{seasonsSurvived}?
+                                    $of _
+                                        $if seasonsSurvived == 0
+                                            Rookie
+                                        $else
+                                            #{seasonsSurvived}
                         <!-- TODO - uncomment this once season 7 episode 1 airs -->
                         <!-- <td .hidden-sm .hidden-xs> -->
                         <!--     #{displayRational $ performanceCappedCumulativePoints performance} -->

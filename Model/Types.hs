@@ -6,7 +6,7 @@ import Web.PathPieces
 ---------------------
 -- CharacterStatus --
 ---------------------
-data CharacterStatus = Alive | Dead | Uncertain
+data CharacterStatus = Alive | Dead | Undead | Uncertain
     deriving (Show, Read, Eq, Ord, Enum, Bounded)
 derivePersistField "CharacterStatus"
 
