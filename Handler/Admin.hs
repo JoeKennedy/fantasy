@@ -107,8 +107,12 @@ adminShow modelLower form (Entity entityId entity) maybeSubTable = do
 -- Actually, I might be able to delete associations FIRST and then just call
 -- this method afterwards. Maybe pass a list of associations deleted to add to
 -- the message.
-adminDelete :: ToBackendKey SqlBackend record => String -> Key record -> Handler ()
+adminDelete :: (ToBackendKey SqlBackend record, AdminRecord record) =>
+               String -> Key record -> Handler ()
 adminDelete model entityId = do
+    entity <- runDB $ get404 entityId
+    userId <- requireAuthId
+    beforeDelete userId $ Entity entityId entity
     runDB $ delete entityId
     let message = model ++ " #" ++ idToString entityId ++ " successfully deleted!"
     setMessage $ toMarkup message

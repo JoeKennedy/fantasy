@@ -112,11 +112,11 @@ moveTeamSeasonToPostSeason postSeasonStatus userId teamSeasonId = do
                         , TeamSeasonUpdatedAt =. now ]
 
 
-------------------
--- Upsert Plays --
-------------------
-updatePlayNotes :: Entity Event -> Handler ()
-updatePlayNotes (Entity eventId event) = runDB $ do
+-----------
+-- Plays --
+-----------
+updatePlayNotes :: EventId -> Event -> Handler ()
+updatePlayNotes eventId event = runDB $ do
     now <- liftIO getCurrentTime
     playIds <- selectKeysList [PlayEventId ==. eventId] []
     forM_ playIds (\playId -> update playId [PlayNote =. eventNote event, PlayUpdatedAt =. now])
@@ -181,6 +181,25 @@ updatePlay week event (Entity playId play) = do
                                       , PlayUpdatedAt =. now
                                       ]
     updatePointsFromPlay play' False
+
+deletePlays :: Episode -> EventId -> Maybe Event -> Handler ()
+deletePlays _ _ Nothing = return ()
+deletePlays episode eventId (Just event) = do
+    seasons <- runDB $ selectList [ SeasonIsActive ==. True
+                                  , SeasonSeriesId ==. episodeSeriesId episode
+                                  ] [Asc SeasonId]
+    mapM_ (deletePlay $ Entity eventId event) $ map (seasonLeagueId . entityVal) seasons
+
+deletePlay :: Entity Event -> LeagueId -> Handler ()
+deletePlay (Entity eventId event) leagueId = do
+    let episodeId = eventEpisodeId event
+    Entity weekId _ <- runDB $ getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
+    maybePlayEntity <- runDB $ getBy $ UniquePlayWeekIdEventId weekId eventId
+    case maybePlayEntity of
+        Nothing -> return ()
+        Just (Entity playId play) -> do
+            updatePointsFromPlay play True
+            runDB $ delete playId
 
 
 ----------------------
