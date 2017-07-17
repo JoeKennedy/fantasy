@@ -78,7 +78,7 @@ changeEventRelations eventId maybeOldEvent maybeNewEvent userId = do
             updateCharacterStatus maybeOldEvent maybeNewEvent userId now
             case maybeNewEvent of
                 Just newEvent -> upsertPlays episode $ Entity eventId newEvent
-                Nothing -> deletePlays episode eventId maybeOldEvent
+                Nothing -> deletePlays eventId
         else if map eventNote maybeOldEvent == map eventNote maybeNewEvent then return () else
             mapM_ (updatePlayNotes eventId) maybeNewEvent
 

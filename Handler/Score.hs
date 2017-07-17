@@ -182,24 +182,15 @@ updatePlay week event (Entity playId play) = do
                                       ]
     updatePointsFromPlay play' False
 
-deletePlays :: Episode -> EventId -> Maybe Event -> Handler ()
-deletePlays _ _ Nothing = return ()
-deletePlays episode eventId (Just event) = do
-    seasons <- runDB $ selectList [ SeasonIsActive ==. True
-                                  , SeasonSeriesId ==. episodeSeriesId episode
-                                  ] [Asc SeasonId]
-    mapM_ (deletePlay $ Entity eventId event) $ map (seasonLeagueId . entityVal) seasons
+deletePlays :: EventId -> Handler ()
+deletePlays eventId = do
+    plays <- runDB $ selectList [PlayEventId ==. eventId] []
+    mapM_ deletePlay plays
 
-deletePlay :: Entity Event -> LeagueId -> Handler ()
-deletePlay (Entity eventId event) leagueId = do
-    let episodeId = eventEpisodeId event
-    Entity weekId _ <- runDB $ getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
-    maybePlayEntity <- runDB $ getBy $ UniquePlayWeekIdEventId weekId eventId
-    case maybePlayEntity of
-        Nothing -> return ()
-        Just (Entity playId play) -> do
-            updatePointsFromPlay play True
-            runDB $ delete playId
+deletePlay :: Entity Play -> Handler ()
+deletePlay (Entity playId play) = do
+    updatePointsFromPlay play True
+    runDB $ delete playId
 
 
 ----------------------
