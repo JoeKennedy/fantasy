@@ -36,7 +36,7 @@
                   <p .list-group-item-text>
                       #{characterPointsLastSeason character}
 
-            <!-- TODO - uncomment this once season 7 episode 1 has aired -->
+            <!-- TODO - uncomment this once season 7 episode 1 is scored -->
             <!-- <li .list-group-item> -->
             <!--     <h6 .list-group-item-heading>Points for Weighting -->
             <!--     <p .list-group-item-text> -->

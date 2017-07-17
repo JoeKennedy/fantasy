@@ -20,7 +20,7 @@
                         Status
                     <th .hidden-sm .hidden-xs data-field="player-survived" data-sortable="true">
                         Seasons Survived
-                    <!-- TODO - uncomment this once season 7 episode 1 airs -->
+                    <!-- TODO - uncomment this once season 7 episode 1 is scored -->
                     <!-- <th .hidden-sm .hidden-xs data-field="player-points-5" data-sortable="true"> -->
                     <!--     Points For Weight -->
                     <th data-field="player-points-this-season" data-sortable="true">
@@ -65,7 +65,7 @@
                                             Rookie
                                         $else
                                             #{seasonsSurvived}
-                        <!-- TODO - uncomment this once season 7 episode 1 airs -->
+                        <!-- TODO - uncomment this once season 7 episode 1 is scored -->
                         <!-- <td .hidden-sm .hidden-xs> -->
                         <!--     #{displayRational $ performanceCappedCumulativePoints performance} -->
                         <td>
