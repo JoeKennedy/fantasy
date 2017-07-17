@@ -65,8 +65,8 @@ getLeaguePlayerR leagueId characterId = do
     maybeLastPlayerSeason <- case maybeLastSeasonId of
         Nothing -> return Nothing
         Just lastSeasonId -> do
-            lastSeasonEntity <- runDB $ getBy404 $ UniquePlayerSeasonPlayerIdSeasonId playerId lastSeasonId
-            return $ Just $ entityVal lastSeasonEntity
+            maybeLastSeasonEntity <- runDB $ getBy $ UniquePlayerSeasonPlayerIdSeasonId playerId lastSeasonId
+            return $ map entityVal maybeLastSeasonEntity 
     -- TODO - uncomment this once season 7 episode 1 is scored
     -- weekId <- getMostRecentWeekId leagueId seasonId
     -- Entity _ performance <- runDB $ getBy404 $ UniquePerformanceWeekIdPlayerId weekId playerId
