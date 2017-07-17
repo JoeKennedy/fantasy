@@ -377,9 +377,8 @@ createWeekData (Entity episodeId episode) (Entity seasonId season) = do
             return $ Entity weekId week
 
 createWeekData_ :: Entity Episode -> Entity Season -> Handler ()
-createWeekData_ episodeEntity seasonEntity = do
-    _ <- createWeekData episodeEntity seasonEntity
-    return ()
+createWeekData_ episodeEntity seasonEntity =
+    createWeekData episodeEntity seasonEntity >> return ()
 
 createWeek :: Entity Season -> Entity Episode -> Handler (Entity Week)
 createWeek (Entity seasonId season) (Entity episodeId episode) = runDB $ do
