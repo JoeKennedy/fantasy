@@ -29,7 +29,7 @@
                             <td .hidden-sm .hidden-xs>#{teamOwnerName team}
                             <td .text-right>#{displayRational $ gamePoints game}
 
-$if weekIsScored week
+$if not (null plays) && not (null performances)
     <div .row>
         <div .col-md-4>
             <div .panel .panel-default>
