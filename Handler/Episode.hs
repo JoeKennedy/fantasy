@@ -127,8 +127,23 @@ airEpisode = do
             now <- liftIO getCurrentTime
             if utctDay now /= utctDay (episodeAirTime episode) then return () else do
                 runDB $ update episodeId [EpisodeStatus =. Airing]
-                seasons <- runDB $ selectList [SeasonIsActive ==. True] [Asc SeasonId]
+                seasons <- runDB $ selectList [ SeasonIsActive ==. True
+                                              , SeasonSeriesId ==. episodeSeriesId episode
+                                              ] [Asc SeasonId]
                 mapM_ (createWeekData_ $ Entity episodeId episode) seasons
+
+-- TODO - remove this
+reAirEpisode :: Entity Episode -> Handler ()
+reAirEpisode (Entity episodeId episode) = do
+    weekIds <- runDB $ selectKeysList [WeekEpisodeId ==. episodeId] []
+    runDB $ deleteWhere [GameWeekId <-. weekIds]
+    runDB $ deleteWhere [PerformanceWeekId <-. weekIds]
+    runDB $ deleteWhere [PlayWeekId <-. weekIds]
+    runDB $ deleteWhere [WeekEpisodeId ==. episodeId]
+    seasons <- runDB $ selectList [ SeasonIsActive ==. True
+                                  , SeasonSeriesId ==. episodeSeriesId episode
+                                  ] [Asc SeasonId]
+    mapM_ (createWeekData_ $ Entity episodeId episode) seasons
 
 
 -------------
