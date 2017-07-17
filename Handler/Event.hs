@@ -56,7 +56,7 @@ getCharacterEvents characterId = runDB
 ---------------
 updateEventRelations :: Maybe Event -> Entity Event -> Handler ()
 updateEventRelations maybeOldEvent (Entity eventId event) = do
-    userId <- requireAuthId
+    let userId = eventUpdatedBy event
     now <- liftIO getCurrentTime
     if eventCoreHasChanged maybeOldEvent event
         then do -- backgroundHandler $ do
