@@ -121,10 +121,12 @@ updatePlayNotes (Entity eventId event) = runDB $ do
     playIds <- selectKeysList [PlayEventId ==. eventId] []
     forM_ playIds (\playId -> update playId [PlayNote =. eventNote event, PlayUpdatedAt =. now])
 
-upsertPlays :: Entity Event -> Handler ()
-upsertPlays eventEntity = do
-    leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
-    mapM_ (upsertPlay eventEntity) leagueIds
+upsertPlays :: Episode -> Entity Event -> Handler ()
+upsertPlays episode eventEntity = do
+    seasons <- runDB $ selectList [ SeasonIsActive ==. True
+                                  , SeasonSeriesId ==. episodeSeriesId episode
+                                  ] [Asc SeasonId]
+    mapM_ (upsertPlay eventEntity) $ map (seasonLeagueId . entityVal) seasons
 
 upsertPlay :: Entity Event -> LeagueId -> Handler ()
 upsertPlay (Entity eventId event) leagueId = do

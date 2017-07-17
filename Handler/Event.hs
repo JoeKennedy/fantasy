@@ -60,16 +60,17 @@ updateEventRelations maybeOldEvent (Entity eventId event) = do
     now <- liftIO getCurrentTime
     if eventCoreHasChanged maybeOldEvent event
         then do -- backgroundHandler $ do
-            markEpisodeEventsPending (eventEpisodeId event) userId now
+            let episodeId = eventEpisodeId event
+            episode <- runDB $ get404 episodeId
+            markEpisodeEventsPending (Entity episodeId episode) userId now
             updateCharacterAppearances maybeOldEvent event userId now
             updateCharacterStatus maybeOldEvent event userId now
-            upsertPlays $ Entity eventId event
+            upsertPlays episode $ Entity eventId event
         else if map eventNote maybeOldEvent == Just (eventNote event) then return () else
             updatePlayNotes $ Entity eventId event
 
-markEpisodeEventsPending :: EpisodeId -> UserId -> UTCTime -> Handler ()
-markEpisodeEventsPending episodeId userId now = runDB $ do
-    episode <- get404 episodeId
+markEpisodeEventsPending :: Entity Episode -> UserId -> UTCTime -> Handler ()
+markEpisodeEventsPending (Entity episodeId episode) userId now = runDB $ do
     if episodeStatus episode == EventsPending then return () else
         update episodeId [ EpisodeAreEventsComplete =. False
                          , EpisodeStatus =. EventsPending

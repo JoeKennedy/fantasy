@@ -74,11 +74,12 @@ upsertEpisodeAppearanceEvents episodeId userId now = do
 
 upsertAppearanceEvents :: UserId -> UTCTime -> Entity Event -> Handler ()
 upsertAppearanceEvents userId now (Entity _ event) = do
-    upsertAppearanceEvent userId now event $ eventCharacterId event
-    mapM_ (upsertAppearanceEvent userId now event) $ eventReceivingCharacterId event
+    episode <- runDB $ get404 $ eventEpisodeId event
+    upsertAppearanceEvent userId now event episode $ eventCharacterId event
+    mapM_ (upsertAppearanceEvent userId now event episode) $ eventReceivingCharacterId event
 
-upsertAppearanceEvent :: UserId -> UTCTime -> Event -> CharacterId -> Handler ()
-upsertAppearanceEvent userId now event characterId = do
+upsertAppearanceEvent :: UserId -> UTCTime -> Event -> Episode -> CharacterId -> Handler ()
+upsertAppearanceEvent userId now event episode characterId = do
     maybeAppear <- runDB $ selectFirst [ EventAction ==. Appear
                                        , EventCharacterId ==. characterId
                                        , EventEpisodeId ==. eventEpisodeId event
@@ -105,7 +106,7 @@ upsertAppearanceEvent userId now event characterId = do
                                }
             eventId <- runDB $ insert event'
             incrementCharacterAppearances characterId 1 userId now
-            upsertPlays $ Entity eventId event'
+            upsertPlays episode $ Entity eventId event'
 
 
 ----------
