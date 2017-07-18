@@ -17,7 +17,7 @@ $maybe (Entity _ series, Entity _ episode) <- maybeSeriesAndEpisode
           has finished airing. Scorekeepers are preparing to score the episode.
 
         $of EventsPending
-          has finished airing and is currently being scoring.
+          has finished airing and is currently being scored.
           $maybe eventsPendingAt <- episodeEventsPendingAt episode
             \ Scoring started on #{displayAirTime eventsPendingAt}. #
           Week #{episodeNo} scores for your team and characters will fluctuate
