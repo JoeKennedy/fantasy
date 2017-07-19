@@ -52,7 +52,8 @@
                 <table .table .table-hover .table-striped>
                     <thead>
                         <th>Episode
-                        <th>Time In Episode
+                        <th>
+                            <i .fa .fa-clock-o>
                         <th>Event
                         <th>Note
 

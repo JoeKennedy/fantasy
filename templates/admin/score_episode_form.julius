@@ -147,7 +147,7 @@ function toggleReceivingCharacter(event) {
 function scoreEpisodeFormReady(jQuery) {
     $('#score_episode_panel').on('change', 'select.action', toggleReceivingCharacter);
     $('#score_episode_panel').on('change', '.form-control', upsertEvent);
-    $('#score_episode_panel').on('click',  '.copy-event', copyEventRow);
+    $('#score_episode_panel').on('click',  '.copy-event',   copyEventRow);
     $('#score_episode_panel').on('click',  '.delete-event', deleteEventRow);
     $('#score_episode_panel button#add_event_rows').on('click', addEventRows);
 }

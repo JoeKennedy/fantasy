@@ -21,7 +21,8 @@ $if not (null events)
     <div .panel .panel-default>
         <table .table .table-striped .table-hover>
             <thead>
-                <th>Time In Episode
+                <th>
+                    <i .fa .fa-clock-o>
                 <th .hidden-sm .hidden-xs>Character
                 <th .hidden-sm .hidden-xs>Action
                 <th .hidden-sm .hidden-xs>Receiving Character
