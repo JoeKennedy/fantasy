@@ -35,9 +35,5 @@
 
     <div .page-header>
 
-    <div .row>
-        <div .col-lg-8 .col-md-10 .col-xs-12 .col-lg-offset-2 .col-md-offset-1>
-            <div .page-header .text-center>
-                <h2>Preseason Rankings
-            <a .thumbnail target="_blank" href="https://docs.google.com/spreadsheets/d/1fnTgdTi2fGEX91MVrjqrOEHZ1fOXEUxl3wviVE4fxZE/edit?usp=sharing">
-                <img src="/static/images/rankings.png" alt="Rankings">
+    <div .text-center>
+        <iframe width="378" height="1201" frameBorder="0" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTN9Jee-MPmQ6zmhHmXVudHcMbvPUMgUNS1hqrB-A5vAyOch75sNQOD_0FUT3vKRmnWMRdYptEa3r4U/pubhtml?gid=177798519&amp;single=true&amp;widget=false&amp;chrome=false&amp;headers=false">
