@@ -398,7 +398,9 @@ createWeek (Entity seasonId season) (Entity episodeId episode) = runDB $ do
 backfillWeekData :: UserId -> Entity Season -> Entity Episode -> Handler ()
 backfillWeekData userId seasonEntity (Entity episodeId episode) = do
     weekEntity <- createWeekData (Entity episodeId episode) seasonEntity
-    events <- runDB $ selectList [EventEpisodeId ==. episodeId] [Asc EventTimeInEpisode]
+    events <- runDB $ selectList [ EventEpisodeId ==. episodeId
+                                 , EventMarkedForDestruction ==. False
+                                 ] [Asc EventTimeInEpisode]
     let leagueId = seasonLeagueId $ entityVal seasonEntity
     forM_ events $ createPlay leagueId weekEntity
     finalizeWeek episodeId userId leagueId

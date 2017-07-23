@@ -24,7 +24,8 @@ getEpisodeEvents episodeId = runDB
         E.on $ E.just (event ^. EventReceivingCharacterId) E.==. E.just (receivingCharacter ?. CharacterId)
         E.on $ event ^. EventCharacterId E.==. character ^. CharacterId
         E.on $ event ^. EventEpisodeId E.==. episode ^. EpisodeId
-        E.where_ (event ^. EventEpisodeId E.==. E.val episodeId)
+        E.where_ $ event ^. EventEpisodeId E.==. E.val episodeId
+            E.&&.  event ^. EventMarkedForDestruction E.==. E.val False
         E.orderBy [E.asc (event ^. EventTimeInEpisode)]
         return (event, episode, character, receivingCharacter)
 
@@ -35,21 +36,24 @@ getEvents = runDB
         E.on $ E.just (event ^. EventReceivingCharacterId) E.==. E.just (receivingCharacter ?. CharacterId)
         E.on $ event ^. EventCharacterId E.==. character ^. CharacterId
         E.on $ event ^. EventEpisodeId E.==. episode ^. EpisodeId
+        E.where_ $ event ^. EventMarkedForDestruction E.==. E.val False
         E.orderBy [E.asc (episode ^. EpisodeOverallNumber), E.asc (event ^. EventTimeInEpisode)]
         return (event, episode, character, receivingCharacter)
 
 getCharacterEvents :: CharacterId -> Handler [FullEventSeries]
 getCharacterEvents characterId = runDB
-        $ E.select
-        $ E.from $ \(event `E.InnerJoin` episode `E.InnerJoin` series `E.InnerJoin` actingCharacter `E.LeftOuterJoin` receivingCharacter) -> do
-            E.on $ E.just (event ^. EventReceivingCharacterId) E.==. E.just (receivingCharacter ?. CharacterId)
-            E.on $ event ^. EventCharacterId E.==. actingCharacter ^. CharacterId
-            E.on $ episode ^. EpisodeSeriesId E.==. series ^. SeriesId
-            E.on $ event ^. EventEpisodeId E.==. episode ^. EpisodeId
-            E.where_ (event ^. EventCharacterId E.==. E.val characterId E.||.
-                      event ^. EventReceivingCharacterId E.==. E.just (E.val characterId))
-            E.orderBy [E.asc (episode ^. EpisodeOverallNumber), E.asc (event ^. EventTimeInEpisode)]
-            return (event, episode, series, actingCharacter, receivingCharacter)
+    $ E.select
+    $ E.from $ \(event `E.InnerJoin` episode `E.InnerJoin` series `E.InnerJoin` actingCharacter `E.LeftOuterJoin` receivingCharacter) -> do
+        E.on $ E.just (event ^. EventReceivingCharacterId) E.==. E.just (receivingCharacter ?. CharacterId)
+        E.on $ event ^. EventCharacterId E.==. actingCharacter ^. CharacterId
+        E.on $ episode ^. EpisodeSeriesId E.==. series ^. SeriesId
+        E.on $ event ^. EventEpisodeId E.==. episode ^. EpisodeId
+        E.where_ $ event ^. EventMarkedForDestruction E.==. E.val False
+            E.&&. (event ^. EventCharacterId E.==. E.val characterId
+            E.||.  event ^. EventReceivingCharacterId E.==. E.just (E.val characterId))
+        E.orderBy [E.asc (episode ^. EpisodeOverallNumber), E.asc (event ^. EventTimeInEpisode)]
+        return (event, episode, series, actingCharacter, receivingCharacter)
+
 
 ---------------
 -- Callbacks --

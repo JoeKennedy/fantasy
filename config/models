@@ -103,6 +103,7 @@ Event
     episodeId EpisodeId
     note Text Maybe
     timeInEpisode Int
+    markedForDestruction Bool default=false
     createdBy UserId default=6
     createdAt UTCTime default=now()
     updatedBy UserId default=6

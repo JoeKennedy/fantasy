@@ -24,6 +24,7 @@ scoreEpisodeForm userId episodeId characters events extra = do
             <*> pure episodeId
             <*> fst nField
             <*> fst tField
+            <*> pure (eventMarkedForDestruction e)
             <*> pure (eventCreatedBy e)
             <*> pure (eventCreatedAt e)
             <*> updatedByField userId
@@ -54,6 +55,7 @@ scoreEventForm userId episodeId now event = Event
     <*> pure episodeId
     <*> iopt textField "note"
     <*> ireq timeInEpisodeField "time"
+    <*> existingElseDefault False (eventMarkedForDestruction <$> event)
     <*> createdByField userId (eventCreatedBy <$> event)
     <*> existingElseDefault now (eventCreatedAt <$> event)
     <*> updatedByField userId
@@ -89,7 +91,9 @@ getAdminScoreEpisodeR episodeId = do
 
         else do
             userId <- requireAuthId
-            events <- runDB $ selectList [EventEpisodeId ==. episodeId] [Asc EventTimeInEpisode]
+            events <- runDB $ selectList [ EventEpisodeId ==. episodeId
+                                         , EventMarkedForDestruction ==. False
+                                         ] [Asc EventTimeInEpisode]
             characters <- runDB $ selectList [] [Asc CharacterName]
             (widget, enctype) <- generateFormPost $ scoreEpisodeForm userId episodeId characters events
             adminLayout "Score" "Score" $(widgetFile "admin/score_episode")

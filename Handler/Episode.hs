@@ -69,7 +69,9 @@ incrementEpisodeTimesFinalized episodeId userId now =
 
 upsertEpisodeAppearanceEvents :: EpisodeId -> UserId -> UTCTime -> Handler ()
 upsertEpisodeAppearanceEvents episodeId userId now = do
-    events <- runDB $ selectList [EventEpisodeId ==. episodeId] [Asc EventTimeInEpisode]
+    events <- runDB $ selectList [ EventEpisodeId ==. episodeId
+                                 , EventMarkedForDestruction ==. False
+                                 ] [Asc EventTimeInEpisode]
     forM_ events $ upsertAppearanceEvents userId now
 
 upsertAppearanceEvents :: UserId -> UTCTime -> Entity Event -> Handler ()
@@ -99,6 +101,7 @@ upsertAppearanceEvent userId now event episode characterId = do
                                , eventEpisodeId = eventEpisodeId event
                                , eventNote = Nothing
                                , eventTimeInEpisode = eventTimeInEpisode event
+                               , eventMarkedForDestruction = False
                                , eventCreatedBy = userId
                                , eventCreatedAt = now
                                , eventUpdatedBy = userId
