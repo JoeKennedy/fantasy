@@ -4,7 +4,7 @@ import Import
 
 import Handler.Character     (addCharacterToLeagues, updateCharacterInLeagues)
 import Handler.Episode       (finalizeEpisode)
-import Handler.Event         (createEventRelations, updateEventRelations, deleteEventRelations)
+import Handler.Event         (changeEventRelations, deleteEventRelations)
 import Handler.League.Season (createLeagueSeasons, updateLeagueSeasonsIfRelevent)
 import Handler.Score
 
@@ -22,8 +22,8 @@ class AdminRecord record where
     afterUpdate :: record -> Entity record -> Handler ()
     afterUpdate _ _ = return ()
 
-    beforeDelete :: UserId -> Entity record -> Handler ()
-    beforeDelete _ _ = return ()
+    beforeDelete :: UserId -> Entity record -> Handler Bool
+    beforeDelete _ _ = return True
 
     createdBy :: record -> UserId
     createdAt :: record -> UTCTime
@@ -69,8 +69,8 @@ instance AdminRecord Episode where
     updatedAt = episodeUpdatedAt
 
 instance AdminRecord Event where
-    afterCreate = createEventRelations
-    afterUpdate = updateEventRelations
+    afterCreate = changeEventRelations Nothing
+    afterUpdate oldEvent = changeEventRelations $ Just oldEvent
     beforeDelete = deleteEventRelations
 
     createdBy = eventCreatedBy

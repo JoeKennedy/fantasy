@@ -112,8 +112,8 @@ adminDelete :: (ToBackendKey SqlBackend record, AdminRecord record) =>
 adminDelete model entityId = do
     entity <- runDB $ get404 entityId
     userId <- requireAuthId
-    beforeDelete userId $ Entity entityId entity
-    runDB $ delete entityId
+    runDelete <- beforeDelete userId $ Entity entityId entity
+    if runDelete then runDB $ delete entityId else return ()
     let message = model ++ " #" ++ idToString entityId ++ " successfully deleted!"
     setMessage $ toMarkup message
 

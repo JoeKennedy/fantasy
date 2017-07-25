@@ -182,10 +182,11 @@ updatePlay week event (Entity playId play) = do
                                       ]
     updatePointsFromPlay play' False
 
-deletePlays :: EventId -> Handler ()
-deletePlays eventId = do
+deleteEvent :: EventId -> Handler ()
+deleteEvent eventId = do
     plays <- runDB $ selectList [PlayEventId ==. eventId] []
     mapM_ deletePlay plays
+    runDB $ delete eventId
 
 deletePlay :: Entity Play -> Handler ()
 deletePlay (Entity playId play) = do

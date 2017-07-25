@@ -2,7 +2,7 @@ module Handler.Event where
 
 import Import
 
-import Handler.Score (deletePlays, upsertPlays, updatePlayNotes)
+import Handler.Score (deleteEvent, upsertPlays, updatePlayNotes)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.), (?.))
@@ -58,38 +58,28 @@ getCharacterEvents characterId = runDB
 ---------------
 -- Callbacks --
 ---------------
-createEventRelations :: Entity Event -> Handler ()
-createEventRelations (Entity eventId event) =
-    changeEventRelations eventId Nothing (Just event) $ eventCreatedBy event
-
-updateEventRelations :: Event -> Entity Event -> Handler ()
-updateEventRelations oldEvent (Entity eventId event) =
-    changeEventRelations eventId (Just oldEvent) (Just event) $ eventUpdatedBy event
-
-deleteEventRelations :: UserId -> Entity Event -> Handler ()
-deleteEventRelations userId (Entity eventId event) =
-    changeEventRelations eventId (Just event) Nothing userId
-
-changeEventRelations :: EventId -> Maybe Event -> Maybe Event -> UserId -> Handler ()
-changeEventRelations eventId maybeOldEvent maybeNewEvent userId = do
+deleteEventRelations :: UserId -> Entity Event -> Handler Bool
+deleteEventRelations userId (Entity eventId _) = do
     now <- liftIO getCurrentTime
-    if eventCoreHasChanged maybeOldEvent maybeNewEvent
+    runDB $ update eventId [ EventMarkedForDestruction =. True
+                           , EventUpdatedBy =. userId
+                           , EventUpdatedAt =. now ]
+    backgroundHandler $ deleteEvent eventId
+    return False
+
+changeEventRelations :: Maybe Event -> Entity Event -> Handler ()
+changeEventRelations maybeOldEvent (Entity eventId event) = do
+    now <- liftIO getCurrentTime
+    if eventCoreHasChanged maybeOldEvent event
         then do -- backgroundHandler $ do
-            let episodeId = episodeIdFromEventChanges maybeOldEvent maybeNewEvent
+            let (episodeId, userId) = (eventEpisodeId event, eventUpdatedBy event)
             episode <- runDB $ get404 episodeId
             markEpisodeEventsPending (Entity episodeId episode) userId now
-            updateCharacterAppearances maybeOldEvent maybeNewEvent userId now
-            updateCharacterStatus maybeOldEvent maybeNewEvent userId now
-            case maybeNewEvent of
-                Just newEvent -> upsertPlays episode $ Entity eventId newEvent
-                Nothing -> deletePlays eventId
-        else if map eventNote maybeOldEvent == map eventNote maybeNewEvent then return () else
-            mapM_ (updatePlayNotes eventId) maybeNewEvent
-
-episodeIdFromEventChanges :: Maybe Event -> Maybe Event -> EpisodeId
-episodeIdFromEventChanges _ (Just newEvent) = eventEpisodeId newEvent
-episodeIdFromEventChanges (Just oldEvent) _ = eventEpisodeId oldEvent
-episodeIdFromEventChanges _ _ = error "Must have an episode ID!"
+            updateCharacterAppearances maybeOldEvent event userId now
+            updateCharacterStatus maybeOldEvent event userId now
+            upsertPlays episode $ Entity eventId event
+        else if map eventNote maybeOldEvent == Just (eventNote event) then return () else
+            updatePlayNotes eventId event
 
 markEpisodeEventsPending :: Entity Episode -> UserId -> UTCTime -> Handler ()
 markEpisodeEventsPending (Entity episodeId episode) userId now = runDB $ do
@@ -100,15 +90,15 @@ markEpisodeEventsPending (Entity episodeId episode) userId now = runDB $ do
                          , EpisodeUpdatedBy =. userId
                          , EpisodeUpdatedAt =. now ]
 
-updateCharacterAppearances :: Maybe Event -> Maybe Event -> UserId -> UTCTime -> Handler ()
-updateCharacterAppearances maybeOldEvent maybeNewEvent userId now = do
+updateCharacterAppearances :: Maybe Event -> Event -> UserId -> UTCTime -> Handler ()
+updateCharacterAppearances maybeOldEvent event userId now = do
     for_ maybeOldEvent $ changeCharacterAppearances (-1) userId now
-    for_ maybeNewEvent $ changeCharacterAppearances   1  userId now
+    changeCharacterAppearances 1 userId now event
 
-updateCharacterStatus :: Maybe Event -> Maybe Event -> UserId -> UTCTime -> Handler ()
-updateCharacterStatus maybeOldEvent maybeNewEvent userId now = do
-    for_ maybeOldEvent $ updateCharacterStatusForEvent True  userId now
-    for_ maybeNewEvent $ updateCharacterStatusForEvent False userId now
+updateCharacterStatus :: Maybe Event -> Event -> UserId -> UTCTime -> Handler ()
+updateCharacterStatus maybeOldEvent event userId now = do
+    for_ maybeOldEvent $ updateCharacterStatusForEvent True userId now
+    updateCharacterStatusForEvent False userId now event
 
 changeCharacterAppearances :: Int -> UserId -> UTCTime -> Event -> Handler ()
 changeCharacterAppearances number userId now event =
@@ -146,11 +136,9 @@ changeCharacterStatus characterId status userId now = runDB $
 -------------
 -- Helpers --
 -------------
-eventCoreHasChanged :: Maybe Event -> Maybe Event -> Bool
-eventCoreHasChanged Nothing Nothing = False
+eventCoreHasChanged :: Maybe Event -> Event -> Bool
 eventCoreHasChanged Nothing _ = True
-eventCoreHasChanged _ Nothing = True
-eventCoreHasChanged (Just oldEvent) (Just event) =
+eventCoreHasChanged (Just oldEvent) event =
     eventCharacterId oldEvent /= eventCharacterId event ||
     eventAction oldEvent /= eventAction event ||
     eventReceivingCharacterId oldEvent /= eventReceivingCharacterId event
