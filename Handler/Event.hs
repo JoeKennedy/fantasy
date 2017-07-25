@@ -70,13 +70,13 @@ deleteEventRelations userId (Entity eventId _) = do
 changeEventRelations :: Maybe Event -> Entity Event -> Handler ()
 changeEventRelations maybeOldEvent (Entity eventId event) =
     if eventCoreHasChanged maybeOldEvent event
-        then do -- backgroundHandler $ do
+        then do
             let (episodeId, userId) = (eventEpisodeId event, eventUpdatedBy event)
             episode <- runDB $ get404 episodeId
             markEpisodeEventsPending (Entity episodeId episode) userId
             updateCharacterAppearances maybeOldEvent event userId
             updateCharacterStatus maybeOldEvent event userId
-            upsertPlays episode $ Entity eventId event
+            backgroundHandler $ upsertPlays episode $ Entity eventId event
         else if map eventNote maybeOldEvent == Just (eventNote event) then return () else
             updatePlayNotes eventId event
 
