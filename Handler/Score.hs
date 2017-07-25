@@ -118,8 +118,8 @@ moveTeamSeasonToPostSeason postSeasonStatus userId teamSeasonId = do
 updatePlayNotes :: EventId -> Event -> Handler ()
 updatePlayNotes eventId event = runDB $ do
     now <- liftIO getCurrentTime
-    playIds <- selectKeysList [PlayEventId ==. eventId] []
-    forM_ playIds (\playId -> update playId [PlayNote =. eventNote event, PlayUpdatedAt =. now])
+    updateWhere [PlayEventId ==. eventId]
+                [PlayNote =. eventNote event, PlayUpdatedAt =. now]
 
 upsertPlays :: Episode -> Entity Event -> Handler ()
 upsertPlays episode eventEntity = do
