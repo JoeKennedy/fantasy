@@ -68,21 +68,21 @@ deleteEventRelations userId (Entity eventId _) = do
     return False
 
 changeEventRelations :: Maybe Event -> Entity Event -> Handler ()
-changeEventRelations maybeOldEvent (Entity eventId event) = do
-    now <- liftIO getCurrentTime
+changeEventRelations maybeOldEvent (Entity eventId event) =
     if eventCoreHasChanged maybeOldEvent event
         then do -- backgroundHandler $ do
             let (episodeId, userId) = (eventEpisodeId event, eventUpdatedBy event)
             episode <- runDB $ get404 episodeId
-            markEpisodeEventsPending (Entity episodeId episode) userId now
-            updateCharacterAppearances maybeOldEvent event userId now
-            updateCharacterStatus maybeOldEvent event userId now
+            markEpisodeEventsPending (Entity episodeId episode) userId
+            updateCharacterAppearances maybeOldEvent event userId
+            updateCharacterStatus maybeOldEvent event userId
             upsertPlays episode $ Entity eventId event
         else if map eventNote maybeOldEvent == Just (eventNote event) then return () else
             updatePlayNotes eventId event
 
-markEpisodeEventsPending :: Entity Episode -> UserId -> UTCTime -> Handler ()
-markEpisodeEventsPending (Entity episodeId episode) userId now = runDB $ do
+markEpisodeEventsPending :: Entity Episode -> UserId -> Handler ()
+markEpisodeEventsPending (Entity episodeId episode) userId = runDB $ do
+    now <- liftIO getCurrentTime
     if episodeStatus episode == EventsPending then return () else
         update episodeId [ EpisodeAreEventsComplete =. False
                          , EpisodeStatus =. EventsPending
@@ -90,29 +90,30 @@ markEpisodeEventsPending (Entity episodeId episode) userId now = runDB $ do
                          , EpisodeUpdatedBy =. userId
                          , EpisodeUpdatedAt =. now ]
 
-updateCharacterAppearances :: Maybe Event -> Event -> UserId -> UTCTime -> Handler ()
-updateCharacterAppearances maybeOldEvent event userId now = do
-    for_ maybeOldEvent $ changeCharacterAppearances (-1) userId now
-    changeCharacterAppearances 1 userId now event
+updateCharacterAppearances :: Maybe Event -> Event -> UserId -> Handler ()
+updateCharacterAppearances maybeOldEvent event userId = do
+    for_ maybeOldEvent $ changeCharacterAppearances (-1) userId
+    changeCharacterAppearances 1 userId event
 
-updateCharacterStatus :: Maybe Event -> Event -> UserId -> UTCTime -> Handler ()
-updateCharacterStatus maybeOldEvent event userId now = do
-    for_ maybeOldEvent $ updateCharacterStatusForEvent True userId now
-    updateCharacterStatusForEvent False userId now event
+updateCharacterStatus :: Maybe Event -> Event -> UserId -> Handler ()
+updateCharacterStatus maybeOldEvent event userId = do
+    for_ maybeOldEvent $ updateCharacterStatusForEvent True userId
+    updateCharacterStatusForEvent False userId event
 
-changeCharacterAppearances :: Int -> UserId -> UTCTime -> Event -> Handler ()
-changeCharacterAppearances number userId now event =
+changeCharacterAppearances :: Int -> UserId -> Event -> Handler ()
+changeCharacterAppearances number userId event =
     if eventAction event /= Appear then return () else
-        incrementCharacterAppearances (eventCharacterId event) number userId now
+        incrementCharacterAppearances (eventCharacterId event) number userId
 
-incrementCharacterAppearances :: CharacterId -> Int -> UserId -> UTCTime -> Handler ()
-incrementCharacterAppearances characterId number userId now = runDB $
-        update characterId [ CharacterEpisodesAppearedIn +=. number
-                           , CharacterUpdatedBy =. userId
-                           , CharacterUpdatedAt =. now ]
+incrementCharacterAppearances :: CharacterId -> Int -> UserId -> Handler ()
+incrementCharacterAppearances characterId number userId = runDB $ do
+    now <- liftIO getCurrentTime
+    update characterId [ CharacterEpisodesAppearedIn +=. number
+                       , CharacterUpdatedBy =. userId
+                       , CharacterUpdatedAt =. now ]
 
-updateCharacterStatusForEvent :: Bool -> UserId -> UTCTime -> Event -> Handler ()
-updateCharacterStatusForEvent reverseStatus userId now event = do
+updateCharacterStatusForEvent :: Bool -> UserId -> Event -> Handler ()
+updateCharacterStatusForEvent reverseStatus userId event = do
     let (charId, mRecCharId) = (eventCharacterId event, eventReceivingCharacterId event)
     character <- runDB $ get404 charId
     mRecCharacter <- runDB $ mapM get404 mRecCharId
@@ -122,13 +123,14 @@ updateCharacterStatusForEvent reverseStatus userId now event = do
 
     if not recCharPlayable then return () else
         case (eventAction event, characterIsPlayable character, mRecCharId) of
-            (Kill,  _, Just rCId) -> changeCharacterStatus rCId killDeathStatus userId now
-            (Raise, _, Just rCId) -> changeCharacterStatus rCId raiseStatus userId now
-            (Death, True, _)      -> changeCharacterStatus charId killDeathStatus userId now
+            (Kill,  _, Just rCId) -> changeCharacterStatus rCId killDeathStatus userId
+            (Raise, _, Just rCId) -> changeCharacterStatus rCId raiseStatus userId
+            (Death, True, _)      -> changeCharacterStatus charId killDeathStatus userId
             (_, _, _) -> return ()
 
-changeCharacterStatus :: CharacterId -> CharacterStatus -> UserId -> UTCTime -> Handler ()
-changeCharacterStatus characterId status userId now = runDB $
+changeCharacterStatus :: CharacterId -> CharacterStatus -> UserId -> Handler ()
+changeCharacterStatus characterId status userId = runDB $ do
+    now <- liftIO getCurrentTime
     update characterId [ CharacterStatus    =. status
                        , CharacterUpdatedBy =. userId
                        , CharacterUpdatedAt =. now ]

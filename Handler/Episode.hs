@@ -108,7 +108,7 @@ upsertAppearanceEvent userId now event episode characterId = do
                                , eventUpdatedAt = now
                                }
             eventId <- runDB $ insert event'
-            incrementCharacterAppearances characterId 1 userId now
+            incrementCharacterAppearances characterId 1 userId
             upsertPlays episode $ Entity eventId event'
 
 
