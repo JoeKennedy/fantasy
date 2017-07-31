@@ -148,6 +148,7 @@ library
                  , numbers
                  , regex-compat
                  , wai
+                 , uuid
 
 executable         fantasy
     if flag(library-only)

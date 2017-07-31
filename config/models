@@ -104,10 +104,12 @@ Event
     note Text Maybe
     timeInEpisode Int
     markedForDestruction Bool default=false
+    uuid UUID default=uuid_generate_v4()
     createdBy UserId default=6
     createdAt UTCTime default=now()
     updatedBy UserId default=6
     updatedAt UTCTime default=now()
+    UniqueEventEpisodeIdUuid episodeId uuid
     deriving Eq Show
 
 League

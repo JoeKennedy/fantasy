@@ -1,7 +1,14 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Model.Types where
 
 import ClassyPrelude.Yesod
+import Database.Persist.Sql (PersistFieldSql (..))
+import Data.UUID            (UUID)
 import Web.PathPieces
+
+import qualified Data.UUID             as UUID
+import qualified Data.ByteString.Char8 as S8
+
 
 ---------------------
 -- CharacterStatus --
@@ -18,6 +25,7 @@ isDead :: CharacterStatus -> Bool
 isDead Dead = True
 isDead    _ = False
 
+
 -------------------
 -- EpisodeStatus --
 -------------------
@@ -28,6 +36,7 @@ derivePersistField "EpisodeStatus"
 instance PathPiece EpisodeStatus where
     fromPathPiece = readFromPathPiece
     toPathPiece = showToPathPiece
+
 
 -----------------
 -- ScoringType --
@@ -219,3 +228,23 @@ instance PathPiece PostSeasonStatus where
     fromPathPiece = readFromPathPiece
     toPathPiece = showToPathPiece
 
+
+----------
+-- UUID --
+----------
+-- Note we're taking advantage of PostgreSQL understanding UUID values,
+-- thus "PersistDbSpecific"
+instance PersistField UUID where
+  toPersistValue u = PersistDbSpecific . S8.pack . UUID.toString $ u
+  fromPersistValue (PersistDbSpecific t) =
+    case UUID.fromString $ S8.unpack t of
+      Just x -> Right x
+      Nothing -> Left "Invalid UUID"
+  fromPersistValue _ = Left "Not PersistDBSpecific"
+
+instance PersistFieldSql UUID where
+  sqlType _ = SqlOther "uuid"
+
+instance PathPiece UUID where
+  toPathPiece   = UUID.toText
+  fromPathPiece = UUID.fromText

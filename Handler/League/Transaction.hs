@@ -551,6 +551,7 @@ joinWithPlayerSeason seasonId (Entity transactionPlayerId transactionPlayer) = d
 
 claimProcessableAt :: LeagueId -> UTCTime -> Handler UTCTime
 claimProcessableAt leagueId utcTime = do
+    -- TODO - figure out what's going on here, we shouldn't be using series 6
     Entity seriesId _ <- runDB $ getBy404 $ UniqueSeriesNumber 6
     Entity _ episode <- runDB $ getBy404 $ UniqueEpisodeNumberSeries 1 seriesId
     if utcTime < episodeAirTime episode then return utcTime else do

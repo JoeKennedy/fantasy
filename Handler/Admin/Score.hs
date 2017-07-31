@@ -8,6 +8,8 @@ import Handler.Admin.Record
 import Handler.Episode       (getEpisodes)
 import Handler.Event         (getEpisodeEvents)
 
+import Data.UUID (UUID)
+
 -----------
 -- Forms --
 -----------
@@ -25,6 +27,7 @@ scoreEpisodeForm userId episodeId characters events extra = do
             <*> fst nField
             <*> fst tField
             <*> pure (eventMarkedForDestruction e)
+            <*> pure (eventUuid e)
             <*> pure (eventCreatedBy e)
             <*> pure (eventCreatedAt e)
             <*> updatedByField userId
@@ -46,9 +49,9 @@ scoreEpisodeForm userId episodeId characters events extra = do
                               $ Just $ eventTimeInEpisode e
               return (Entity eId e, cField, aField, rcField, nField, tField)
 
-scoreEventForm :: UserId -> EpisodeId -> UTCTime -> Maybe Event ->
+scoreEventForm :: UserId -> EpisodeId -> UTCTime -> UUID -> Maybe Event ->
                   FormInput Handler Event
-scoreEventForm userId episodeId now event = Event
+scoreEventForm userId episodeId now uuid event = Event
     <$> ireq (selectField characters) "character"
     <*> ireq (selectField optionsEnum) "action"
     <*> iopt (selectField characters) "receivingCharacter"
@@ -56,6 +59,7 @@ scoreEventForm userId episodeId now event = Event
     <*> iopt textField "note"
     <*> ireq timeInEpisodeField "time"
     <*> existingElseDefault False (eventMarkedForDestruction <$> event)
+    <*> pure uuid
     <*> createdByField userId (eventCreatedBy <$> event)
     <*> existingElseDefault now (eventCreatedAt <$> event)
     <*> updatedByField userId
@@ -98,24 +102,14 @@ getAdminScoreEpisodeR episodeId = do
             (widget, enctype) <- generateFormPost $ scoreEpisodeForm userId episodeId characters events
             adminLayout "Score" "Score" $(widgetFile "admin/score_episode")
 
-postAdminScoreEpisodeR :: EpisodeId -> Handler Value
-postAdminScoreEpisodeR episodeId = replacertEvent episodeId Nothing
-
-postAdminScoreEventR :: EventId -> Handler Value
-postAdminScoreEventR eventId = do
-    event <- runDB $ get404 eventId
-    replacertEvent (eventEpisodeId event) $ Just eventId
-
-
--------------
--- Helpers --
--------------
-replacertEvent :: EpisodeId -> Maybe EventId -> Handler Value
-replacertEvent episodeId maybeEventId = do
+postAdminScoreEventR :: EpisodeId -> UUID -> Handler Value
+postAdminScoreEventR episodeId uuid = do
+    maybeEventEntity <- runDB $ getBy $ UniqueEventEpisodeIdUuid episodeId uuid
+    let maybeEventId = map entityKey maybeEventEntity
+        maybeEvent   = map entityVal maybeEventEntity
     userId <- requireAuthId
     now <- liftIO getCurrentTime
-    maybeEvent <- mapM (runDB . get404) maybeEventId
-    result <- runInputPostResult $ scoreEventForm userId episodeId now maybeEvent
+    result <- runInputPostResult $ scoreEventForm userId episodeId now uuid maybeEvent
     case result of
         FormMissing -> badMethod
         FormFailure args -> invalidArgs args

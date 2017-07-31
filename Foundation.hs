@@ -6,6 +6,7 @@ import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.))
 import           Database.Persist.Sql                 (ConnectionPool, runSqlPool)
 import           Data.Maybe                           (fromJust)
+import           Data.UUID                            (UUID)
 import           Facebook                             (Credentials(..))
 import           Network.Mail.Mime.SES
 import           Text.Hamlet                          (hamletFile)
@@ -571,7 +572,7 @@ instance YesodBreadcrumbs App where
     breadcrumb RobotsR        = return ("", Nothing)
     breadcrumb LetsEncryptR{} = return ("", Nothing)
 
-    breadcrumb (AdminR (AdminScoreEventR _)) = return ("", Nothing)
+    breadcrumb (AdminR (AdminScoreEventR _ _)) = return ("", Nothing)
 
     breadcrumb LeagueSeasonR{}            = return ("", Nothing)
     breadcrumb LeagueCancelTransactionR{} = return ("", Nothing)

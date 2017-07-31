@@ -18,6 +18,7 @@ eventForm userId event = renderBootstrapForm $ Event
     <*> aopt textField (fieldName "Further description") (eventNote <$> event)
     <*> areq timeInEpisodeField (fieldName "Time in episode") (eventTimeInEpisode <$> event)
     <*> existingElseDefault False (eventMarkedForDestruction <$> event)
+    <*> uuidField (eventUuid <$> event)
     <*> createdByField userId (eventCreatedBy <$> event)
     <*> createdAtField (eventCreatedAt <$> event)
     <*> updatedByField userId

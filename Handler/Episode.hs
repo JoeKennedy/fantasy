@@ -8,7 +8,8 @@ import Handler.Score         (finalizeWeek, upsertPlays)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.))
-import           Text.Blaze (toMarkup)
+import           Data.UUID.V4       (nextRandom)
+import           Text.Blaze         (toMarkup)
 
 ------------
 -- Routes --
@@ -95,6 +96,7 @@ upsertAppearanceEvent userId now event episode characterId = do
                                              , EventUpdatedAt =. now ]
 
         Nothing -> do
+            uuid <- liftIO nextRandom
             let event' = Event { eventCharacterId = characterId
                                , eventAction = Appear
                                , eventReceivingCharacterId = Nothing
@@ -102,6 +104,7 @@ upsertAppearanceEvent userId now event episode characterId = do
                                , eventNote = Nothing
                                , eventTimeInEpisode = eventTimeInEpisode event
                                , eventMarkedForDestruction = False
+                               , eventUuid = uuid
                                , eventCreatedBy = userId
                                , eventCreatedAt = now
                                , eventUpdatedBy = userId

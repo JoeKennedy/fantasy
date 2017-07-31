@@ -2,11 +2,13 @@
 
 module Model where
 
+import Model.Action
+import Model.Types
+
 import ClassyPrelude.Yesod
 import Database.Persist.Quasi
 import Data.Time.LocalTime    (TimeOfDay)
-import Model.Action
-import Model.Types
+import Data.UUID              (UUID)
 
 -- You can define all of your database entities in the entities file.
 -- You can find more information on persistent and how to declare entities

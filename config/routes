@@ -18,8 +18,8 @@
     /house                  AdminHousesR       GET POST
     /house/#HouseId         AdminHouseR        GET POST DELETE
     /score/                 AdminScoreR        GET
-    /score/#EpisodeId       AdminScoreEpisodeR GET POST
-    /score/#EventId/event   AdminScoreEventR       POST
+    /score/#EpisodeId       AdminScoreEpisodeR GET
+    /score/#EpisodeId/#UUID AdminScoreEventR       POST
     /series                 AdminSeriesListR   GET POST
     /series/#SeriesId       AdminSeriesR       GET POST DELETE
     /species                AdminSpeciesListR  GET POST

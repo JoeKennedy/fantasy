@@ -45,10 +45,11 @@ $if not (null events)
                                     Add Events
 
             <tbody>
-                $forall (Entity eventId _, charField, actionField, recCharField, noteField, timeField) <- forms
+                $forall (Entity eventId event, charField, actionField, recCharField, noteField, timeField) <- forms
                     <tr .vertical-align-middle>
                         <td .text-center>
-                            <input .event-id type="hidden" value="#{toPathPiece eventId}"/>
+                            <input .event-id type="hidden" value=#{toPathPiece eventId} />
+                            <input .event-uuid type="hidden" value=#{toPathPiece $ eventUuid event} />
                             <i .success-icon .fa .fa-lg .fa-check .text-success>
                         <td>^{fvInput $ snd charField}
                         <td>^{fvInput $ snd actionField}

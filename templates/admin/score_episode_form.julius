@@ -14,6 +14,8 @@ function upsertEvent(event) {
             data: data,
             success: function(data) {
               row.find('.event-id').val(data);
+              row.find('button.delete-event').removeClass('disabled')
+                                              .prop('disabled', false);
               row.find('a.edit-event').removeClass('disabled')
                                       .prop('href', '/admin/event/' + data);
               markRowSuccess(row);
@@ -29,7 +31,7 @@ function copyEventRow(event) {
 
 function deleteEventRow(event) {
     var row = eventRow(event);
-    var id = row.find('.event-id').val();
+    var id = row.find('input.event-id').val();
 
     if (id) {
         var $modal = $('#deleteEvent');
@@ -57,6 +59,10 @@ function cloneEventRow(row, resetFields) {
 }
 
 function markRowInProcess(row) {
+    if (row.find('input.event-id').val()) {
+        row.find('button.delete-event').addClass('disabled')
+                                       .prop('disabled', true);
+    }
     row.find('i.success-icon').removeClass('fa-close text-danger')
                               .removeClass('fa-check text-success')
                               .addClass('fa-spin fa-spinner')
@@ -84,6 +90,7 @@ function markRowNew(row, resetFields) {
     } else {
         row.find('input.event-id').val('');
     }
+    row.find('input.event-uuid').val(uuidv4());
     row.find('a.edit-event').addClass('disabled').prop('href', '#');
     row.find('i.success-icon').removeClass('fa-check text-success')
                               .removeClass('fa-close text-danger')
@@ -93,12 +100,8 @@ function markRowNew(row, resetFields) {
 
 function getAjaxUrl(row) {
     var url = '/admin/score/';
-    var eventId = row.find('input.event-id').val();
-    if (eventId) {
-      return url + eventId + '/event';
-    } else {
-      return url + #{toJSON $ toPathPiece episodeId};
-    }
+    url += #{toJSON $ toPathPiece episodeId} + '/';
+    return url + row.find('input.event-uuid').val();
 }
 
 function validateForm(row) {
@@ -150,6 +153,12 @@ function scoreEpisodeFormReady(jQuery) {
     $('#score_episode_panel').on('click',  '.copy-event',   copyEventRow);
     $('#score_episode_panel').on('click',  '.delete-event', deleteEventRow);
     $('#score_episode_panel button#add_event_rows').on('click', addEventRows);
+}
+
+function uuidv4() {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  )
 }
 
 $(document).ready(scoreEpisodeFormReady)

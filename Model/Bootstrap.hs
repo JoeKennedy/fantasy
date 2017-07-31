@@ -5,6 +5,8 @@ import Model
 import           ClassyPrelude.Yesod
 import           Data.Char             (isLetter, isSpace)
 import qualified Data.Text as Text     (toLower, replace)
+import           Data.UUID             (UUID)
+import           Data.UUID.V4          (nextRandom)
 import           Yesod.Form.Bootstrap3 ( BootstrapFormLayout (..)
                                        , BootstrapGridOptions (..)
                                        , renderBootstrap3)
@@ -71,6 +73,10 @@ updatedByField = pure
 
 updatedAtField :: (Applicative (t m), MonadTrans t, MonadIO m) => t m UTCTime
 updatedAtField = lift $ liftIO getCurrentTime
+
+uuidField :: (Applicative (t m), MonadIO m, MonadTrans t) => Maybe UUID -> t m UUID
+uuidField (Just uuid) = pure uuid
+uuidField Nothing     = lift $ liftIO nextRandom
 
 existingElseDefault :: (Applicative f) => a -> Maybe a -> f a
 existingElseDefault defaultValue maybeExistingValue = pure $ fromMaybe defaultValue maybeExistingValue
