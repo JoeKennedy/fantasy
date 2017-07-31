@@ -90,5 +90,5 @@ development server. To quit the server process, type `quit`.
 Take a look at one of the [issues](https://github.com/JoeKennedy/fantasy/issues)
 filed on Github. If it's tagged with "help wanted", feel free to take a swipe at
 it! If you can think of another improvement and want to submit that, feel free
-to do that as well! Or, if you've found a bug, feel free tofile it. You know the
-drill.
+to do that as well! Or, if you've found a bug, feel free to file it. You know
+the drill.
