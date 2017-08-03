@@ -4,7 +4,9 @@ import Import
 
 import Handler.Event         (getEpisodeEvents, incrementCharacterAppearances)
 import Handler.League.Season (createWeekData_)
-import Handler.Score         (finalizeWeek, upsertPlays)
+-- import Handler.Score         (finalizeWeek, upsertPlays)
+-- TODO - remove the below line and uncomment above line
+import Handler.Score         (finalizeWeek, unfinalizeWeek, upsertPlays)
 
 import qualified Database.Esqueleto as E
 import           Database.Esqueleto ((^.))
@@ -51,20 +53,38 @@ getSeriesEpisodes seriesId = runDB
 ---------------
 -- Callbacks --
 ---------------
-finalizeEpisode :: EpisodeId -> UserId -> Handler ()
-finalizeEpisode episodeId userId = do
+finalizeEpisode :: Entity Episode -> Handler ()
+finalizeEpisode (Entity episodeId episode) = do
     now <- liftIO getCurrentTime
+    let userId = episodeUpdatedBy episode
     backgroundHandler $ do
         incrementEpisodeTimesFinalized episodeId userId now
+        -- TODO - delete the below 2 lines
+        events <- runDB $ selectList [EventEpisodeId ==. episodeId] [Asc EventTimeInEpisode]
+        forM_ events $ upsertPlays episode
+        -- TODO - delete the above 2 lines
         upsertEpisodeAppearanceEvents episodeId userId now
         leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
         forM_ leagueIds $ finalizeWeek episodeId userId
+        -- TODO - delete the below line maybe? I might keep it, could be nice to
+        -- have
+        setMessage $ toMarkup $ episodeName episode ++ " has been finalized"
+
+-- TODO - delete this function
+unfinalizeEpisode :: Entity Episode -> Handler ()
+unfinalizeEpisode (Entity episodeId episode) =
+    if episodeOverallNumber episode /= 61 then return () else backgroundHandler $ do
+        leagueIds <- runDB $ selectKeysList [LeagueIsActive ==. True] [Asc LeagueId]
+        forM_ leagueIds $ unfinalizeWeek episodeId
+        setMessage $ toMarkup $ episodeName episode ++ " has been un-finalized"
 
 incrementEpisodeTimesFinalized :: EpisodeId -> UserId -> UTCTime -> Handler ()
 incrementEpisodeTimesFinalized episodeId userId now =
-    runDB $ update episodeId [ EpisodeTimesFinalized +=. 1
-                             , EpisodeStatus =. EventsComplete
-                             , EpisodeEventsCompleteAt =. Just now
+    runDB $ update episodeId [ EpisodeStatus =. EventsComplete
+                             -- TODO - uncomment the below 2 lines
+                             -- , EpisodeTimesFinalized +=. 1
+                             -- , EpisodeEventsCompleteAt =. Just now
+                             -- TODO - uncomment the above 2 lines
                              , EpisodeUpdatedBy =. userId
                              , EpisodeUpdatedAt =. now ]
 

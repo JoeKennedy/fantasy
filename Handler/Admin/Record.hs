@@ -3,7 +3,9 @@ module Handler.Admin.Record where
 import Import
 
 import Handler.Character     (addCharacterToLeagues, updateCharacterInLeagues)
-import Handler.Episode       (finalizeEpisode)
+-- import Handler.Episode       (finalizeEpisode)
+-- TODO - delete the below line and uncomment the above line
+import Handler.Episode       (finalizeEpisode, unfinalizeEpisode)
 import Handler.Event         (changeEventRelations, deleteEventRelations)
 import Handler.League.Season (createLeagueSeasons, updateLeagueSeasonsIfRelevent)
 import Handler.Score
@@ -60,8 +62,12 @@ instance AdminRecord Character where
 instance AdminRecord Episode where
     afterUpdate oldEpisode (Entity episodeId episode) = do
         if episodeAreEventsComplete episode && not (episodeAreEventsComplete oldEpisode)
-            then finalizeEpisode episodeId $ episodeUpdatedBy episode
-            else return ()
+            then finalizeEpisode $ Entity episodeId episode
+            -- else return ()
+            -- TODO - delete the below stuff and replace with the above line
+            else if episodeAreEventsComplete oldEpisode && not (episodeAreEventsComplete episode)
+                then unfinalizeEpisode $ Entity episodeId episode
+                else return ()
 
     createdBy = episodeCreatedBy
     createdAt = episodeCreatedAt

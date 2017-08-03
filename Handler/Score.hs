@@ -32,16 +32,15 @@ getPerformancesForPlayer seasonId playerId = runDB
 getPreviousWeeks :: Week -> Episode -> Handler [Entity Week]
 getPreviousWeeks week episode = runDB $ do
     series <- get404 $ episodeSeriesId episode
-    let (leagueId, totalEpisodes) = (weekLeagueId week, seriesTotalEpisodes series)
-        overallNumber = episodeOverallNumber episode
+    let overallNumber = episodeOverallNumber episode
     E.select $ E.from $ \(week' `E.InnerJoin` episode') -> do
         E.on $ week' ^. WeekEpisodeId E.==. episode' ^. EpisodeId
-        E.where_ $ week' ^. WeekLeagueId E.==. E.val leagueId
+        E.where_ $ week' ^. WeekLeagueId E.==. E.val (weekLeagueId week)
             E.&&. episode' ^. EpisodeOverallNumber E.<. E.val overallNumber
-        E.orderBy [E.asc (episode' ^. EpisodeOverallNumber)]
+        E.orderBy [E.desc (episode' ^. EpisodeOverallNumber)]
         -- TODO - maybe this number should be configurable by league?
         -- But right now it's the total number of episodes in the season
-        E.limit $ fromIntegral totalEpisodes
+        E.limit $ fromIntegral $ seriesTotalEpisodes series
         return week'
 
 --------------------
@@ -57,6 +56,12 @@ finalizeWeek episodeId userId leagueId = do
     markWeekAsScored $ Entity weekId week
     -- TODO - Implement the below function and un-comment the below line
     -- emailTeamOwners episode -- Email only if league draft is complete
+
+-- TODO - delete this function
+unfinalizeWeek :: EpisodeId -> LeagueId -> Handler ()
+unfinalizeWeek episodeId leagueId = do
+    weekEntity <- runDB $ getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
+    calculateWeekCumulativePoints weekEntity
 
 markWeekAsScored :: Entity Week -> Handler ()
 markWeekAsScored (Entity weekId week) = if weekIsScored week then return () else do
