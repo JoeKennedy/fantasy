@@ -8,6 +8,7 @@ import Handler.League.Setup
 
 import Network.Mail.Mime
 import System.Random     (newStdGen)
+import Text.Blaze        (toMarkup)
 
 ----------
 -- Form --
@@ -82,21 +83,36 @@ postLeagueCancelR leagueId = do
                         ]
     setMessage "Your league has been successfully canceled"
 
-getSetupNewLeagueR :: Handler Html
+getSetupNewLeagueR :: Handler ()
 getSetupNewLeagueR = do
+    userId <- requireAuthId
+    maybeLeague <- leagueBeingSetUp userId
+    case maybeLeague of
+        Nothing -> redirect $ SetupLeagueR SetupLeagueStartR
+        Just (Entity _ league) -> do
+            let message = "You are currently in the middle of creating a " ++
+                          "league: \"" ++ leagueName league ++ "\". " ++
+                          "Continue creating this league or click the red " ++
+                          "Cancel League button below to scrap this league " ++
+                          "and create a new one."
+            setMessage $ toMarkup message
+            redirect $ leagueSetupNextStepToComplete league
+
+getSetupLeagueStartR :: Handler Html
+getSetupLeagueStartR = do
     userId <- requireAuthId
     maybeLeague <- leagueBeingSetUp userId
     (widget, enctype) <- generateFormPost $ leagueForm userId $ map entityVal maybeLeague
     defaultLayout $ do
         let title = "Create A League!" :: Html
-            action = SetupLeagueR SetupNewLeagueR
+            action = SetupLeagueR SetupLeagueStartR
             lastCompletedStep = fromMaybe 0 (leagueLastCompletedStep <$> map entityVal maybeLeague)
             maybeLeagueId = map entityKey maybeLeague
         setTitle title
         $(widgetFile "layouts/league-setup-layout")
 
-postSetupNewLeagueR :: Handler Html
-postSetupNewLeagueR = do
+postSetupLeagueStartR :: Handler Html
+postSetupLeagueStartR = do
     userId <- requireAuthId
     maybeLeague <- leagueBeingSetUp userId
     ((result, widget), enctype) <- runFormPost $ leagueForm userId $ map entityVal maybeLeague
@@ -107,7 +123,7 @@ postSetupNewLeagueR = do
             redirect $ SetupLeagueR SetupGeneralSettingsR
         _ -> defaultLayout $ do
             let title = "Create A League!" :: Html
-                action = SetupLeagueR SetupNewLeagueR
+                action = SetupLeagueR SetupLeagueStartR
                 lastCompletedStep = fromMaybe 0 (leagueLastCompletedStep <$> map entityVal maybeLeague)
                 maybeLeagueId = map entityKey maybeLeague
             setTitle title

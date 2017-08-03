@@ -44,7 +44,8 @@
 /leagues/ LeaguesR GET
 
 /leagues/setup SetupLeagueR:
-    /new     SetupNewLeagueR       GET POST
+    /new     SetupNewLeagueR       GET
+    /start   SetupLeagueStartR     GET POST
     /general SetupGeneralSettingsR GET POST
     /scoring SetupScoringSettingsR GET POST
     /draft   SetupDraftSettingsR   GET POST

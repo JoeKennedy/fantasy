@@ -42,7 +42,7 @@ leagueSetupNextStepToComplete league =
         Nothing                -> error "No next step"
 
 leagueSetupSteps :: [(Int, String, Route App)]
-leagueSetupSteps = [ (1, "Create League",    SetupLeagueR SetupNewLeagueR)
+leagueSetupSteps = [ (1, "Create League",    SetupLeagueR SetupLeagueStartR)
                    , (2, "General Settings", SetupLeagueR SetupGeneralSettingsR)
                    , (3, "Scoring Settings", SetupLeagueR SetupScoringSettingsR)
                    , (4, "Draft Settings",   SetupLeagueR SetupDraftSettingsR)

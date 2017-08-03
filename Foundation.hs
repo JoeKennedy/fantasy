@@ -558,8 +558,8 @@ instance YesodBreadcrumbs App where
     breadcrumb (LeagueSettingsR leagueId LeagueTeamsSettingsR)   = return ("Team Settings", Just $ LeagueR leagueId)
 
     -- League setup breadcrumbs
-    breadcrumb (SetupLeagueR SetupNewLeagueR)       = return ("Setup", Just LeaguesR)
-    breadcrumb (SetupLeagueR SetupGeneralSettingsR) = return ("General Settings", Just $ SetupLeagueR SetupNewLeagueR)
+    breadcrumb (SetupLeagueR SetupLeagueStartR)     = return ("Setup", Just LeaguesR)
+    breadcrumb (SetupLeagueR SetupGeneralSettingsR) = return ("General Settings", Just $ SetupLeagueR SetupLeagueStartR)
     breadcrumb (SetupLeagueR SetupScoringSettingsR) = return ("Scoring Settings", Just $ SetupLeagueR SetupGeneralSettingsR)
     breadcrumb (SetupLeagueR SetupDraftSettingsR)   = return ("Draft Settings", Just $ SetupLeagueR SetupScoringSettingsR)
     breadcrumb (SetupLeagueR SetupTeamsSettingsR)   = return ("Team Settings", Just $ SetupLeagueR SetupDraftSettingsR)
@@ -572,7 +572,8 @@ instance YesodBreadcrumbs App where
     breadcrumb RobotsR        = return ("", Nothing)
     breadcrumb LetsEncryptR{} = return ("", Nothing)
 
-    breadcrumb (AdminR (AdminScoreEventR _ _)) = return ("", Nothing)
+    breadcrumb (AdminR AdminScoreEventR{}) = return ("", Nothing)
+    breadcrumb (SetupLeagueR SetupNewLeagueR) = return ("", Nothing)
 
     breadcrumb LeagueSeasonR{}            = return ("", Nothing)
     breadcrumb LeagueCancelTransactionR{} = return ("", Nothing)
