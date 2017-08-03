@@ -54,11 +54,8 @@ episodeAreEventsCompleteField Nothing = pure False
 episodeAreEventsCompleteField (Just episode) = do
     -- TODO - force a minimum of at least X events for the episode, and figure
     -- out what X should be (if not 0)
-    if episodeStatus episode `elem` [EventsPending, EventsComplete]
-        then areq checkBoxField (fieldName "Is Episode Finalized?") $ Just $ episodeAreEventsComplete episode
-    -- TODO - delete the above two lines and uncomment the below two lines
-    -- if episodeStatus episode == EventsPending
-    --     then areq checkBoxField (fieldName "Is Episode Finalized?") $ Just False
+    if episodeStatus episode == EventsPending
+        then areq checkBoxField (fieldName "Is Episode Finalized?") $ Just False
         else pure $ episodeAreEventsComplete episode
 
 eventTimeInEpisodeText :: Event -> Text

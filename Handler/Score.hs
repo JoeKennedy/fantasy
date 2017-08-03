@@ -57,12 +57,6 @@ finalizeWeek episodeId userId leagueId = do
     -- TODO - Implement the below function and un-comment the below line
     -- emailTeamOwners episode -- Email only if league draft is complete
 
--- TODO - delete this function
-unfinalizeWeek :: EpisodeId -> LeagueId -> Handler ()
-unfinalizeWeek episodeId leagueId = do
-    weekEntity <- runDB $ getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
-    calculateWeekCumulativePoints weekEntity
-
 markWeekAsScored :: Entity Week -> Handler ()
 markWeekAsScored (Entity weekId week) = if weekIsScored week then return () else do
     now <- liftIO getCurrentTime
