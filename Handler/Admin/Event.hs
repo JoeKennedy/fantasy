@@ -52,7 +52,9 @@ deleteAdminEventR = adminDelete "Event"
 adminEventsR :: Handler Html
 adminEventsR = do
     userId <- requireAuthId
-    events <- getEvents
+    let events = [] :: [FullEvent]
+    -- TODO - delete the above line and uncomment the below line
+    -- events <- getEvents
     let form = eventForm userId Nothing
     adminList "event" form $(widgetFile "admin/entities/events")
 
