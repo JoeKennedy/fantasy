@@ -49,6 +49,7 @@ getPreviousWeeks week episode = runDB $ do
 finalizeWeek :: EpisodeId -> UserId -> LeagueId -> Handler ()
 finalizeWeek episodeId userId leagueId = do
     Entity weekId week <- runDB $ getBy404 $ UniqueWeekLeagueIdEpisodeId leagueId episodeId
+    calculatePointsThisWeek leagueId weekId
     calculatePointsThisSeason week userId
     calculateNextWeekCumulativePoints week
     determineWaiverOrder week userId
@@ -276,6 +277,44 @@ addToGamePoints performance weekId points =
             now <- liftIO getCurrentTime
             update gameId [GamePoints +=. points, GameUpdatedAt =. now]
         (_, _) -> return ()
+
+calculatePointsThisWeek :: LeagueId -> WeekId -> Handler ()
+calculatePointsThisWeek leagueId weekId = runDB $ do
+    playerIds <- selectKeysList [ PlayerLeagueId ==. leagueId
+                                , PlayerIsPlayable ==. True
+                                ] [Asc PlayerId]
+    forM_ playerIds $ calculatePerformancePoints weekId
+    teamIds <- selectKeysList [TeamLeagueId ==. leagueId] [Asc TeamId]
+    forM_ teamIds $ calculateGamePoints weekId
+
+calculatePerformancePoints :: WeekId -> PlayerId -> ReaderT SqlBackend Handler ()
+calculatePerformancePoints weekId playerId = do
+    plays <- selectList ( [ PlayReceivingPlayerId ==. Just playerId
+                          , PlayWeekId ==. weekId ] ||.
+                          [ PlayWeekId ==. weekId, PlayPlayerId ==. playerId ]
+                        ) [Asc PlayId]
+    let playerPoints = sum $ map (getPlayerPoints playerId) plays
+    now <- liftIO getCurrentTime
+    updateWhere [PerformanceWeekId ==. weekId, PerformancePlayerId ==. playerId]
+                [PerformancePoints =. playerPoints, PerformanceUpdatedAt =. now]
+
+getPlayerPoints :: PlayerId -> Entity Play -> Rational
+getPlayerPoints playerId (Entity _ play)
+    | playPlayerId play == playerId = playPoints play
+    | playReceivingPlayerId play == Just playerId = playReceivingPoints play
+    | otherwise = 0
+
+calculateGamePoints :: WeekId -> TeamId -> ReaderT SqlBackend Handler ()
+calculateGamePoints weekId teamId = do
+    teamPointsVal <- E.select $ E.from $ \performance -> do
+        E.where_ $ performance ^. PerformanceTeamId E.==. E.val (Just teamId)
+             E.&&. performance ^. PerformanceWeekId E.==. E.val weekId
+             E.&&. performance ^. PerformanceIsStarter E.==. E.val True
+        return $ E.sum_ $ performance ^. PerformancePoints
+    let teamPoints = sum $ map (fromMaybe 0 . E.unValue) teamPointsVal
+    now <- liftIO getCurrentTime
+    updateWhere [GameWeekId ==. weekId, GameTeamId ==. teamId]
+                [GamePoints =. teamPoints, GameUpdatedAt =. now]
 
 calculatePointsThisSeason :: Week -> UserId -> Handler ()
 calculatePointsThisSeason week userId = do
