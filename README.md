@@ -27,15 +27,15 @@ git clone https://github.com/JoeKennedy/fantasy.git
 ### Install yesod-bin
 
 In order to run `yesod` commands in your terminal, you'll need to install
-yesod-bin
+`yesod-bin`. Just `cd` to your local copy of the repo and run:
 
 ```bash
-cabal install yesod-bin
+stack install yesod-bin --install-ghc
 ```
 
 ### Initial compile
 
-With Stack, just `cd` to your local copy of the repo and run:
+Still in the directory containing your local copy of the repo:
 
 ```bash
 stack build
@@ -48,6 +48,8 @@ Run `psql` to create the database. Then, in the postgres shell, run:
 ```bash
 CREATE USER fantasy password 'fantasy';
 CREATE DATABASE fantasy OWNER fantasy;
+\c fantasy
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 \q
 ```
 
@@ -79,11 +81,12 @@ Facebook OAuth2.
 Pretty simple, just run:
 
 ```bash
-yesod devel
+stack exec -- yesod devel
 ```
 
 This will create all the tables, indices, and unique constraints, and start the
-development server. To quit the server process, type `quit`.
+development server, which will be accessible at http://localhost:3000/.
+To quit the server process, type `quit`.
 
 ## Contribute
 
