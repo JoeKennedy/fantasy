@@ -52,6 +52,12 @@ data AppSettings = AppSettings
     -- ^ Copyright text to appear in the footer of the page
     , appAnalytics              :: Maybe Text
     -- ^ Google Analytics code
+
+    -- TODO - the below 2 parameters should be parsed as part of appDatabaseConf
+    , appSSLMode                :: Maybe Text
+    -- ^ SSL Mode for PostgresSQL connection
+    , appSSLRootCert            :: Maybe Text
+    -- ^ SSL Root Cert for PostgresSQL connection
     }
 
 data OAuth2Keys = OAuth2Keys
@@ -82,6 +88,9 @@ instance FromJSON AppSettings where
 
         appCopyright              <- o .: "copyright"
         appAnalytics              <- o .:? "analytics"
+
+        appSSLMode                <- o .:? "sslmode"
+        appSSLRootCert            <- o .:? "sslrootcert"
 
         return AppSettings {..}
 

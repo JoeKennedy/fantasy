@@ -32,6 +32,7 @@ import System.Environment                   (getEnv)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
 
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Proxy as P
 import qualified Web.ServerSession.Core as SS
@@ -115,8 +116,12 @@ makeFoundation appSettings = do
 
     -- Create the database connection pool
     -- TODO make the DB connect to DATABASE_URL if not in development
+    let connStr = catMaybes [ Just (pgConnStr $ appDatabaseConf appSettings)
+                            , toPgConnStrParamMaybe "sslmode" (appSSLMode appSettings)
+                            , toPgConnStrParamMaybe "sslrootcert" (appSSLRootCert appSettings)
+                            ]
     pool <- flip runLoggingT logFunc $ createPostgresqlPool
-        (pgConnStr  $ appDatabaseConf appSettings)
+        (BS.intercalate " " connStr)
         (pgPoolSize $ appDatabaseConf appSettings)
 
     -- Perform database migration using our application's logging settings.
@@ -150,6 +155,10 @@ makeFoundation appSettings = do
             acmeChallenge <- getEnv "LETS_ENCRYPT_ACME_CHALLENGE"
             letsEncrypt   <- getEnv "LETS_ENCRYPT_SECRET"
             return (pack acmeChallenge, pack letsEncrypt)
+
+        toPgConnStrParamMaybe :: Text -> Maybe Text -> Maybe ByteString
+        toPgConnStrParamMaybe _ Nothing = Nothing
+        toPgConnStrParamMaybe name (Just value) = Just $ encodeUtf8 $ intercalate "=" [name, value]
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.

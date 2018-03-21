@@ -17,6 +17,10 @@ ip-from-header: "_env:IP_FROM_HEADER:false"
 # mutable-static: false
 # skip-combining: false
 
+# TODO - these two should probably be under database, but I'm lazy
+sslmode:     "_env:SSLMODE"
+sslrootcert: "_env:SSLROOTCERT"
+
 database:
   user:     "_env:PGUSER:fantasy"
   password: "_env:PGPASS:fantasy"
