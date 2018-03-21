@@ -25,5 +25,5 @@ database:
   database: "_env:PGDATABASE:fantasy"
   poolsize: "_env:PGPOOLSIZE:10"
 
-copyright: © 2016 Fantasy Game Of Thrones
+copyright: © 2018 Fantasy Game Of Thrones
 #analytics: UA-YOURCODE
