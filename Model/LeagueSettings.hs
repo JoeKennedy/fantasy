@@ -20,7 +20,7 @@ toOptions :: (Show a) => [a] -> [(Text, a)]
 toOptions valuesList = map (\value -> (pack $ show value, value)) valuesList
 
 totalWeeksError :: a
-totalWeeksError = error "Total weeks must be 7 or 10"
+totalWeeksError = error "Total weeks must be 6, 7, or 10"
 
 ----------------------
 -- General Settings --
@@ -38,11 +38,13 @@ possibleRosterSizes teamsCount = [2..snd $ maxRosterSize teamsCount]
 possibleRegularSeasonLengths :: Int -> [Int]
 possibleRegularSeasonLengths 10 = [7..10]
 possibleRegularSeasonLengths  7 = [5..7]
+possibleRegularSeasonLengths  6 = [4..6]
 possibleRegularSeasonLengths  _ = totalWeeksError
 
 possiblePlayoffLengths :: Int -> [Int]
 possiblePlayoffLengths 10 = [0..3]
 possiblePlayoffLengths  7 = [0..2]
+possiblePlayoffLengths  6 = [0..2]
 possiblePlayoffLengths  _ = totalWeeksError
 
 possibleNumbersOfTeamsInPlayoffs :: Int -> [Int]
@@ -51,6 +53,7 @@ possibleNumbersOfTeamsInPlayoffs teamsCount = [2..teamsCount]
 possibleTradeDeadlineWeeks :: Int -> [Int]
 possibleTradeDeadlineWeeks 10 = [7..10]
 possibleTradeDeadlineWeeks  7 = [5..7]
+possibleTradeDeadlineWeeks  6 = [4..6]
 possibleTradeDeadlineWeeks  _ = totalWeeksError
 
 possibleWaiverPeriodsInDays :: [Int]
@@ -81,6 +84,7 @@ defaultSeasonLength 10 teamsCount
     | teamsCount < 11 = (8, 2)
     | otherwise       = (7, 3)
 defaultSeasonLength 7 _ = (7, 0)
+defaultSeasonLength 6 _ = (6, 0)
 defaultSeasonLength _ _ = totalWeeksError
 
 -- takes in total number of weeks in season and number of teams
@@ -88,6 +92,7 @@ defaultSeasonLength _ _ = totalWeeksError
 defaultNumberOfTeamsInPlayoffs :: Int -> Int -> Int
 defaultNumberOfTeamsInPlayoffs 10 teamsCount = teamsCount `quot` 2
 defaultNumberOfTeamsInPlayoffs 7 _ = 0
+defaultNumberOfTeamsInPlayoffs 6 _ = 0
 defaultNumberOfTeamsInPlayoffs _ _ = totalWeeksError
 
 -- takes in total number of weeks in season and number of teams
@@ -95,6 +100,7 @@ defaultNumberOfTeamsInPlayoffs _ _ = totalWeeksError
 defaultTradeDeadlineWeek :: Int -> Int -> Int
 defaultTradeDeadlineWeek 10 teamsCount = fst $ defaultSeasonLength 10 teamsCount
 defaultTradeDeadlineWeek 7 _ = 6
+defaultTradeDeadlineWeek 6 _ = 5
 defaultTradeDeadlineWeek _ _ = totalWeeksError
 
 defaultWaiverPeriodInDays :: Int
